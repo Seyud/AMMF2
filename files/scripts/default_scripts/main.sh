@@ -17,6 +17,12 @@ start_script() {
     mkdir -p "$TMP_FOLDER"
     SDCARD="/storage/emulated/0"
     download_destination="/$SDCARD/Download/AMMF/"
+    
+    # 初始化日志系统
+    LOG_DIR="$NOW_PATH/logs"
+    LOG_FILE="$LOG_DIR/script.log"
+    mkdir -p "$LOG_DIR"
+    
     if [ ! -f "$NOW_PATH/module_settings/config.sh" ]; then
         abort "Notfound File!!!($NOW_PATH/module_settings/config.sh)"
     else
@@ -53,23 +59,61 @@ key_select() {
 }
 Aurora_ui_print() {
     sleep 0.02
+    # 添加日志记录
+    log_to_file "INFO" "$1"
     echo "[${OUTPUT}] $1"
 }
 
 Aurora_abort() {
+    # 添加日志记录
+    log_to_file "ERROR" "$1"
     echo "[${ERROR_TEXT}] $1"
     abort "$ERROR_CODE_TEXT: $2"
 }
+
+# 添加日志记录函数
+log_to_file() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    
+    # 确保日志目录存在
+    if [ ! -d "$LOG_DIR" ]; then
+        mkdir -p "$LOG_DIR"
+    fi
+    
+    # 写入日志
+    echo "${timestamp} [${level}] ${message}" >> "$LOG_FILE"
+    
+    # 检查日志文件大小
+    check_log_size
+}
+
+# 检查日志文件大小并轮换
+check_log_size() {
+    if [ -f "$LOG_FILE" ]; then
+        local size=$(stat -c %s "$LOG_FILE" 2>/dev/null || stat -f %z "$LOG_FILE" 2>/dev/null)
+        if [ "$size" -gt 102400 ]; then # 100KB
+            # 保留最近的日志
+            mv "$LOG_FILE" "${LOG_FILE}.old"
+            # 清空当前日志文件
+            echo "--- 日志已轮换 $(date) ---" > "$LOG_FILE"
+        fi
+    fi
+}
+
 Aurora_test_input() {
     if [ -z "$3" ]; then
         Aurora_ui_print "$1 ( $2 ) $WARN_MISSING_PARAMETERS"
     fi
 }
+
 print_title() {
     if [ -n "$2" ]; then
         Aurora_ui_print "$1 $2"
     fi
 }
+
 ui_print() {
     if [ "$1" = "- Setting permissions" ]; then
         return
@@ -89,6 +133,8 @@ ui_print() {
     if [ "$1" = "- Done" ]; then
         return
     fi
+    # 添加日志记录
+    log_to_file "INFO" "$1"
     echo "$1"
 }
 #About_the_custom_script

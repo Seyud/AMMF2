@@ -12,13 +12,7 @@ main() {
         . "$MODPATH/files/scripts/default_scripts/main.sh"
     fi
     start_script
-    replace_module_id "$MODPATH/files/languages.sh" "languages.sh"
-    replace_module_id "$MODPATH/webroot/language.js" "WEBUI/language.js"
-    replace_module_id "$MODPATH/webroot/index.html" "WEBUI/index.html"
-    replace_module_id "$MODPATH/webroot/navigation.js" "WEBUI/navigation.js"
-    replace_module_id "$MODPATH/webroot/logs.js" "WEBUI/logs.js"
-    replace_module_id "$MODPATH/webroot/status.js" "WEBUI/status.js"
-    replace_module_id "$MODPATH/webroot/settings.js" "WEBUI/settings.js"
+    # 模块ID替换已在构建时完成，无需在安装时执行
     version_check
     if [ "$ARCH" = "arm64" ]; then
     rm -f "$MODPATH/bin/filewatch-x86_64"
@@ -47,6 +41,7 @@ version_check() {
         Aurora_abort "Android API: $ERROR_UNSUPPORTED_VERSION $API ($ERROR_VERSION_NUMBER >= $ANDROID_API)" 2
     fi
 }
+# 保留replace_module_id函数以防某些文件未在构建时替换
 replace_module_id() {
     if [ -f "$1" ] && [ -n "$MODID" ]; then
         Aurora_ui_print "Setting $2 ..."
