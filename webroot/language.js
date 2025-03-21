@@ -365,5 +365,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const languageToggle = document.getElementById('language-toggle');
     if (languageToggle) {
         languageToggle.addEventListener('click', toggleLanguageMenu);
+        console.log('语言切换按钮事件已绑定');
+    } else {
+        console.error('未找到语言切换按钮元素');
     }
+    
+    // 初始加载可用语言
+    loadLanguages().then(() => {
+        console.log('语言加载完成');
+        updateLanguage();
+    }).catch(err => {
+        console.error('加载语言时出错:', err);
+    });
 });
+
+// 添加按钮点击动画效果
+function addButtonClickAnimation(button) {
+    if (!button) return;
+    
+    button.addEventListener('click', function() {
+        // 移除可能存在的动画类
+        this.classList.remove('button-click');
+        
+        // 触发重排
+        void this.offsetWidth;
+        
+        // 添加动画类
+        this.classList.add('button-click');
+        
+        // 监听动画结束事件
+        const handleAnimationEnd = () => {
+            this.classList.remove('button-click');
+            this.removeEventListener('animationend', handleAnimationEnd);
+        };
+        
+        this.addEventListener('animationend', handleAnimationEnd);
+        
+        // 备份超时移除
+        setTimeout(() => {
+            this.classList.remove('button-click');
+        }, 300);
+    });
+}

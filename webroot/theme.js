@@ -19,31 +19,70 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 
 // 确保DOM加载完成后绑定事件
 document.addEventListener('DOMContentLoaded', function() {
-    // 绑定主题切换按钮事件
+    // 获取主题切换按钮
     const themeToggle = document.getElementById('theme-toggle');
+    
+    // 检查按钮是否存在
     if (themeToggle) {
-        themeToggle.addEventListener('click', toggleTheme);
+        // 绑定点击事件
+        themeToggle.addEventListener('click', function() {
+            // 获取当前主题
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            
+            // 切换主题
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // 应用新主题
+            document.documentElement.setAttribute('data-theme', newTheme);
+            
+            // 更新状态
+            state.isDarkMode = newTheme === 'dark';
+            
+            // 更新图标
+            const themeIcon = this.querySelector('.material-symbols-outlined');
+            if (themeIcon) {
+                themeIcon.textContent = state.isDarkMode ? 'light_mode' : 'dark_mode';
+            }
+            
+            // 保存主题设置到本地存储
+            localStorage.setItem('theme', newTheme);
+            
+            console.log('主题已切换为:', newTheme);
+        });
+        
+        console.log('主题切换按钮事件已绑定');
+    } else {
+        console.error('未找到主题切换按钮元素');
     }
 });
 
-// 主题切换函数
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+// 初始化主题
+function initTheme() {
+    // 从本地存储获取主题设置
+    const savedTheme = localStorage.getItem('theme');
     
-    document.documentElement.setAttribute('data-theme', newTheme);
-    
-    // 更新图标
-    const themeIcon = document.querySelector('#theme-toggle .material-symbols-outlined');
-    if (themeIcon) {
-        themeIcon.textContent = newTheme === 'light' ? 'dark_mode' : 'light_mode';
+    // 如果有保存的主题设置，应用它
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        state.isDarkMode = savedTheme === 'dark';
+    } else {
+        // 否则检查系统偏好
+        const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDarkMode) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            state.isDarkMode = true;
+        }
     }
     
-    // 保存主题设置到本地存储
-    localStorage.setItem('theme', newTheme);
-    
-    // 更新状态
-    if (typeof state !== 'undefined') {
-        state.isDarkMode = newTheme === 'dark';
+    // 更新主题图标
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        const themeIcon = themeToggle.querySelector('.material-symbols-outlined');
+        if (themeIcon) {
+            themeIcon.textContent = state.isDarkMode ? 'light_mode' : 'dark_mode';
+        }
     }
 }
+
+// 页面加载时初始化主题
+document.addEventListener('DOMContentLoaded', initTheme);
