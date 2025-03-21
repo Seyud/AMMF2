@@ -40,6 +40,19 @@ jobs:
             cat module.prop
             rm latest_tag.txt
             rm current_time.txt
+            
+      - name: Replace module ID in files
+        run: |
+          . ./module_settings/config.sh
+          # 替换文件中的模块ID
+          sed -i "s/AMMF/${action_id}/g" files/languages.sh
+          sed -i "s/AMMF/${action_id}/g" webroot/language.js
+          sed -i "s/AMMF/${action_id}/g" webroot/index.html
+          sed -i "s/AMMF/${action_id}/g" webroot/navigation.js
+          sed -i "s/AMMF/${action_id}/g" webroot/logs.js
+          sed -i "s/AMMF/${action_id}/g" webroot/status.js
+          sed -i "s/AMMF/${action_id}/g" webroot/settings.js
+          echo "已完成模块ID替换"
 
       - name: Set short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
@@ -51,22 +64,22 @@ jobs:
       
       - name: Build for aarch64
         run: |
-          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
-          -O2 -Wall -Wextra -o filewatch-aarch64 bin/filewatch.c
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
+          -O2 -Wall -Wextra -o filewatch-aarch64 bin/filewatch.cpp
       
       - name: Build for x86_64
         run: |
-          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang \
-          -O2 -Wall -Wextra -o filewatch-x86_64 bin/filewatch.c
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang++ \
+          -O2 -Wall -Wextra -o filewatch-x86_64 bin/filewatch.cpp
       
       - name: Strip binaries
         run: |
-          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip bin/filewatch-aarch64
-          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip bin/filewatch-x86_64
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip bin/filewatch-aarch64 || echo "Failed to strip aarch64 binary"
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip bin/filewatch-x86_64 || echo "Failed to strip x86_64 binary"
       
       - name: Remove c files
         run: |
-          rm -f bin/filewatch.c
+          rm -f bin/filewatch.cpp
           
       - name: Upload zip files as artifacts
         uses: actions/upload-artifact@v4
