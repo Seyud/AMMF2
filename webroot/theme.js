@@ -16,3 +16,34 @@
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
     document.body.setAttribute('data-theme', e.matches ? 'dark' : 'light');
 });
+
+// 确保DOM加载完成后绑定事件
+document.addEventListener('DOMContentLoaded', function() {
+    // 绑定主题切换按钮事件
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+});
+
+// 主题切换函数
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    
+    // 更新图标
+    const themeIcon = document.querySelector('#theme-toggle .material-symbols-outlined');
+    if (themeIcon) {
+        themeIcon.textContent = newTheme === 'light' ? 'dark_mode' : 'light_mode';
+    }
+    
+    // 保存主题设置到本地存储
+    localStorage.setItem('theme', newTheme);
+    
+    // 更新状态
+    if (typeof state !== 'undefined') {
+        state.isDarkMode = newTheme === 'dark';
+    }
+}
