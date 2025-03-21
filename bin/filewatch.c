@@ -19,12 +19,14 @@ static int fd, wd;
 static int running = 1;
 static char *target_file = NULL;
 static char *script_path = NULL;
+static char *status_file = NULL;  // Moved this declaration up here
 static int daemon_mode = 0;
 static int verbose = 0;
 static int check_interval = 1; // 默认检查间隔为1秒
 
 // 信号处理函数
 void handle_signal(int sig) {
+    (void)sig;  // Silence unused parameter warning
     running = 0;
 }
 
@@ -140,9 +142,6 @@ void print_usage(const char *prog_name) {
     printf("\n示例:\n");
     printf("  %s -d -v /data/adb/modules/mymodule/config.txt /data/adb/modules/mymodule/update.sh\n", prog_name);
 }
-
-// 在全局变量部分添加
-static char *status_file = NULL;
 
 // 在main函数的参数解析部分添加新选项
 int main(int argc, char *argv[]) {
