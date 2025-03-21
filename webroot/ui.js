@@ -228,45 +228,50 @@ function generateSettingsForm() {
 
 // 添加设置项变更动画
 function addSettingChangeAnimation(element) {
+    // 先移除可能存在的动画类
     element.classList.remove('setting-changed');
-    void element.offsetWidth; // 触发重排以应用新的动画
+    
+    // 触发重排以应用新的动画
+    void element.offsetWidth;
+    
+    // 添加动画类
     element.classList.add('setting-changed');
+    
+    // 确保动画结束后移除类
+    element.addEventListener('animationend', function onAnimationEnd() {
+        element.classList.remove('setting-changed');
+        element.removeEventListener('animationend', onAnimationEnd);
+    });
+    
+    // 作为备份，设置超时移除类（以防animationend事件未触发）
     setTimeout(() => {
         element.classList.remove('setting-changed');
     }, 500);
 }
 
-// 移除重复的 saveSettings 函数
-// async function saveSettings() {
-//    try {
-//        // ... 现有代码 ...
-//        
-//        // 添加保存成功动画
-//        const saveButton = document.getElementById('save-button');
-//        saveButton.classList.add('save-success');
-//        setTimeout(() => {
-//            saveButton.classList.remove('save-success');
-//        }, 1000);
-//        
-//        showSnackbar(translations[state.language].saveSuccess || '设置保存成功！');
-//    } catch (error) {
-//        // ... 错误处理代码 ...
-//        
-//        // 添加保存失败动画
-//        const saveButton = document.getElementById('save-button');
-//        saveButton.classList.add('save-error');
-//        setTimeout(() => {
-//            saveButton.classList.remove('save-error');
-//        }, 1000);
-//    }
-//}
-
-// 替换为添加动画的函数
+// 修复保存按钮动画
 function addSaveButtonAnimation(success) {
     const saveButton = document.getElementById('save-button');
-    saveButton.classList.add(success ? 'save-success' : 'save-error');
+    const animClass = success ? 'save-success' : 'save-error';
+    
+    // 移除可能存在的动画类
+    saveButton.classList.remove('save-success', 'save-error');
+    
+    // 触发重排
+    void saveButton.offsetWidth;
+    
+    // 添加新动画类
+    saveButton.classList.add(animClass);
+    
+    // 监听动画结束事件
+    saveButton.addEventListener('animationend', function onAnimationEnd() {
+        saveButton.classList.remove(animClass);
+        saveButton.removeEventListener('animationend', onAnimationEnd);
+    });
+    
+    // 备份超时
     setTimeout(() => {
-        saveButton.classList.remove(success ? 'save-success' : 'save-error');
+        saveButton.classList.remove(animClass);
     }, 1000);
 }
 

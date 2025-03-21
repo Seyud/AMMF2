@@ -15,35 +15,37 @@ const logsManager = {
         const logsCard = document.getElementById('logs-card');
         if (logsCard) {
             logsCard.addEventListener('click', () => {
-                navigation.navigateTo('logs');
                 this.loadLogs();
-                navigation.addButtonClickAnimation('logs-card');
             });
         }
         
-        const backButton = document.getElementById('back-to-home-logs');
-        if (backButton) {
-            backButton.addEventListener('click', () => {
-                navigation.navigateTo('home');
-                navigation.addButtonClickAnimation('back-to-home-logs');
+        // 刷新日志按钮
+        const refreshLogs = document.getElementById('refresh-logs');
+        if (refreshLogs) {
+            refreshLogs.addEventListener('click', () => {
+                this.loadLogs();
+                // 添加按钮点击动画
+                navigation.addButtonClickAnimation('refresh-logs');
             });
         }
         
-        document.getElementById('refresh-logs').addEventListener('click', () => {
-            this.loadLogs();
-            navigation.addButtonClickAnimation('refresh-logs');
-        });
+        // 清空日志按钮
+        const clearLogs = document.getElementById('clear-logs');
+        if (clearLogs) {
+            clearLogs.addEventListener('click', () => {
+                this.clearLogs();
+                // 添加按钮点击动画
+                navigation.addButtonClickAnimation('clear-logs');
+            });
+        }
         
-        document.getElementById('clear-logs').addEventListener('click', () => {
-            this.clearLogs();
-            navigation.addButtonClickAnimation('clear-logs');
-        });
-        
-        // 日志级别过滤器
-        document.getElementById('log-level-filter').addEventListener('change', (e) => {
-            this.currentFilter = e.target.value;
-            this.displayLogs(this.currentLogs);
-        });
+        // 日志过滤器
+        const logFilter = document.getElementById('log-filter');
+        if (logFilter) {
+            logFilter.addEventListener('change', (e) => {
+                this.filterLogs(e.target.value);
+            });
+        }
     },
     
     // 加载日志
@@ -53,6 +55,24 @@ const logsManager = {
             document.getElementById('logs-loading').style.display = 'flex';
             document.getElementById('logs-display').style.display = 'none';
             document.getElementById('no-logs-message').style.display = 'none';
+            
+            // 检查模块是否安装
+            const moduleInstalled = await this.checkModuleInstalled();
+            if (!moduleInstalled) {
+                document.getElementById('logs-loading').style.display = 'none';
+                document.getElementById('no-logs-message').style.display = 'flex';
+                document.getElementById('no-logs-text').textContent = translations[state.language].moduleNotInstalled || '模块未安装';
+                return;
+            }
+            
+            // 检查日志文件是否存在
+            const logFileExists = await this.checkFileExists(this.logFilePath);
+            if (!logFileExists) {
+                document.getElementById('logs-loading').style.display = 'none';
+                document.getElementById('no-logs-message').style.display = 'flex';
+                document.getElementById('no-logs-text').textContent = translations[state.language].noLogsFile || '日志文件不存在（模块可能未运行或刚刚启动）';
+                return;
+            }
             
             // 获取日志文件内容
             const logs = await this.getLogContent();
@@ -73,21 +93,14 @@ const logsManager = {
         }
     },
     
-    // 获取日志内容
-    getLogContent: async function() {
+    // 检查模块是否安装
+    checkModuleInstalled: async function() {
         try {
-            // 检查日志文件是否存在
-            const fileExists = await this.checkFileExists(this.logFilePath);
-            if (!fileExists) {
-                return '';
-            }
-            
-            // 读取日志文件
-            const logs = await execCommand(`cat ${this.logFilePath}`);
-            return logs;
+            const result = await execCommand('ls /data/adb/modules/AMMF');
+            return result.trim() !== '';
         } catch (error) {
-            console.error('读取日志文件失败:', error);
-            throw error;
+            console.error('检查模块安装状态失败:', error);
+            return false;
         }
     },
     
@@ -98,6 +111,24 @@ const logsManager = {
             return true;
         } catch (error) {
             return false;
+        }
+    },
+    
+    // 获取日志内容
+    getLogContent: async function() {
+        try {
+            // 检查日志文件是否存在
+            const fileExists = await this.checkFileExists(this.logFilePath);
+            if (!fileExists) {
+                return '';
+            }
+            
+            // 获取日志内容
+            const content = await execCommand(`cat ${this.logFilePath}`);
+            return content;
+        } catch (error) {
+            console.error('获取日志内容失败:', error);
+            throw error;
         }
     },
     
@@ -121,33 +152,77 @@ const logsManager = {
         logsDisplay.style.display = 'block';
         document.getElementById('no-logs-message').style.display = 'none';
         
-        // 解析日志
-        const logEntries = this.parseLogEntries(logs);
-        
-        // 清空日志显示容器
+        // 清空现有日志
         logsDisplay.innerHTML = '';
         
+        // 按行分割日志
+        const logLines = logs.split('\n');
+        
+        // 应用过滤器
+        const filteredLines = this.filterLogLines(logLines);
+        
+        // 如果过滤后没有日志，显示提示信息
+        if (filteredLines.length === 0) {
+            logsDisplay.style.display = 'none';
+            document.getElementById('no-logs-message').style.display = 'flex';
+            document.getElementById('no-logs-text').textContent = translations[state.language].noMatchingLogs || '没有匹配的日志';
+            return;
+        }
+        
         // 添加日志条目
-        logEntries.forEach(entry => {
-            // 如果设置了过滤器且不是"all"，则只显示匹配的日志级别
-            if (this.currentFilter !== 'all' && !entry.level.includes(this.currentFilter)) {
-                return;
-            }
+        filteredLines.forEach(line => {
+            if (line.trim() === '') return;
             
             const logEntry = document.createElement('div');
-            logEntry.className = `log-entry ${entry.level}`;
-            logEntry.textContent = entry.text;
+            logEntry.className = 'log-entry';
+            
+            // 根据日志级别添加类
+            if (line.includes('[ERROR]')) {
+                logEntry.classList.add('log-error');
+            } else if (line.includes('[WARN]')) {
+                logEntry.classList.add('log-warn');
+            } else if (line.includes('[INFO]')) {
+                logEntry.classList.add('log-info');
+            } else if (line.includes('[DEBUG]')) {
+                logEntry.classList.add('log-debug');
+            }
+            
+            logEntry.textContent = line;
             logsDisplay.appendChild(logEntry);
         });
         
-        // 如果过滤后没有日志，显示提示信息
-        if (logsDisplay.children.length === 0) {
-            document.getElementById('no-logs-message').style.display = 'flex';
-            document.getElementById('no-logs-text').textContent = translations[state.language].noMatchingLogs || '没有匹配的日志';
-        }
-        
         // 滚动到底部
         logsDisplay.scrollTop = logsDisplay.scrollHeight;
+    },
+    
+    // 过滤日志行
+    filterLogLines: function(lines) {
+        // 如果过滤级别是全部，返回所有行
+        if (this.currentFilter === 'all') {
+            return lines;
+        }
+        
+        // 根据过滤级别过滤日志行
+        return lines.filter(line => {
+            switch (this.currentFilter) {
+                case 'ERROR':
+                    return line.includes('[ERROR]');
+                case 'WARN':
+                    return line.includes('[WARN]');
+                case 'INFO':
+                    return line.includes('[INFO]');
+                case 'DEBUG':
+                    return line.includes('[DEBUG]');
+                default:
+                    return true;
+            }
+        });
+    },
+    
+    // 过滤日志
+    filterLogs: function(level) {
+        this.currentFilter = level;
+        this.displayLogs(this.currentLogs);
     },
     
     // 解析日志条目
@@ -202,13 +277,19 @@ const logsManager = {
         document.getElementById('logs-page-title').textContent = translations[state.language].logs_page_title || '模块日志';
         document.getElementById('back-text-logs').textContent = translations[state.language].back || '返回';
         document.getElementById('logs-loading-text').textContent = translations[state.language].loading || '加载日志中...';
+        document.getElementById('refresh-logs-text').textContent = translations[state.language].refresh || '刷新';
+        document.getElementById('clear-logs-text').textContent = translations[state.language].clear || '清空';
+        document.getElementById('filter-label').textContent = translations[state.language].filterLevel || '过滤级别:';
+        document.getElementById('no-logs-text').textContent = translations[state.language].noLogs || '暂无日志';
         
         // 更新过滤器选项
         const filterSelect = document.getElementById('log-level-filter');
-        filterSelect.options[0].text = translations[state.language].allLevels || '所有级别';
-        filterSelect.options[1].text = translations[state.language].errorLevel || '错误';
-        filterSelect.options[2].text = translations[state.language].warnLevel || '警告';
-        filterSelect.options[3].text = translations[state.language].infoLevel || '信息';
-        filterSelect.options[4].text = translations[state.language].debugLevel || '调试';
+        if (filterSelect) {
+            filterSelect.options[0].text = translations[state.language].allLevels || '所有级别';
+            filterSelect.options[1].text = translations[state.language].errorLevel || '错误';
+            filterSelect.options[2].text = translations[state.language].warnLevel || '警告';
+            filterSelect.options[3].text = translations[state.language].infoLevel || '信息';
+            filterSelect.options[4].text = translations[state.language].debugLevel || '调试';
+        }
     }
 };

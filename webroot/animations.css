@@ -347,8 +347,15 @@
     transition: transform 0.3s ease-out;
 }
 
-#refresh-status:active .material-symbols-outlined {
-    animation: spin 0.5s linear;
+/* 修复刷新按钮动画 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#refresh-status:active .material-symbols-outlined,
+#refresh-logs:active .material-symbols-outlined {
+  animation: spin 0.5s linear;
 }
 
 /* 重启按钮动画 */
@@ -446,17 +453,6 @@
     animation: fadeIn 0.3s ease-out;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 #refresh-logs:active .material-symbols-outlined {
     animation: spin 0.5s linear;
 }
@@ -510,4 +506,140 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* 配置文件选择器动画 */
+.file-selector {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.file-selector .select-container {
+    animation: slideInRight 0.5s ease-out;
+}
+
+/* 设置加载动画 */
+#loading {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 设置表单加载动画 */
+#settings-form {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* 设置项加载动画 - 错开时间 */
+#settings-form .setting-item:nth-child(odd) {
+    animation: slideInRight 0.3s ease-out;
+}
+
+#settings-form .setting-item:nth-child(even) {
+    animation: slideInRight 0.3s ease-out 0.1s;
+    animation-fill-mode: both;
+}
+
+/* 配置文件切换动画 */
+.config-transition {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 页面切换动画 */
+.page-enter {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 按钮点击动画 */
+.button-click {
+    animation: buttonClick 0.3s ease-out;
+}
+
+/* 状态更新动画 */
+.updating {
+    animation: pulse 0.5s ease-out;
+}
+
+/* 加载动画 */
+.loading-spinner {
+    animation: rotate 1s linear infinite;
+}
+
+/* 状态卡片加载动画 */
+.status-card.loading {
+    animation: cardPulse 1.5s ease-in-out infinite;
+}
+
+/* 空文件提示动画 */
+.empty-file-message {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.empty-file-icon {
+    animation: pulse 2s infinite;
+}
+
+.primary-button {
+    animation: fadeIn 0.5s ease-out 0.3s backwards;
+}
+
+.primary-button:hover {
+    animation: pulse 1s infinite;
+}
+
+/* 状态徽章动画 - 未运行状态 */
+.status-badge.not-running {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* 创建文件动画 */
+.file-created {
+    animation: createFile 0.5s ease-out;
+}
+
+@keyframes createFile {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* 按钮点击动画 */
+@keyframes buttonClick {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.95);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* 旋转动画 */
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 卡片脉冲动画 */
+@keyframes cardPulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
 }

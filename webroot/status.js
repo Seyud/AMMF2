@@ -5,6 +5,7 @@ const moduleStatus = {
     STATUS_PAUSED: 'PAUSED',
     STATUS_ERROR: 'ERROR',
     STATUS_NORMAL_EXIT: 'NORMAL_EXIT',
+    STATUS_NOT_RUNNING: 'NOT_RUNNING',  // 添加未运行状态
     
     // 当前状态
     currentStatus: null,
@@ -29,14 +30,15 @@ const moduleStatus = {
         
         document.getElementById('restart-module').addEventListener('click', () => {
             this.restartModule();
+            // 添加按钮点击动画
             navigation.addButtonClickAnimation('restart-module');
         });
         
-        // 首次加载状态
+        // 初始刷新状态
         await this.refreshStatus();
         
-        // 设置定时刷新（每30秒）
-        setInterval(() => this.refreshStatus(), 30000);
+        // 设置定时刷新
+        setInterval(() => this.updateUptime(), 1000);
     },
     
     // 刷新状态
@@ -45,33 +47,84 @@ const moduleStatus = {
             // 显示加载状态
             this.updateStatusUI('检查中...', null);
             
-            // 获取状态文件内容
+            // 检查模块是否安装
+            const moduleInstalled = await this.checkModuleInstalled();
+            if (!moduleInstalled) {
+                this.updateStatusUI(translations[state.language].moduleNotInstalled || '模块未安装', 'ERROR');
+                return;
+            }
+            
+            // 检查状态文件是否存在
+            const statusFileExists = await this.checkFileExists(this.statusFilePath);
+            if (!statusFileExists) {
+                this.updateStatusUI(translations[state.language].statusNotRunning || '未运行', 'not-running');
+                return;
+            }
+            
+            // 获取模块状态
             const status = await this.getModuleStatus();
+            this.currentStatus = status;
             
-            // 更新UI
-            this.updateStatusUI(status);
-            
-            // 更新最后检查时间
+            // 更新最后更新时间
             this.lastUpdate = new Date();
-            document.getElementById('status-last-update').textContent = this.formatTime(this.lastUpdate);
             
-            // 如果状态发生变化，记录开始时间
-            if (this.currentStatus !== status) {
-                this.startTime = new Date();
-                this.currentStatus = status;
+            // 根据状态更新UI
+            switch (status) {
+                case this.STATUS_RUNNING:
+                    this.updateStatusUI(translations[state.language].statusRunning || '正在运行', 'running');
+                    // 如果是首次检测到运行状态，设置启动时间
+                    if (!this.startTime) {
+                        this.startTime = new Date();
+                    }
+                    break;
+                case this.STATUS_PAUSED:
+                    this.updateStatusUI(translations[state.language].statusPaused || '已暂停', 'paused');
+                    break;
+                case this.STATUS_ERROR:
+                    this.updateStatusUI(translations[state.language].statusError || '出错', 'error');
+                    break;
+                case this.STATUS_NORMAL_EXIT:
+                    this.updateStatusUI(translations[state.language].statusNormalExit || '正常退出', 'normal');
+                    break;
+                default:
+                    // 处理模块未运行或状态未知的情况
+                    if (status === '' || status === 'NOT_RUNNING' || !status) {
+                        this.updateStatusUI(translations[state.language].statusNotRunning || '未运行', 'not-running');
+                    } else {
+                        this.updateStatusUI(status, 'unknown');
+                    }
             }
             
             // 更新运行时间
             this.updateUptime();
             
-            // 设置定时更新运行时间（每秒）
-            if (!this._uptimeInterval) {
-                this._uptimeInterval = setInterval(() => this.updateUptime(), 1000);
-            }
+            // 更新最后更新时间显示
+            this.updateLastUpdateTime();
             
         } catch (error) {
-            console.error('获取模块状态失败:', error);
-            this.updateStatusUI('ERROR', '无法获取状态');
+            console.error('刷新状态失败:', error);
+            this.updateStatusUI(translations[state.language].statusCheckError || '检查状态失败', 'error');
+        }
+    },
+    
+    // 检查模块是否安装
+    checkModuleInstalled: async function() {
+        try {
+            const result = await execCommand('ls /data/adb/modules/AMMF');
+            return result.trim() !== '';
+        } catch (error) {
+            console.error('检查模块安装状态失败:', error);
+            return false;
+        }
+    },
+    
+    // 检查文件是否存在
+    checkFileExists: async function(filePath) {
+        try {
+            await execCommand(`ls ${filePath}`);
+            return true;
+        } catch (error) {
+            return false;
         }
     },
     
@@ -82,50 +135,57 @@ const moduleStatus = {
             return result.trim();
         } catch (error) {
             console.error('读取状态文件失败:', error);
-            return 'ERROR';
+            return this.STATUS_NOT_RUNNING;
         }
     },
     
     // 更新状态UI
-    updateStatusUI: function(status, statusText) {
-        const statusBadge = document.getElementById('status-badge');
+    updateStatusUI: function(statusText, statusClass) {
         const statusValue = document.getElementById('status-value');
+        const statusBadge = document.querySelector('.status-badge');
         
-        // 清除所有状态类
-        statusBadge.classList.remove('running', 'paused', 'error', 'normal-exit');
+        // 添加更新动画
+        statusValue.classList.add('updating');
         
-        // 设置状态文本
-        if (statusText === null) {
-            // 根据状态设置文本和样式
-            switch(status) {
-                case this.STATUS_RUNNING:
-                    statusBadge.textContent = translations[state.language].statusRunning || '运行中';
-                    statusBadge.classList.add('running');
-                    statusValue.textContent = translations[state.language].statusRunningDesc || '模块正常运行中';
-                    break;
-                case this.STATUS_PAUSED:
-                    statusBadge.textContent = translations[state.language].statusPaused || '已暂停';
-                    statusBadge.classList.add('paused');
-                    statusValue.textContent = translations[state.language].statusPausedDesc || '模块已暂停，等待触发';
-                    break;
-                case this.STATUS_ERROR:
-                    statusBadge.textContent = translations[state.language].statusError || '异常';
-                    statusBadge.classList.add('error');
-                    statusValue.textContent = translations[state.language].statusErrorDesc || '模块运行异常';
-                    break;
-                case this.STATUS_NORMAL_EXIT:
-                    statusBadge.textContent = translations[state.language].statusNormalExit || '已退出';
-                    statusBadge.classList.add('normal-exit');
-                    statusValue.textContent = translations[state.language].statusNormalExitDesc || '模块已正常退出';
-                    break;
-                default:
-                    statusBadge.textContent = status;
-                    statusValue.textContent = '未知状态';
+        // 更新状态文本
+        statusValue.textContent = statusText;
+        
+        // 更新状态徽章
+        if (statusBadge) {
+            // 移除所有状态类
+            statusBadge.classList.remove('running', 'paused', 'error', 'not-running', 'normal', 'unknown');
+            
+            // 添加新状态类
+            if (statusClass) {
+                statusBadge.classList.add(statusClass);
+                
+                // 更新徽章文本
+                switch (statusClass) {
+                    case 'running':
+                        statusBadge.textContent = translations[state.language].statusBadgeRunning || '运行中';
+                        break;
+                    case 'paused':
+                        statusBadge.textContent = translations[state.language].statusBadgePaused || '已暂停';
+                        break;
+                    case 'error':
+                        statusBadge.textContent = translations[state.language].statusBadgeError || '错误';
+                        break;
+                    case 'not-running':
+                        statusBadge.textContent = translations[state.language].statusBadgeNotRunning || '未运行';
+                        break;
+                    case 'normal':
+                        statusBadge.textContent = translations[state.language].statusBadgeNormal || '正常';
+                        break;
+                    default:
+                        statusBadge.textContent = translations[state.language].statusBadgeUnknown || '未知';
+                }
             }
-        } else {
-            statusBadge.textContent = status;
-            statusValue.textContent = statusText;
         }
+        
+        // 移除更新动画
+        setTimeout(() => {
+            statusValue.classList.remove('updating');
+        }, 500);
     },
     
     // 更新运行时间
@@ -143,31 +203,83 @@ const moduleStatus = {
         
         // 格式化时间
         let uptimeText = '';
-        if (days > 0) uptimeText += `${days}天 `;
+        if (days > 0) {
+            uptimeText += `${days}${translations[state.language].days || '天'} `;
+        }
+        
         uptimeText += `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
+        // 更新UI
         document.getElementById('status-uptime').textContent = uptimeText;
+    },
+    
+    // 更新最后更新时间
+    updateLastUpdateTime: function() {
+        if (!this.lastUpdate) return;
+        
+        // 格式化时间
+        const hours = this.lastUpdate.getHours().toString().padStart(2, '0');
+        const minutes = this.lastUpdate.getMinutes().toString().padStart(2, '0');
+        const seconds = this.lastUpdate.getSeconds().toString().padStart(2, '0');
+        
+        const timeText = `${hours}:${minutes}:${seconds}`;
+        
+        // 更新UI
+        document.getElementById('status-last-update').textContent = timeText;
     },
     
     // 重启模块
     restartModule: async function() {
         try {
+            // 显示提示
             showSnackbar(translations[state.language].restartingModule || '正在重启模块...');
             
+            // 添加状态卡片加载动画
+            const statusCard = document.querySelector('.status-card');
+            if (statusCard) {
+                statusCard.classList.add('loading');
+            }
+            
             // 执行重启命令
-            await execCommand('su -c "/data/adb/modules/AMMF/service.sh"');
+            await execCommand('su -c "/data/adb/modules/AMMF/service.sh restart"');
+            
+            // 重置启动时间
+            this.startTime = new Date();
             
             // 延迟后刷新状态
-            setTimeout(() => this.refreshStatus(), 2000);
+            setTimeout(() => {
+                this.refreshStatus();
+                
+                // 移除加载动画
+                if (statusCard) {
+                    statusCard.classList.remove('loading');
+                }
+                
+                showSnackbar(translations[state.language].restartSuccess || '模块已重启');
+            }, 2000);
             
         } catch (error) {
             console.error('重启模块失败:', error);
             showSnackbar(translations[state.language].restartFailed || '重启模块失败');
+            
+            // 移除加载动画
+            const statusCard = document.querySelector('.status-card');
+            if (statusCard) {
+                statusCard.classList.remove('loading');
+            }
         }
     },
     
-    // 格式化时间
-    formatTime: function(date) {
-        return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    // 更新UI文本
+    updateUIText: function() {
+        // 更新状态相关文本
+        document.getElementById('status-label').textContent = translations[state.language].statusLabel || '当前状态:';
+        document.getElementById('refresh-text').textContent = translations[state.language].refresh || '刷新';
+        document.getElementById('restart-text').textContent = translations[state.language].restart || '重启';
+        
+        // 刷新状态以更新徽章文本
+        if (this.currentStatus) {
+            this.refreshStatus();
+        }
     }
 };

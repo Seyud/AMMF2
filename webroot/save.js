@@ -4,125 +4,101 @@ async function saveSettings() {
         // 获取当前配置文件路径
         const filePath = navigation.configFilePaths[navigation.currentConfigFile];
         
-        // 收集所有设置的当前值
-        const updatedSettings = {};
-        
-        for (const key in state.settings) {
-            const setting = state.settings[key];
-            
-            // 对于排除的设置项，保持原值和原始格式
-            if (state.excludedSettings.includes(key)) {
-                // 使用原始格式而不仅仅是值，这样可以保留引号
-                updatedSettings[key] = setting.originalFormat || setting.value;
-                continue;
-            }
-            
-            const input = document.getElementById(`setting-${key}`);
-            
-            // 如果找不到输入元素（可能是排除的设置），跳过
-            if (!input) continue;
-            
-            if (setting.type === 'boolean') {
-                updatedSettings[key] = input.checked ? 'true' : 'false';
-            } else if (setting.type === 'number') {
-                // 确保数字值有效
-                let numValue = parseInt(input.value);
-                if (isNaN(numValue)) numValue = 0;
-                updatedSettings[key] = numValue.toString();
-            } else {
-                // 文本类型，检查原始格式以保持一致性
-                let value = input.value;
-                
-                // 如果原始值有引号格式，恢复相同的引号格式
-                if (setting.originalFormat && 
-                   ((setting.originalFormat.startsWith('"') && setting.originalFormat.endsWith('"')) || 
-                    (setting.originalFormat.startsWith("'") && setting.originalFormat.endsWith("'")))) {
-                    // 确定使用的是单引号还是双引号
-                    const quoteChar = setting.originalFormat.startsWith('"') ? '"' : "'";
-                    value = `${quoteChar}${value}${quoteChar}`;
-                }
-                
-                updatedSettings[key] = value;
-            }
-        }
-        
-        // 根据文件类型生成新内容
-        let newContent = '';
-        
-        if (navigation.currentConfigFile === 'settings.sh') {
-            // 获取原始文件内容以保留注释
-            const originalContent = await execCommand(`cat ${filePath}`);
-            const lines = originalContent.split('\n');
-            
-            for (const line of lines) {
-                // 保留注释和空行
-                if (line.trim().startsWith('#') || line.trim() === '') {
-                    newContent += line + '\n';
-                    continue;
-                }
-                
-                // 查找变量赋值
-                const match = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
-                if (match) {
-                    const key = match[1];
-                    if (updatedSettings[key] !== undefined) {
-                        newContent += `${key}=${updatedSettings[key]}\n`;
-                    } else {
-                        newContent += line + '\n';
-                    }
-                } else {
-                    newContent += line + '\n';
-                }
-            }
+        // 根据文件类型调用不同的保存函数
+        if (navigation.currentConfigFile === 'config.sh') {
+            await saveConfigSh(filePath);
         } else if (navigation.currentConfigFile === 'system.prop') {
-            // 获取原始文件内容以保留注释
-            const originalContent = await execCommand(`cat ${filePath}`);
-            const lines = originalContent.split('\n');
-            
-            for (const line of lines) {
-                // 保留注释和空行
-                if (line.trim().startsWith('#') || line.trim() === '') {
-                    newContent += line + '\n';
-                    continue;
-                }
-                
-                // 查找属性赋值
-                const match = line.match(/^([^=]+)=([^#]*)(#.*)?$/);
-                if (match) {
-                    const key = match[1].trim();
-                    const comment = match[3] || '';
-                    
-                    if (updatedSettings[key] !== undefined) {
-                        newContent += `${key}=${updatedSettings[key]}${comment ? ' ' + comment : ''}\n`;
-                    } else {
-                        newContent += line + '\n';
-                    }
-                } else {
-                    newContent += line + '\n';
-                }
-            }
+            await saveSystemProp();
         }
         
-        // 写入新的设置文件
-        await execCommand(`echo '${newContent}' > ${filePath}`);
-        
-        // 显示成功消息
-        // 保存成功后添加动画
-        if (typeof addSaveButtonAnimation === 'function') {
-            addSaveButtonAnimation(true);
-        }
-        
-        showSnackbar(translations[state.language].saveSuccess || '设置保存成功！');
-        return true;
     } catch (error) {
-        console.error('保存设置时出错:', error);
+        console.error('保存设置失败:', error);
+        showSnackbar(translations[state.language].saveError || '保存失败');
+    }
+}
+
+// 保存config.sh文件
+async function saveConfigSh(filePath) {
+    // 收集所有设置的当前值
+    const updatedSettings = {};
+    
+    for (const key in state.settings) {
+        const setting = state.settings[key];
         
-        // 保存失败后添加动画
-        if (typeof addSaveButtonAnimation === 'function') {
-            addSaveButtonAnimation(false);
+        // 对于排除的设置项，保持原值和原始格式
+        if (state.excludedSettings.includes(key)) {
+            updatedSettings[key] = setting.originalValue;
+            continue;
         }
         
-        showSnackbar(translations[state.language].saveError || '保存设置时出错');
-        return false;
+        // 根据设置类型获取值
+        let value;
+        
+        if (setting.type === 'boolean') {
+            // 布尔值转换为0或1
+            value = setting.value ? '1' : '0';
+        } else if (setting.type === 'select') {
+            // 选择框直接使用选中的值
+            value = setting.value;
+        } else {
+            // 其他类型直接使用值
+            value = setting.value;
+        }
+        
+        // 更新设置
+        updatedSettings[key] = value;
+    }
+    
+    // 构建新的配置文件内容
+    let newContent = '';
+    
+    // 使用原始内容的行进行更新
+    const lines = state.originalContent.split('\n');
+    
+    for (const line of lines) {
+        // 跳过空行和注释行
+        if (line.trim() === '' || line.trim().startsWith('#')) {
+            newContent += line + '\n';
+            continue;
+        }
+        
+        // 匹配设置行
+        const match = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
+        if (match) {
+            const key = match[1];
+            
+            // 如果是我们要更新的设置
+            if (key in updatedSettings) {
+                // 使用新值
+                newContent += `${key}=${updatedSettings[key]}\n`;
+                // 从更新列表中删除，表示已处理
+                delete updatedSettings[key];
+            } else {
+                // 保持原样
+                newContent += line + '\n';
+            }
+        } else {
+            // 非设置行保持原样
+            newContent += line + '\n';
+        }
+    }
+    
+    // 添加任何未处理的新设置
+    for (const key in updatedSettings) {
+        newContent += `${key}=${updatedSettings[key]}\n`;
+    }
+    
+    // 保存文件
+    await execCommand(`su -c "echo '${newContent}' > ${filePath}"`);
+    
+    // 显示成功消息
+    showSnackbar(translations[state.language].saveSuccess || '保存成功');
+    
+    // 移除已修改标记
+    document.getElementById('save-button').classList.remove('modified');
+    
+    // 询问是否重启模块
+    if (confirm(translations[state.language].confirmRestart || '保存成功，是否立即重启模块以应用更改？')) {
+        moduleStatus.restartModule();
     }
 }

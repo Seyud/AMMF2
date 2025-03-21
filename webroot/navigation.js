@@ -41,11 +41,8 @@ const navigation = {
             this.addButtonClickAnimation('about-card');
         });
         
-        // 返回按钮点击事件
-        document.getElementById('back-to-home').addEventListener('click', () => {
-            this.navigateTo('home');
-            this.addButtonClickAnimation('back-to-home');
-        });
+        // 注意：返回按钮的事件处理已移至app.js中的initBackButtons函数
+        // 这样可以确保所有返回按钮都能正确初始化
         
         // 配置文件选择器变更事件
         document.getElementById('config-file-selector').addEventListener('change', (e) => {
@@ -55,16 +52,17 @@ const navigation = {
         // 保存按钮点击事件
         document.getElementById('save-button').addEventListener('click', () => {
             this.addButtonClickAnimation('save-button');
+            saveSettings();
         });
         
         // 更新UI文本
         this.updateUIText();
         
-        // 初始化时添加主页卡片动画
+        // 添加首页卡片动画
         this.animateHomeCards();
     },
     
-    // 页面导航
+    // 导航到指定页面
     navigateTo: function(page) {
         // 如果已经在当前页面，不做任何操作
         if (this.currentPage === page) {
@@ -117,13 +115,50 @@ const navigation = {
         // 清空当前设置
         state.settings = {};
         
+        // 确保路径存在
+        if (!this.configFilePaths[filename]) {
+            console.error('Config file path not found for:', filename);
+            showSnackbar('配置文件路径错误');
+            document.getElementById('loading').style.display = 'none';
+            return;
+        }
+        
         // 根据文件类型加载不同的设置
         if (filename === 'config.sh') {
-            // 加载模块设置
-            loadSettings(this.configFilePaths[filename]);
+            // 加载模块设置前先检查文件是否存在
+            this.checkFileExists(this.configFilePaths[filename])
+                .then(exists => {
+                    if (exists) {
+                        loadSettings(this.configFilePaths[filename]);
+                    } else {
+                        showSnackbar(translations[state.language].configFileNotFound || 'config.sh文件不存在');
+                        document.getElementById('loading').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking config.sh:', error);
+                    showSnackbar('检查配置文件失败');
+                    document.getElementById('loading').style.display = 'none';
+                });
         } else if (filename === 'system.prop') {
-            // 加载系统属性
-            loadSystemProp(this.configFilePaths[filename]);
+            // 加载系统属性前先检查文件是否存在
+            this.checkFileExists(this.configFilePaths[filename])
+                .then(exists => {
+                    if (exists) {
+                        loadSystemProp(this.configFilePaths[filename]);
+                    } else {
+                        // 处理system.prop不存在的情况
+                        showSnackbar(translations[state.language].systemPropNotFound || 'system.prop文件不存在');
+                        // 创建一个空的表单，显示创建system.prop的提示
+                        this.createEmptySystemPropForm();
+                        document.getElementById('loading').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking system.prop:', error);
+                    showSnackbar('检查system.prop文件失败');
+                    document.getElementById('loading').style.display = 'none';
+                });
         }
         
         // 更新标题
@@ -131,51 +166,198 @@ const navigation = {
         document.getElementById('title').textContent = translations[state.language][`${configName}_title`] || filename;
     },
     
-    // 更新UI文本
-    updateUIText: function() {
-        // 首页文本
-        document.getElementById('settings-title').textContent = translations[state.language].settings_title || '模块设置';
-        document.getElementById('settings-description').textContent = translations[state.language].settings_description || '配置AMMF模块的各项参数';
+    // 检查文件是否存在
+    checkFileExists: async function(filePath) {
+        try {
+            await execCommand(`ls ${filePath}`);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    },
+    
+    // 创建空的system.prop表单
+    createEmptySystemPropForm: function() {
+        const settingsForm = document.getElementById('settings-form');
+        settingsForm.innerHTML = '';
         
-        document.getElementById('system-prop-title').textContent = translations[state.language].system_prop_title || '系统属性';
-        document.getElementById('system-prop-description').textContent = translations[state.language].system_prop_description || '编辑system.prop文件中的系统属性';
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'empty-file-message';
+        emptyMessage.innerHTML = `
+            <div class="empty-file-icon">
+                <span class="material-symbols-outlined">description</span>
+            </div>
+            <h3>${translations[state.language].systemPropNotFound || 'system.prop文件不存在'}</h3>
+            <p>${translations[state.language].createSystemPropHint || '您可以创建一个新的system.prop文件来添加系统属性'}</p>
+            <button id="create-system-prop" class="primary-button">
+                <span class="material-symbols-outlined">add</span>
+                ${translations[state.language].createSystemProp || '创建system.prop'}
+            </button>
+        `;
         
-        document.getElementById('logs-title').textContent = translations[state.language].logs_title || '运行日志';
-        document.getElementById('logs-description').textContent = translations[state.language].logs_description || '查看模块运行日志';
+        settingsForm.appendChild(emptyMessage);
+        settingsForm.style.display = 'block';
         
-        document.getElementById('about-title').textContent = translations[state.language].about_title || '关于';
-        document.getElementById('about-description').textContent = translations[state.language].about_description || '查看模块信息和版本';
-        
-        // 设置页面文本
-        document.getElementById('back-text').textContent = translations[state.language].back || '返回';
-        document.getElementById('file-selector-label').textContent = translations[state.language].config_file || '配置文件:';
-        document.getElementById('loading-text').textContent = translations[state.language].loading || '加载设置中...';
-        
-        // 日志页面文本
-        logsManager.updateUIText();
+        // 添加创建system.prop的事件监听器
+        document.getElementById('create-system-prop').addEventListener('click', () => {
+            this.createSystemPropFile();
+        });
+    },
+    
+    // 创建system.prop文件
+    createSystemPropFile: async function() {
+        try {
+            showSnackbar(translations[state.language].creatingSystemProp || '正在创建system.prop文件...');
+            
+            // 创建空的system.prop文件
+            await execCommand('su -c "touch /data/adb/modules/AMMF/system.prop"');
+            
+            // 添加默认注释
+            const defaultContent = '# AMMF系统属性配置文件\n# 在此处添加系统属性，格式为：属性名=属性值\n\n';
+            await execCommand(`su -c "echo '${defaultContent}' > /data/adb/modules/AMMF/system.prop"`);
+            
+            // 重新加载system.prop
+            loadSystemProp(this.configFilePaths['system.prop']);
+            
+            showSnackbar(translations[state.language].systemPropCreated || 'system.prop文件已创建');
+        } catch (error) {
+            console.error('创建system.prop文件失败:', error);
+            showSnackbar(translations[state.language].createSystemPropFailed || '创建system.prop文件失败');
+        }
     },
     
     // 添加按钮点击动画
     addButtonClickAnimation: function(elementId) {
         const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        // 移除可能存在的动画类
         element.classList.remove('button-click');
-        void element.offsetWidth; // 触发重排以应用新的动画
+        
+        // 触发重排
+        void element.offsetWidth;
+        
+        // 添加动画类
         element.classList.add('button-click');
+        
+        // 监听动画结束事件
+        const handleAnimationEnd = () => {
+            element.classList.remove('button-click');
+            element.removeEventListener('animationend', handleAnimationEnd);
+        };
+        
+        element.addEventListener('animationend', handleAnimationEnd);
+        
+        // 备份超时移除
+        setTimeout(() => {
+            element.classList.remove('button-click');
+        }, 300);
     },
     
-    // 为主页卡片添加动画
+    // 更新UI文本
+    updateUIText: function() {
+        // 首页文本
+        const backTextSettings = document.getElementById('back-text-settings');
+        if (backTextSettings) {
+            backTextSettings.textContent = translations[state.language].back || '返回';
+        }
+        
+        const backTextLogs = document.getElementById('back-text-logs');
+        if (backTextLogs) {
+            backTextLogs.textContent = translations[state.language].back || '返回';
+        }
+        
+        // 更新配置文件选择器标签
+        const fileSelectorLabel = document.getElementById('file-selector-label');
+        if (fileSelectorLabel) {
+            fileSelectorLabel.textContent = translations[state.language].config_file || '配置文件:';
+        }
+        
+        // 更新主页卡片文本
+        const settingsTitle = document.getElementById('settings-title');
+        if (settingsTitle) {
+            settingsTitle.textContent = translations[state.language].settings_title || '模块设置';
+        }
+        
+        const settingsDescription = document.getElementById('settings-description');
+        if (settingsDescription) {
+            settingsDescription.textContent = translations[state.language].settings_description || '配置AMMF模块的各项参数';
+        }
+        
+        const systemPropTitle = document.getElementById('system-prop-title');
+        if (systemPropTitle) {
+            systemPropTitle.textContent = translations[state.language].system_prop_title || '系统属性';
+        }
+        
+        const systemPropDescription = document.getElementById('system-prop-description');
+        if (systemPropDescription) {
+            systemPropDescription.textContent = translations[state.language].system_prop_description || '编辑system.prop文件中的系统属性';
+        }
+        
+        const logsTitle = document.getElementById('logs-title');
+        if (logsTitle) {
+            logsTitle.textContent = translations[state.language].logs_title || '运行日志';
+        }
+        
+        const logsDescription = document.getElementById('logs-description');
+        if (logsDescription) {
+            logsDescription.textContent = translations[state.language].logs_description || '查看模块运行日志';
+        }
+        
+        const aboutTitle = document.getElementById('about-title');
+        if (aboutTitle) {
+            aboutTitle.textContent = translations[state.language].about_title || '关于';
+        }
+        
+        const aboutDescription = document.getElementById('about-description');
+        if (aboutDescription) {
+            aboutDescription.textContent = translations[state.language].about_description || '查看模块信息和版本';
+        }
+    },
+    
+    // 首页卡片动画
     animateHomeCards: function() {
         const cards = document.querySelectorAll('.home-card');
         cards.forEach((card, index) => {
+            // 重置卡片状态
             card.style.opacity = '0';
+            card.classList.remove('slide-in-up');
+            
             setTimeout(() => {
                 card.style.opacity = '1';
                 card.classList.add('slide-in-up');
-                // 移除动画类，以便下次可以重新应用
+                
+                // 使用动画结束事件移除类
+                const handleAnimationEnd = () => {
+                    card.classList.remove('slide-in-up');
+                    card.removeEventListener('animationend', handleAnimationEnd);
+                };
+                
+                card.addEventListener('animationend', handleAnimationEnd);
+                
+                // 备份超时移除
                 setTimeout(() => {
                     card.classList.remove('slide-in-up');
                 }, 500);
-            }, index * 100); // 每张卡片延迟100ms
+            }, index * 100);
         });
     }
 };
+
+// 显示指定页面
+function showPage(pageId) {
+    // 隐藏所有页面
+    const pages = document.querySelectorAll('main[id$="-page"]');
+    pages.forEach(page => {
+        page.style.display = 'none';
+    });
+    
+    // 显示指定页面
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) {
+        targetPage.style.display = 'block';
+    }
+}
+
+// 导出navigation对象供其他模块使用
+window.navigation = navigation;

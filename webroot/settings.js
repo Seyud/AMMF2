@@ -86,7 +86,7 @@ async function loadSettingsConfig() {
         // 动态更新print_languages选项，使其包含所有可用语言
         if (state.settingsOptions.print_languages && state.availableLanguages.length > 0) {
             state.settingsOptions.print_languages.options = state.availableLanguages.map(langCode => {
-                // 使用从languages.ini加载的语言名称
+                // 使用从languages.sh加载的语言名称（修正文件名）
                 let langName = {};
                 
                 // 为每种UI语言提供当前语言的名称
@@ -112,14 +112,28 @@ async function loadSettingsConfig() {
         state.excludedSettings = ['MODULE_ID', 'action_id', 'action_name', 'action_author', 'action_description'];
         state.settingsDescriptions = {};
         state.settingsOptions = {};
+        
+        // 显示错误提示并提供重试选项
+        showLoadingError('加载设置配置失败', () => loadSettingsConfig());
     }
 }
 
 // 加载设置 - 修改为接受文件路径参数
 async function loadSettings(filePath) {
     try {
+        console.log('Loading settings from:', filePath);
+        
+        // 检查文件路径是否有效
+        if (!filePath || typeof filePath !== 'string') {
+            throw new Error('Invalid file path');
+        }
+        
         // 使用KSU执行命令获取设置文件内容
         const settingsContent = await execCommand(`cat ${filePath}`);
+        
+        if (!settingsContent || settingsContent.trim() === '') {
+            throw new Error('Empty settings file');
+        }
         
         // 解析设置文件
         parseSettings(settingsContent);
@@ -127,6 +141,7 @@ async function loadSettings(filePath) {
         // 获取默认语言设置 (仅当加载config.sh时)
         if (filePath.endsWith('config.sh') && state.settings.print_languages && state.settings.print_languages.value) {
             state.language = state.settings.print_languages.value.replace(/"/g, '') === 'zh' ? 'zh' : 'en';
+            updateLanguage(); // 更新UI语言
         }
         
         // 生成设置表单
@@ -138,55 +153,229 @@ async function loadSettings(filePath) {
         
     } catch (error) {
         console.error('Error loading settings:', error);
-        showSnackbar(translations[state.language].loadError || '加载设置失败');
+        
+        // 显示错误提示并提供重试选项
+        showLoadingError(
+            translations[state.language]?.loadError || '加载设置失败，请重试', 
+            () => loadSettings(filePath)
+        );
     }
 }
 
 // 加载system.prop文件
 async function loadSystemProp(filePath) {
     try {
-        // 使用KSU执行命令获取system.prop内容
-        const propContent = await execCommand(`cat ${filePath}`);
+        console.log('Loading system.prop from:', filePath);
+        
+        // 显示加载指示器
+        document.getElementById('loading').style.display = 'flex';
+        document.getElementById('settings-form').style.display = 'none';
+        
+        // 获取文件内容
+        const content = await execCommand(`cat ${filePath}`);
         
         // 解析system.prop文件
-        parseSystemProp(propContent);
+        const properties = parseSystemProp(content);
         
-        // 生成设置表单
-        generateSettingsForm();
+        // 创建设置表单
+        createSystemPropForm(properties);
         
-        // 隐藏加载指示器，显示设置表单
+        // 隐藏加载指示器
         document.getElementById('loading').style.display = 'none';
         document.getElementById('settings-form').style.display = 'block';
         
     } catch (error) {
-        console.error('Error loading system.prop:', error);
-        showSnackbar(translations[state.language].loadError || '加载系统属性失败');
+        console.error('加载system.prop失败:', error);
+        showSnackbar(translations[state.language].settingsLoadError || '加载设置失败');
+        
+        // 隐藏加载指示器
+        document.getElementById('loading').style.display = 'none';
     }
 }
 
 // 解析system.prop文件
 function parseSystemProp(content) {
+    const properties = [];
     const lines = content.split('\n');
     
-    for (const line of lines) {
-        // 跳过注释和空行
-        if (line.trim().startsWith('#') || line.trim() === '') continue;
+    lines.forEach(line => {
+        // 跳过空行和注释行
+        if (line.trim() === '' || line.trim().startsWith('#')) {
+            return;
+        }
         
-        // 使用正则表达式匹配属性赋值，处理行尾注释
-        const match = line.match(/^([^=]+)=([^#]*)(#.*)?$/);
+        // 解析属性行
+        const match = line.match(/^([^=]+)=(.*)$/);
         if (match) {
             const key = match[1].trim();
-            // 去除值两端的空格
-            let value = match[2].trim();
-            let originalFormat = value; // 保存原始格式
+            const value = match[2].trim();
             
-            // 存储设置
-            state.settings[key] = {
-                value: value,
-                type: 'text', // system.prop中的值都视为文本
-                originalFormat: originalFormat
-            };
+            properties.push({
+                key: key,
+                value: value
+            });
         }
+    });
+    
+    return properties;
+}
+
+// 创建system.prop表单
+function createSystemPropForm(properties) {
+    const settingsForm = document.getElementById('settings-form');
+    settingsForm.innerHTML = '';
+    
+    // 如果没有属性，显示添加属性的提示
+    if (properties.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'empty-properties-message';
+        emptyMessage.innerHTML = `
+            <p>${translations[state.language].noProperties || '暂无系统属性'}</p>
+            <p>${translations[state.language].addPropertyHint || '点击下方的"添加属性"按钮添加新的系统属性'}</p>
+        `;
+        settingsForm.appendChild(emptyMessage);
+    }
+    
+    // 添加现有属性
+    properties.forEach((prop, index) => {
+        const propItem = document.createElement('div');
+        propItem.className = 'setting-item property-item';
+        propItem.innerHTML = `
+            <div class="setting-label-container">
+                <input type="text" class="text-input property-key" value="${prop.key}" placeholder="${translations[state.language].propertyName || '属性名'}" data-original="${prop.key}">
+            </div>
+            <div class="setting-control">
+                <input type="text" class="text-input property-value" value="${prop.value}" placeholder="${translations[state.language].propertyValue || '属性值'}" data-original="${prop.value}">
+                <button class="icon-button remove-property" data-index="${index}">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        `;
+        settingsForm.appendChild(propItem);
+        
+        // 添加删除属性的事件监听器
+        propItem.querySelector('.remove-property').addEventListener('click', function() {
+            propItem.remove();
+            // 标记为已修改
+            document.getElementById('save-button').classList.add('modified');
+        });
+        
+        // 添加属性修改的事件监听器
+        const keyInput = propItem.querySelector('.property-key');
+        const valueInput = propItem.querySelector('.property-value');
+        
+        keyInput.addEventListener('input', function() {
+            if (this.value !== this.getAttribute('data-original')) {
+                document.getElementById('save-button').classList.add('modified');
+            }
+        });
+        
+        valueInput.addEventListener('input', function() {
+            if (this.value !== this.getAttribute('data-original')) {
+                document.getElementById('save-button').classList.add('modified');
+            }
+        });
+    });
+    
+    // 添加"添加属性"按钮
+    const addButton = document.createElement('button');
+    addButton.className = 'add-property-button';
+    addButton.innerHTML = `
+        <span class="material-symbols-outlined">add</span>
+        ${translations[state.language].addProperty || '添加属性'}
+    `;
+    settingsForm.appendChild(addButton);
+    
+    // 添加"添加属性"按钮的事件监听器
+    addButton.addEventListener('click', function() {
+        const propItem = document.createElement('div');
+        propItem.className = 'setting-item property-item new-property';
+        propItem.innerHTML = `
+            <div class="setting-label-container">
+                <input type="text" class="text-input property-key" placeholder="${translations[state.language].propertyName || '属性名'}" data-original="">
+            </div>
+            <div class="setting-control">
+                <input type="text" class="text-input property-value" placeholder="${translations[state.language].propertyValue || '属性值'}" data-original="">
+                <button class="icon-button remove-property">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        `;
+        
+        // 插入到"添加属性"按钮之前
+        settingsForm.insertBefore(propItem, addButton);
+        
+        // 添加删除属性的事件监听器
+        propItem.querySelector('.remove-property').addEventListener('click', function() {
+            propItem.remove();
+        });
+        
+        // 添加属性修改的事件监听器
+        const keyInput = propItem.querySelector('.property-key');
+        const valueInput = propItem.querySelector('.property-value');
+        
+        keyInput.addEventListener('input', function() {
+            document.getElementById('save-button').classList.add('modified');
+        });
+        
+        valueInput.addEventListener('input', function() {
+            document.getElementById('save-button').classList.add('modified');
+        });
+        
+        // 标记为已修改
+        document.getElementById('save-button').classList.add('modified');
+        
+        // 聚焦到新添加的属性名输入框
+        keyInput.focus();
+    });
+}
+
+// 保存system.prop文件
+async function saveSystemProp() {
+    try {
+        // 获取当前配置文件路径
+        const filePath = navigation.configFilePaths['system.prop'];
+        
+        // 收集所有属性
+        const properties = [];
+        const propertyItems = document.querySelectorAll('.property-item');
+        
+        propertyItems.forEach(item => {
+            const keyInput = item.querySelector('.property-key');
+            const valueInput = item.querySelector('.property-value');
+            
+            if (keyInput && valueInput && keyInput.value.trim() !== '') {
+                properties.push({
+                    key: keyInput.value.trim(),
+                    value: valueInput.value.trim()
+                });
+            }
+        });
+        
+        // 构建文件内容
+        let content = '# AMMF系统属性配置文件\n# 在此处添加系统属性，格式为：属性名=属性值\n\n';
+        
+        properties.forEach(prop => {
+            content += `${prop.key}=${prop.value}\n`;
+        });
+        
+        // 保存文件
+        await execCommand(`su -c "echo '${content}' > ${filePath}"`);
+        
+        // 显示成功消息
+        showSnackbar(translations[state.language].saveSuccess || '保存成功');
+        
+        // 移除已修改标记
+        document.getElementById('save-button').classList.remove('modified');
+        
+        // 询问是否重启模块
+        if (confirm(translations[state.language].confirmRestart || '保存成功，是否立即重启模块以应用更改？')) {
+            moduleStatus.restartModule();
+        }
+        
+    } catch (error) {
+        console.error('保存system.prop失败:', error);
+        showSnackbar(translations[state.language].saveError || '保存失败');
     }
 }
 

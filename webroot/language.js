@@ -21,11 +21,42 @@ const translations = {
         settings_title: 'Module Settings',
         settings_description: 'Configure AMMF module parameters',
         system_prop_description: 'Edit system properties in system.prop file',
+        logs_title: 'Logs',
+        logs_description: 'View module logs',
         about_title: 'About',
         about_description: 'View module information and version',
         back: 'Back',
         config_file: 'Config File:',
-        aboutInfo: 'AMMF Module - A Magisk/KernelSU Module Framework'
+        aboutInfo: 'AMMF Module - A Magisk/KernelSU Module Framework',
+        // system.prop相关翻译
+        noProperties: 'No system properties',
+        addPropertyHint: 'Click the "Add Property" button below to add new system properties',
+        propertyName: 'Property Name',
+        propertyValue: 'Property Value',
+        addProperty: 'Add Property',
+        // 状态相关翻译
+        statusTitle: 'Module Status',
+        statusLabel: 'Current Status:',
+        uptimeLabel: 'Uptime:',
+        refreshStatus: 'Refresh',
+        restartModule: 'Restart Module',
+        // 日志相关翻译
+        refreshLogs: 'Refresh Logs',
+        clearLogs: 'Clear Logs',
+        filterLogs: 'Filter Logs',
+        noLogs: 'No logs available',
+        confirmClearLogs: 'Are you sure you want to clear all logs?',
+        logsCleared: 'Logs cleared successfully',
+        // 系统属性相关翻译
+        systemPropNotFound: 'system.prop file not found',
+        createSystemPropHint: 'You can create a new system.prop file to add system properties',
+        createSystemProp: 'Create system.prop',
+        creatingSystemProp: 'Creating system.prop file...',
+        systemPropCreated: 'system.prop file created',
+        createSystemPropFailed: 'Failed to create system.prop file',
+        // 其他翻译
+        confirmRestart: 'Settings saved successfully. Do you want to restart the module to apply changes?',
+        languageTitle: 'Available Languages'
     },
     zh: {
         title: 'AMMF设置',
@@ -47,11 +78,44 @@ const translations = {
         settings_title: '模块设置',
         settings_description: '配置AMMF模块的各项参数',
         system_prop_description: '编辑system.prop文件中的系统属性',
+        logs_title: '运行日志',
+        logs_description: '查看模块运行日志',
         about_title: '关于',
         about_description: '查看模块信息和版本',
         back: '返回',
         config_file: '配置文件:',
-        aboutInfo: 'AMMF模块 - 一个Magisk/KernelSU模块框架'
+        aboutInfo: 'AMMF模块 - 一个Magisk/KernelSU模块框架',
+        // system.prop相关翻译
+        noProperties: '暂无系统属性',
+        addPropertyHint: '点击下方的"添加属性"按钮添加新的系统属性',
+        propertyName: '属性名',
+        propertyValue: '属性值',
+        addProperty: '添加属性',
+        // 状态相关翻译
+        statusTitle: '模块状态',
+        statusLabel: '当前状态:',
+        uptimeLabel: '运行时间:',
+        refreshStatus: '刷新',
+        restartModule: '重启模块',
+        // 日志相关翻译
+        logs_title: '运行日志',
+        logs_description: '查看模块运行日志',
+        refreshLogs: '刷新日志',
+        clearLogs: '清空日志',
+        filterLogs: '筛选日志',
+        noLogs: '暂无日志',
+        confirmClearLogs: '确定要清空所有日志吗？',
+        logsCleared: '日志已清空',
+        // 系统属性相关翻译
+        systemPropNotFound: 'system.prop文件不存在',
+        createSystemPropHint: '您可以创建一个新的system.prop文件来添加系统属性',
+        createSystemProp: '创建system.prop',
+        creatingSystemProp: '正在创建system.prop文件...',
+        systemPropCreated: 'system.prop文件已创建',
+        createSystemPropFailed: '创建system.prop文件失败',
+        // 其他翻译
+        confirmRestart: '保存成功，是否立即重启模块以应用更改？',
+        languageTitle: '可用语言'
     }
 };
 
@@ -131,6 +195,16 @@ function updateLanguage() {
     if (navigation && typeof navigation.updateUIText === 'function') {
         navigation.updateUIText();
     }
+    
+    // 更新状态文本
+    if (moduleStatus && typeof moduleStatus.updateUIText === 'function') {
+        moduleStatus.updateUIText();
+    }
+    
+    // 更新日志文本
+    if (logsManager && typeof logsManager.updateUIText === 'function') {
+        logsManager.updateUIText();
+    }
 }
 
 // 显示语言选择菜单
@@ -209,7 +283,7 @@ function toggleLanguageMenu() {
 async function loadLanguages() {
     try {
         // 尝试从languages.ini加载语言配置
-        const languagesContent = await execCommand('cat /data/adb/modules/AMMF/settings/languages.ini');
+        const languagesContent = await execCommand('cat /data/adb/modules/AMMF/settings/languages.sh');
         
         // 解析languages.ini文件
         const languageFunctions = languagesContent.match(/lang_([a-z]{2,})\(\)/g);
@@ -251,6 +325,19 @@ async function loadLanguages() {
                                     translations[langCode][translationKey] = value;
                                 } else if (key === 'ERROR_TEXT') {
                                     translations[langCode].saveError = value;
+                                } else {
+                                    // 添加其他常用翻译映射
+                                    switch(key) {
+                                        case 'ERROR_UNSUPPORTED_VERSION':
+                                            translations[langCode].unsupportedVersion = value;
+                                            break;
+                                        case 'CUSTOM_SCRIPT_ENABLED':
+                                            translations[langCode].customScriptEnabled = value;
+                                            break;
+                                        case 'CUSTOM_SCRIPT_DISABLED':
+                                            translations[langCode].customScriptDisabled = value;
+                                            break;
+                                    }
                                 }
                                 
                                 // 添加语言名称
@@ -271,3 +358,12 @@ async function loadLanguages() {
         state.availableLanguages = ['en', 'zh'];
     }
 }
+
+// 确保DOM加载完成后绑定事件
+document.addEventListener('DOMContentLoaded', function() {
+    // 绑定语言切换按钮事件
+    const languageToggle = document.getElementById('language-toggle');
+    if (languageToggle) {
+        languageToggle.addEventListener('click', toggleLanguageMenu);
+    }
+});
