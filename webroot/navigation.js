@@ -14,35 +14,11 @@ const navigation = {
     
     // 初始化导航
     init: function() {
-        // 设置卡片点击事件
-        document.getElementById('settings-card').addEventListener('click', () => {
-            this.navigateTo('settings');
-            this.loadConfigFile('config.sh');
-            this.addButtonClickAnimation('settings-card');
-        });
+        // 绑定卡片点击事件
+        this.bindCardEvents();
         
-        // 系统属性卡片点击事件
-        document.getElementById('system-prop-card').addEventListener('click', () => {
-            this.navigateTo('settings');
-            this.loadConfigFile('system.prop');
-            this.addButtonClickAnimation('system-prop-card');
-        });
-        
-        // 日志卡片点击事件
-        document.getElementById('logs-card').addEventListener('click', () => {
-            this.navigateTo('logs');
-            this.addButtonClickAnimation('logs-card');
-        });
-        
-        // 关于卡片点击事件
-        document.getElementById('about-card').addEventListener('click', () => {
-            // 暂时只显示提示信息
-            showSnackbar(translations[state.language].aboutInfo || 'AMMF模块');
-            this.addButtonClickAnimation('about-card');
-        });
-        
-        // 注意：返回按钮的事件处理已移至app.js中的initBackButtons函数
-        // 这样可以确保所有返回按钮都能正确初始化
+        // 绑定返回按钮事件
+        this.bindBackButtons();
         
         // 配置文件选择器变更事件
         document.getElementById('config-file-selector').addEventListener('change', (e) => {

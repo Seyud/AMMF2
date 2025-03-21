@@ -157,3 +157,32 @@ function initBackButtons() {
 //         });
 //     }
 // }
+
+
+// 初始化应用
+function initApp() {
+    // 初始化导航
+    if (navigation && typeof navigation.init === 'function') {
+        navigation.init();
+    }
+    
+    // 初始化状态模块
+    if (moduleStatus && typeof moduleStatus.init === 'function') {
+        moduleStatus.init();
+    }
+    
+    // 初始化日志管理器
+    if (logsManager && typeof logsManager.init === 'function') {
+        logsManager.init();
+    }
+    
+    // 加载语言
+    loadLanguages().then(() => {
+        updateLanguage();
+    });
+    
+    console.log('应用初始化完成');
+}
+
+// 页面加载完成后初始化应用
+document.addEventListener('DOMContentLoaded', initApp);
