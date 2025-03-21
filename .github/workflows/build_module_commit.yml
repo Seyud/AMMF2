@@ -1,0 +1,76 @@
+name: Commit Build module
+
+on:
+  push:
+    branches: [ main ] # 根据实际情况替换分支名
+
+jobs:
+  compress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 设置为 0 以获取所有标签历史
+
+
+      - name: Get current time
+        run: |
+          random_number=$((RANDOM % 100))
+          timestamp_with_random="$(date +'%Y%m%d')${random_number}"
+          echo "$timestamp_with_random" > current_time.txt
+          
+      - name: Get latest tag
+        id: latest-tag
+        run: |
+              LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+              echo "$LATEST_TAG" > latest_tag.txt
+
+      - name: Make module.prop
+        run: |
+            LATEST_TAG=$(cat latest_tag.txt)
+            CURRENT_TIME=$(cat current_time.txt)
+            . ./module_settings/config.sh
+            echo "id=${action_id}" > module.prop
+            echo "name=${action_name}" >> module.prop
+            echo "version=${LATEST_TAG}" >> module.prop
+            echo "versionCode=${CURRENT_TIME}" >> module.prop
+            echo "author=${action_author}" >> module.prop
+            echo "description=${action_description}" >> module.prop
+            cat module.prop
+            rm latest_tag.txt
+            rm current_time.txt
+
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+      
+      - name: Build for aarch64
+        run: |
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang \
+          -O2 -Wall -Wextra -o filewatch-aarch64 bin/filewatch.c
+      
+      - name: Build for x86_64
+        run: |
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang \
+          -O2 -Wall -Wextra -o filewatch-x86_64 bin/filewatch.c
+      
+      - name: Strip binaries
+        run: |
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip bin/filewatch-aarch64
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip bin/filewatch-x86_64
+      
+      - name: Remove c files
+        run: |
+          rm -f bin/filewatch.c
+          
+      - name: Upload zip files as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}_${{ env.SHORT_SHA }}
+          path: |
+            *

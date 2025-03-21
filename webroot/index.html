@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMMF设置</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="animations.css">
+    <script src="theme.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-bar">
+            <h1 id="title">AMMF</h1>
+            <div class="spacer"></div>
+            <button id="language-toggle" class="icon-button">
+                <span class="material-symbols-outlined">translate</span>
+            </button>
+            <button id="theme-toggle" class="icon-button">
+                <span class="material-symbols-outlined">dark_mode</span>
+            </button>
+        </header>
+
+        <!-- 首页内容 -->
+        <main id="home-page" class="home-container page-transition">
+            <!-- 添加状态卡片 -->
+            <div class="status-card">
+                <div class="status-header">
+                    <div class="status-title" id="status-title">模块状态</div>
+                    <div class="status-badge" id="status-badge">检查中...</div>
+                </div>
+                <div class="status-content">
+                    <div class="status-info-row">
+                        <span class="status-label" id="status-label">当前状态:</span>
+                        <span class="status-value" id="status-value">正在检查...</span>
+                    </div>
+                    <div class="status-info-row">
+                        <span class="status-label">运行时间:</span>
+                        <span class="status-value" id="status-uptime">--</span>
+                    </div>
+                    <div class="status-info-row">
+                        <span class="status-label">最后更新:</span>
+                        <span class="status-value" id="status-last-update">--</span>
+                    </div>
+                </div>
+                <div class="status-actions">
+                    <button id="refresh-status" class="status-action-button">
+                        <span class="material-symbols-outlined">refresh</span>
+                        <span id="refresh-text">刷新</span>
+                    </button>
+                    <button id="restart-module" class="status-action-button">
+                        <span class="material-symbols-outlined">restart_alt</span>
+                        <span id="restart-text">重启模块</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="home-card" id="settings-card">
+                <div class="home-card-title" id="settings-title">模块设置</div>
+                <div class="home-card-description" id="settings-description">配置AMMF模块的各项参数</div>
+                <span class="material-symbols-outlined home-card-icon">settings</span>
+            </div>
+            
+            <div class="home-card" id="system-prop-card">
+                <div class="home-card-title" id="system-prop-title">系统属性</div>
+                <div class="home-card-description" id="system-prop-description">编辑system.prop文件中的系统属性</div>
+                <span class="material-symbols-outlined home-card-icon">build</span>
+            </div>
+            
+            <!-- 添加日志卡片 -->
+            <div class="home-card" id="logs-card">
+                <div class="home-card-title" id="logs-title">运行日志</div>
+                <div class="home-card-description" id="logs-description">查看模块运行日志</div>
+                <span class="material-symbols-outlined home-card-icon">article</span>
+            </div>
+            
+            <div class="home-card" id="about-card">
+                <div class="home-card-title" id="about-title">关于</div>
+                <div class="home-card-description" id="about-description">查看模块信息和版本</div>
+                <span class="material-symbols-outlined home-card-icon">info</span>
+            </div>
+        </main>
+
+        <!-- 设置页面 -->
+        <main id="settings-page" class="settings-container page-transition" style="display: none;">
+            <!-- 现有设置页面内容 -->
+        </main>
+
+        <!-- 日志页面 -->
+        <main id="logs-page" class="logs-container page-transition" style="display: none;">
+            <div class="page-header">
+                <button id="back-to-home-logs" class="back-button">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    <span id="back-text-logs">返回</span>
+                </button>
+                <div class="spacer"></div>
+                <button id="refresh-logs" class="icon-button">
+                    <span class="material-symbols-outlined">refresh</span>
+                </button>
+                <button id="clear-logs" class="icon-button">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+
+            <div class="logs-content">
+                <div class="logs-header">
+                    <div class="logs-title" id="logs-page-title">模块日志</div>
+                    <div class="logs-filter">
+                        <div class="select-container">
+                            <select id="log-level-filter" class="select-input">
+                                <option value="all">所有级别</option>
+                                <option value="ERROR">错误</option>
+                                <option value="WARN">警告</option>
+                                <option value="INFO">信息</option>
+                                <option value="DEBUG">调试</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="logs-loading" class="loading-indicator">
+                    <div class="spinner"></div>
+                    <div id="logs-loading-text">加载日志中...</div>
+                </div>
+
+                <div id="logs-display" class="logs-display">
+                    <!-- 日志内容将在这里动态加载 -->
+                </div>
+
+                <div id="no-logs-message" class="no-logs-message" style="display: none;">
+                    <span class="material-symbols-outlined">article</span>
+                    <p id="no-logs-text">暂无日志</p>
+                </div>
+            </div>
+        </main>
+            
+            <div class="file-selector">
+                <span class="file-selector-label" id="file-selector-label">配置文件:</span>
+                <div class="select-container">
+                    <select id="config-file-selector" class="select-input">
+                        <option value="config.sh">config.sh</option>
+                        <option value="system.prop">system.prop</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="loading-indicator" id="loading">
+                <div class="spinner"></div>
+                <p id="loading-text">加载设置中...</p>
+            </div>
+            
+            <div id="settings-form" style="display: none;">
+                <!-- Settings will be dynamically generated here -->
+            </div>
+            
+            <div class="fab-container">
+                <button id="save-button" class="fab">
+                    <span class="material-symbols-outlined">save</span>
+                </button>
+            </div>
+        </main>
+        
+        <div id="snackbar"></div>
+    </div>
+    
+    <!-- 按顺序加载其他脚本 -->
+    <script src="utils.js"></script>
+    <script src="language.js"></script>
+    <script src="settings.js"></script>
+    <script src="ui.js"></script>
+    <script src="save.js"></script>
+    <script src="navigation.js"></script>
+    <script src="status.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
