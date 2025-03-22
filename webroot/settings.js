@@ -118,10 +118,18 @@ const settingsManager = {
     },
     
     // 保存配置
-    saveConfig: async function() {
+    // 保存配置
+    saveConfig: async function(configData = null) {
         try {
+            // 如果没有提供配置数据，使用当前的配置数据
+            const dataToSave = configData || this.configData;
+            if (!dataToSave) {
+                console.error('没有可保存的配置数据');
+                return false;
+            }
+            
             // 生成新的配置文件内容
-            const newConfigContent = utils.generateConfigContent(this.configData, this.originalConfigContent);
+            const newConfigContent = utils.generateConfigContent(dataToSave, this.originalConfigContent);
             
             // 写入webroot中的配置文件
             await utils.writeFile(this.configPath, newConfigContent);
@@ -138,9 +146,11 @@ const settingsManager = {
             this.originalConfigContent = newConfigContent;
             
             statusManager.showToast(languageManager.translate('SETTINGS_SAVED', '设置已保存'));
+            return true;
         } catch (error) {
             console.error('保存配置时出错:', error);
             statusManager.showToast(languageManager.translate('SETTINGS_SAVE_ERROR', '保存设置时出错'), 'error');
+            return false;
         }
     },
     

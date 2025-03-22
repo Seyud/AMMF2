@@ -278,27 +278,33 @@ async function writeFile(path, content) {
 }
 
 // 添加一个函数来获取配置，如果无法从文件读取则使用默认值
+// 获取配置
 async function getConfig() {
-    const configPath = `${MODULE_PATH}module_settings/config.sh`;
-    
-    // 检查文件是否存在
-    const exists = await fileExists(configPath);
-    if (!exists) {
-        console.error(`配置文件不存在: ${configPath}`);
+    try {
+        const configPath = `${MODULE_PATH}module_settings/config.sh`;
+        
+        // 检查文件是否存在
+        const exists = await fileExists(configPath);
+        if (!exists) {
+            console.error(`配置文件不存在: ${configPath}`);
+            return getDefaultConfig();
+        }
+        
+        // 尝试读取配置文件
+        const configContent = await readFile(configPath);
+        if (!configContent) {
+            console.error(`无法读取配置文件: ${configPath}`);
+            return getDefaultConfig();
+        }
+        
+        // 解析配置文件
+        const config = parseConfigFile(configContent);
+        console.log('成功读取配置:', config);
+        return config;
+    } catch (error) {
+        console.error('获取配置出错:', error);
         return getDefaultConfig();
     }
-    
-    // 尝试读取配置文件
-    const configContent = await readFile(configPath);
-    if (!configContent) {
-        console.error(`无法读取配置文件: ${configPath}`);
-        return getDefaultConfig();
-    }
-    
-    // 解析配置文件
-    const config = parseConfigFile(configContent);
-    console.log('成功读取配置:', config);
-    return config;
 }
 
 // 默认配置
@@ -318,7 +324,7 @@ function getDefaultConfig() {
     };
 }
 
-// 导出新增的函数
+// 导出函数
 window.utils = {
     MODULE_PATH,
     execCommand,
@@ -330,5 +336,6 @@ window.utils = {
     setTheme,
     getModuleStatus,
     fileExists,
-    getConfig
+    getConfig,
+    getDefaultConfig
 };

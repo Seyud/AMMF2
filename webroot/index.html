@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMMF Module Manager</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,7 +13,7 @@
         <div class="header">
             <h1 id="module-title">AMMF Module Manager</h1>
             <div class="theme-toggle">
-                <button id="theme-toggle-btn" class="md-button">
+                <button id="theme-toggle-btn" class="md-button icon-only">
                     <i class="material-icons">dark_mode</i>
                 </button>
             </div>
@@ -41,67 +42,7 @@
     <script src="logs.js"></script>
     <script src="settings.js"></script>
     <script src="navigation.js"></script>
+    <script src="theme.js"></script>
     <script src="app.js"></script>
-    
-    <script>
-        // 初始化主题切换按钮
-        document.addEventListener('DOMContentLoaded', () => {
-            const themeToggleBtn = document.getElementById('theme-toggle-btn');
-            const themeIcon = themeToggleBtn.querySelector('i');
-            
-            // 获取当前主题
-            const getCurrentTheme = () => {
-                return document.documentElement.getAttribute('data-theme') || 'auto';
-            };
-            
-            // 更新主题图标
-            const updateThemeIcon = (theme) => {
-                if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    themeIcon.textContent = 'light_mode';
-                } else {
-                    themeIcon.textContent = 'dark_mode';
-                }
-            };
-            
-            // 初始化图标
-            updateThemeIcon(getCurrentTheme());
-            
-            // 切换主题
-            themeToggleBtn.addEventListener('click', () => {
-                const currentTheme = getCurrentTheme();
-                let newTheme;
-                
-                if (currentTheme === 'auto') {
-                    newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
-                } else if (currentTheme === 'dark') {
-                    newTheme = 'light';
-                } else {
-                    newTheme = 'dark';
-                }
-                
-                document.documentElement.setAttribute('data-theme', newTheme);
-                utils.setTheme(newTheme);
-                updateThemeIcon(newTheme);
-                
-                // 保存主题设置到本地存储
-                localStorage.setItem('theme', newTheme);
-            });
-            
-            // 从本地存储加载主题设置
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-                utils.setTheme(savedTheme);
-                updateThemeIcon(savedTheme);
-            }
-            
-            // 监听系统主题变化
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (getCurrentTheme() === 'auto') {
-                    updateThemeIcon('auto');
-                }
-            });
-        });
-    </script>
 </body>
 </html>
