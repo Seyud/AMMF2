@@ -16,27 +16,31 @@ const languageManager = {
                 this.parseLanguagesFile(languagesContent);
             }
             
-            // 从本地存储加载语言设置 (优先级最高)
+            // 语言优先级：
+            // 1. 本地存储 (用户明确选择)
+            // 2. 配置文件设置
+            // 3. 浏览器语言
+            // 4. 默认语言 (en)
+            
+            // 1. 首先检查本地存储
             const savedLanguage = localStorage.getItem('selectedLanguage');
             if (savedLanguage && this.supportedLangs.includes(savedLanguage)) {
                 this.currentLang = savedLanguage;
                 console.log(`从本地存储加载语言设置: ${this.currentLang}`);
                 
-                // 确保配置文件也更新了语言设置
+                // 确保配置文件也同步更新
                 await this.updateConfigLanguage(savedLanguage);
             } else {
-                // 使用新的getConfig函数获取配置
+                // 2. 检查配置文件
                 const config = await utils.getConfig();
                 if (config && config.print_languages && this.supportedLangs.includes(config.print_languages)) {
                     this.currentLang = config.print_languages;
                     console.log(`从配置中读取语言设置: ${this.currentLang}`);
                 } else {
-                    console.log('配置中没有有效的语言设置');
-                    
-                    // 如果没有设置语言或语言不支持，尝试使用系统语言
-                    const systemLang = navigator.language.split('-')[0];
-                    this.currentLang = this.supportedLangs.includes(systemLang) ? systemLang : 'en';
-                    console.log(`使用系统语言或默认语言: ${this.currentLang}`);
+                    // 3. 使用浏览器语言
+                    const browserLang = navigator.language.split('-')[0];
+                    this.currentLang = this.supportedLangs.includes(browserLang) ? browserLang : 'en';
+                    console.log(`使用浏览器语言或默认语言: ${this.currentLang}`);
                     
                     // 更新配置文件
                     await this.updateConfigLanguage(this.currentLang);
@@ -148,8 +152,10 @@ const languageManager = {
             option.addEventListener('click', async (e) => {
                 const lang = e.currentTarget.getAttribute('data-lang');
                 if (lang) {
-                    await this.setLanguage(lang);
+                    // 先关闭对话框，避免界面卡顿
                     this.closeLanguageDialog();
+                    // 然后设置语言
+                    await this.setLanguage(lang);
                 }
             });
         });
@@ -253,23 +259,7 @@ const languageManager = {
             localStorage.setItem('selectedLanguage', lang);
             
             // 更新配置文件中的语言设置
-            try {
-                // 获取当前配置
-                const config = await utils.getConfig();
-                if (config) {
-                    // 更新语言设置
-                    config.print_languages = lang;
-                    
-                    // 保存配置
-                    if (window.settingsManager && typeof window.settingsManager.saveConfig === 'function') {
-                        await window.settingsManager.saveConfig(config);
-                        console.log(`配置文件语言更新成功: ${lang}`);
-                    }
-                }
-            } catch (error) {
-                console.error('更新配置文件语言设置出错:', error);
-                // 继续执行，不要因为配置保存失败而阻止语言切换
-            }
+            await this.updateConfigLanguage(lang);
             
             // 应用语言
             this.applyLanguage();
@@ -290,97 +280,37 @@ const languageManager = {
         }
     },
     
-    // 显示语言选择对话框
-    showLanguageDialog() {
-        try {
-            // 创建对话框
-            const dialogHTML = `
-                <div class="dialog language-dialog">
-                    <div class="dialog-content">
-                        <div class="dialog-header">
-                            <h3>${this.translate('WEBUI_LANGUAGE_TITLE', '选择语言')}</h3>
-                            <button class="icon-button close-dialog">
-                                <i class="material-icons">close</i>
-                            </button>
-                        </div>
-                        <div class="dialog-body">
-                            <div class="language-options">
-                                ${this.generateLanguageOptionsHTML()}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // 添加到DOM
-            const dialogContainer = document.createElement('div');
-            dialogContainer.innerHTML = dialogHTML;
-            document.body.appendChild(dialogContainer.firstElementChild);
-            
-            // 获取对话框元素
-            const dialog = document.querySelector('.language-dialog');
-            
-            // 添加关闭按钮事件
-            const closeButton = dialog.querySelector('.close-dialog');
-            if (closeButton) {
-                closeButton.addEventListener('click', () => {
-                    this.closeLanguageDialog();
-                });
-            }
-            
-            // 添加语言选项点击事件
-            const options = dialog.querySelectorAll('.language-option');
-            if (options) {
-                options.forEach(option => {
-                    option.addEventListener('click', async (e) => {
-                        try {
-                            const lang = e.currentTarget.getAttribute('data-lang');
-                            if (lang) {
-                                // 先关闭对话框，避免卡死
-                                this.closeLanguageDialog();
-                                // 然后设置语言
-                                await this.setLanguage(lang);
-                            }
-                        } catch (error) {
-                            console.error('选择语言时出错:', error);
-                        }
-                    });
-                });
-            }
-            
-            // 显示对话框
-            setTimeout(() => {
-                dialog.classList.add('visible');
-            }, 10);
-        } catch (error) {
-            console.error('显示语言对话框时出错:', error);
-        }
-    },
     
     // 应用语言到页面
     applyLanguage() {
-        // 更新所有带有data-i18n属性的元素
-        document.querySelectorAll('[data-i18n]').forEach(element => {
-            const key = element.getAttribute('data-i18n');
-            element.textContent = this.translate(key);
-        });
-        
-        // 更新模块标题
-        const moduleTitle = document.getElementById('module-title');
-        if (moduleTitle) {
-            moduleTitle.textContent = this.translate('MODULE_MANAGER_TITLE', 'AMMF Module Manager');
+        try {
+            // 更新所有带有data-i18n属性的元素
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (key) {
+                    element.textContent = this.translate(key);
+                }
+            });
+            
+            // 更新模块标题
+            const moduleTitle = document.getElementById('module-title');
+            if (moduleTitle) {
+                moduleTitle.textContent = this.translate('MODULE_MANAGER_TITLE', 'AMMF Module Manager');
+            }
+            
+            // 更新加载中文本
+            const loadingText = document.querySelector('.loading-indicator p');
+            if (loadingText) {
+                loadingText.textContent = this.translate('LOADING', '加载中...');
+            }
+            
+            // 触发语言变更事件
+            document.dispatchEvent(new CustomEvent('languageChanged', {
+                detail: { language: this.currentLang }
+            }));
+        } catch (error) {
+            console.error('应用语言时出错:', error);
         }
-        
-        // 更新加载中文本
-        const loadingText = document.querySelector('.loading-indicator p');
-        if (loadingText) {
-            loadingText.textContent = this.translate('LOADING', '加载中...');
-        }
-        
-        // 触发语言变更事件
-        document.dispatchEvent(new CustomEvent('languageChanged', {
-            detail: { language: this.currentLang }
-        }));
     },
     
     // 翻译文本
