@@ -49,7 +49,6 @@ jobs:
           find webroot -name "*.js" -exec sed -i "s/AMMF/${action_id}/g" {} \;
           sed -i "s/AMMF/${action_id}/g" webroot/index.html
           echo "已完成模块ID替换"
-          echo "已完成模块ID替换"
 
       - name: Set short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
@@ -67,7 +66,7 @@ jobs:
       - name: Build for x86_64
         run: |
           $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang++ \
-          -O2 -Wall -Wextra -o filewatch-x86_64 bin/filewatch.cpp
+          -O2 -Wall -Wextra -o bin/filewatch-x86_64 bin/filewatch.cpp
       
       - name: Strip binaries
         run: |
