@@ -45,13 +45,10 @@ jobs:
         run: |
           . ./module_settings/config.sh
           # 替换文件中的模块ID
-          sed -i "s/AMMF/${action_id}/g" files/languages.sh
-          sed -i "s/AMMF/${action_id}/g" webroot/language.js
+          find files -name "*.sh" -exec sed -i "s/AMMF/${action_id}/g" {} \;
+          find webroot -name "*.js" -exec sed -i "s/AMMF/${action_id}/g" {} \;
           sed -i "s/AMMF/${action_id}/g" webroot/index.html
-          sed -i "s/AMMF/${action_id}/g" webroot/navigation.js
-          sed -i "s/AMMF/${action_id}/g" webroot/logs.js
-          sed -i "s/AMMF/${action_id}/g" webroot/status.js
-          sed -i "s/AMMF/${action_id}/g" webroot/settings.js
+          echo "已完成模块ID替换"
           echo "已完成模块ID替换"
 
       - name: Set short SHA
