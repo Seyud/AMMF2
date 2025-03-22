@@ -1,9 +1,13 @@
-// 日志管理模块
-const logsManager = {
+/**
+ * AMMF WebUI 日志页面模块
+ * 查看和管理模块日志
+ */
+
+const LogsPage = {
     // 日志文件路径
     logFiles: {
-        'service': `${utils.MODULE_PATH}logs/service.log`,
-        'service_old': `${utils.MODULE_PATH}logs/service.log.old`
+        'service': `${Core.MODULE_PATH}logs/service.log`,
+        'service_old': `${Core.MODULE_PATH}logs/service.log.old`
     },
     
     // 当前选中的日志文件
@@ -17,33 +21,42 @@ const logsManager = {
     refreshInterval: 5000,
     refreshTimer: null,
     
-    // 渲染日志页面
-    render: async function() {
-        // 获取日志内容
-        await this.loadLogContent();
-        
+    // 初始化
+    async init() {
+        try {
+            // 加载日志内容
+            await this.loadLogContent();
+            return true;
+        } catch (error) {
+            console.error('初始化日志页面失败:', error);
+            return false;
+        }
+    },
+    
+    // 渲染页面
+    render() {
         return `
             <div class="page-container logs-page">
                 <div class="logs-header card">
                     <div class="logs-selector">
-                        <label for="log-file-select">${languageManager.translate('SELECT_LOG_FILE', 'Select Log File')}:</label>
+                        <label for="log-file-select" data-i18n="SELECT_LOG_FILE">选择日志文件</label>
                         <select id="log-file-select">
-                            <option value="service" ${this.currentLogFile === 'service' ? 'selected' : ''}>
-                                ${languageManager.translate('SERVICE_LOG', 'Service Log')}
+                            <option value="service" ${this.currentLogFile === 'service' ? 'selected' : ''} data-i18n="SERVICE_LOG">
+                                服务日志
                             </option>
-                            <option value="service_old" ${this.currentLogFile === 'service_old' ? 'selected' : ''}>
-                                ${languageManager.translate('SERVICE_LOG_OLD', 'Service Log (Old)')}
+                            <option value="service_old" ${this.currentLogFile === 'service_old' ? 'selected' : ''} data-i18n="SERVICE_LOG_OLD">
+                                服务日志(旧)
                             </option>
                         </select>
                     </div>
                     <div class="logs-actions">
                         <button id="refresh-logs" class="md-button">
-                            <i class="material-icons">refresh</i>
-                            ${languageManager.translate('REFRESH_LOGS', 'Refresh')}
+                            <span class="material-symbols-rounded">refresh</span>
+                            <span data-i18n="REFRESH_LOGS">刷新日志</span>
                         </button>
                         <div class="auto-refresh-toggle">
-                            <label for="auto-refresh-checkbox">
-                                ${languageManager.translate('AUTO_REFRESH', 'Auto Refresh')}
+                            <label for="auto-refresh-checkbox" data-i18n="AUTO_REFRESH">
+                                自动刷新
                             </label>
                             <label class="switch">
                                 <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''}>
@@ -54,17 +67,17 @@ const logsManager = {
                 </div>
                 
                 <div class="logs-content card">
-                    <pre id="logs-display">${this.escapeHtml(this.logContent) || languageManager.translate('NO_LOGS', 'No logs available')}</pre>
+                    <pre id="logs-display">${this.escapeHtml(this.logContent) || I18n.translate('NO_LOGS', '没有可用的日志')}</pre>
                 </div>
                 
                 <div class="logs-actions-bottom">
                     <button id="clear-logs" class="md-button warning">
-                        <i class="material-icons">delete</i>
-                        ${languageManager.translate('CLEAR_LOGS', 'Clear Logs')}
+                        <span class="material-symbols-rounded">delete</span>
+                        <span data-i18n="CLEAR_LOGS">清除日志</span>
                     </button>
                     <button id="export-logs" class="md-button secondary">
-                        <i class="material-icons">download</i>
-                        ${languageManager.translate('EXPORT_LOGS', 'Export Logs')}
+                        <span class="material-symbols-rounded">download</span>
+                        <span data-i18n="EXPORT_LOGS">导出日志</span>
                     </button>
                 </div>
             </div>
@@ -72,7 +85,7 @@ const logsManager = {
     },
     
     // 渲染后的回调
-    afterRender: function() {
+    afterRender() {
         // 添加日志文件选择事件
         document.getElementById('log-file-select')?.addEventListener('change', (e) => {
             this.currentLogFile = e.target.value;
@@ -111,66 +124,70 @@ const logsManager = {
     },
     
     // 加载日志内容
-    loadLogContent: async function(showToast = false) {
+    async loadLogContent(showToast = false) {
         try {
             const logPath = this.logFiles[this.currentLogFile];
-            const content = await utils.readFile(logPath);
+            const content = await Core.readFile(logPath);
             
             this.logContent = content || '';
             
             // 更新UI
             const logsDisplay = document.getElementById('logs-display');
             if (logsDisplay) {
-                logsDisplay.innerHTML = this.escapeHtml(this.logContent) || languageManager.translate('NO_LOGS', 'No logs available');
+                logsDisplay.innerHTML = this.escapeHtml(this.logContent) || I18n.translate('NO_LOGS', '没有可用的日志');
                 
                 // 滚动到底部
                 logsDisplay.scrollTop = logsDisplay.scrollHeight;
             }
             
             if (showToast) {
-                statusManager.showToast(languageManager.translate('LOGS_REFRESHED', 'Logs refreshed'));
+                Core.showToast(I18n.translate('LOGS_REFRESHED', '日志已刷新'));
             }
         } catch (error) {
-            console.error('Error loading log content:', error);
+            console.error('加载日志内容失败:', error);
             this.logContent = '';
             
             // 更新UI
             const logsDisplay = document.getElementById('logs-display');
             if (logsDisplay) {
-                logsDisplay.innerHTML = languageManager.translate('LOGS_ERROR', 'Error loading logs');
+                logsDisplay.innerHTML = I18n.translate('LOGS_ERROR', '加载日志失败');
             }
             
             if (showToast) {
-                statusManager.showToast(languageManager.translate('LOGS_REFRESH_ERROR', 'Error refreshing logs'), 'error');
+                Core.showToast(I18n.translate('LOGS_LOAD_ERROR', '加载日志失败'), 'error');
             }
         }
     },
     
     // 清除日志
-    clearLogs: async function() {
+    async clearLogs() {
         try {
-            const logPath = this.logFiles[this.currentLogFile];
-            
             // 确认对话框
-            if (!confirm(languageManager.translate('CONFIRM_CLEAR_LOGS', 'Are you sure you want to clear this log file?'))) {
+            if (!confirm(I18n.translate('CONFIRM_CLEAR_LOGS', '确定要清除此日志文件吗？'))) {
                 return;
             }
             
+            const logPath = this.logFiles[this.currentLogFile];
+            
             // 清空日志文件
-            await utils.writeFile(logPath, '--- Log cleared on ' + new Date().toLocaleString() + ' ---\n');
+            await Core.writeFile(logPath, '');
             
-            // 重新加载日志
-            await this.loadLogContent();
+            // 刷新日志显示
+            this.logContent = '';
+            const logsDisplay = document.getElementById('logs-display');
+            if (logsDisplay) {
+                logsDisplay.innerHTML = I18n.translate('NO_LOGS', '没有可用的日志');
+            }
             
-            statusManager.showToast(languageManager.translate('LOGS_CLEARED', 'Logs cleared'));
+            Core.showToast(I18n.translate('LOGS_CLEARED', '日志已清除'));
         } catch (error) {
-            console.error('Error clearing logs:', error);
-            statusManager.showToast(languageManager.translate('LOGS_CLEAR_ERROR', 'Error clearing logs'), 'error');
+            console.error('清除日志失败:', error);
+            Core.showToast(I18n.translate('LOGS_CLEAR_ERROR', '清除日志失败'), 'error');
         }
     },
     
     // 导出日志
-    exportLogs: function() {
+    exportLogs() {
         try {
             // 创建Blob对象
             const blob = new Blob([this.logContent], {
@@ -193,28 +210,24 @@ const logsManager = {
                 URL.revokeObjectURL(url);
             }, 100);
             
-            statusManager.showToast(languageManager.translate('LOGS_EXPORTED', 'Logs exported'));
+            Core.showToast(I18n.translate('LOGS_EXPORTED', '日志已导出'));
         } catch (error) {
-            console.error('Error exporting logs:', error);
-            statusManager.showToast(languageManager.translate('LOGS_EXPORT_ERROR', 'Error exporting logs'), 'error');
+            console.error('导出日志失败:', error);
+            Core.showToast(I18n.translate('LOGS_EXPORT_ERROR', '导出日志失败'), 'error');
         }
     },
     
     // 启动自动刷新
-    startAutoRefresh: function() {
-        // 清除现有定时器
-        if (this.refreshTimer) {
-            clearInterval(this.refreshTimer);
-        }
+    startAutoRefresh() {
+        this.stopAutoRefresh(); // 先停止现有的定时器
         
-        // 设置新定时器
         this.refreshTimer = setInterval(() => {
             this.loadLogContent();
         }, this.refreshInterval);
     },
     
     // 停止自动刷新
-    stopAutoRefresh: function() {
+    stopAutoRefresh() {
         if (this.refreshTimer) {
             clearInterval(this.refreshTimer);
             this.refreshTimer = null;
@@ -222,27 +235,16 @@ const logsManager = {
     },
     
     // HTML转义
-    escapeHtml: function(text) {
+    escapeHtml(text) {
         if (!text) return '';
-        
-        // 高亮不同日志级别
         return text
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;')
-            .replace(/^(.*?\[ERROR\].*?)$/gm, '<span class="log-error">$1</span>')
-            .replace(/^(.*?\[WARN\].*?)$/gm, '<span class="log-warn">$1</span>')
-            .replace(/^(.*?\[INFO\].*?)$/gm, '<span class="log-info">$1</span>')
-            .replace(/^(.*?\[DEBUG\].*?)$/gm, '<span class="log-debug">$1</span>');
+            .replace(/'/g, '&#039;');
     }
 };
 
-// 导出
-window.logsManager = logsManager;
-
-// 页面卸载时清理
-window.addEventListener('beforeunload', () => {
-    logsManager.stopAutoRefresh();
-});
+// 导出日志页面模块
+window.LogsPage = LogsPage;
