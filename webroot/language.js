@@ -17,34 +17,23 @@ const languageManager = {
             }
             
             // 语言优先级：
-            // 1. 本地存储 (用户明确选择)
-            // 2. 配置文件设置
-            // 3. 浏览器语言
-            // 4. 默认语言 (en)
+            // 1. 配置文件设置
+            // 2. 浏览器语言
+            // 3. 默认语言 (en)
             
-            // 1. 首先检查本地存储
-            const savedLanguage = localStorage.getItem('selectedLanguage');
-            if (savedLanguage && this.supportedLangs.includes(savedLanguage)) {
-                this.currentLang = savedLanguage;
-                console.log(`从本地存储加载语言设置: ${this.currentLang}`);
-                
-                // 确保配置文件也同步更新
-                await this.updateConfigLanguage(savedLanguage);
+            // 1. 检查配置文件
+            const config = await utils.getConfig();
+            if (config && config.print_languages && this.supportedLangs.includes(config.print_languages)) {
+                this.currentLang = config.print_languages;
+                console.log(`从配置中读取语言设置: ${this.currentLang}`);
             } else {
-                // 2. 检查配置文件
-                const config = await utils.getConfig();
-                if (config && config.print_languages && this.supportedLangs.includes(config.print_languages)) {
-                    this.currentLang = config.print_languages;
-                    console.log(`从配置中读取语言设置: ${this.currentLang}`);
-                } else {
-                    // 3. 使用浏览器语言
-                    const browserLang = navigator.language.split('-')[0];
-                    this.currentLang = this.supportedLangs.includes(browserLang) ? browserLang : 'en';
-                    console.log(`使用浏览器语言或默认语言: ${this.currentLang}`);
-                    
-                    // 更新配置文件
-                    await this.updateConfigLanguage(this.currentLang);
-                }
+                // 2. 使用浏览器语言
+                const browserLang = navigator.language.split('-')[0];
+                this.currentLang = this.supportedLangs.includes(browserLang) ? browserLang : 'en';
+                console.log(`使用浏览器语言或默认语言: ${this.currentLang}`);
+                
+                // 更新配置文件
+                await this.updateConfigLanguage(this.currentLang);
             }
             
             // 应用语言
@@ -95,19 +84,21 @@ const languageManager = {
         }
     },
     
-    // 添加语言选择按钮
+    // 添加语言选择按钮 - 改进位置和样式
     addLanguageButton() {
-        const container = document.getElementById('language-selector-container');
-        if (container) {
-            container.innerHTML = `
-                <button id="language-button" class="md-button">
-                    <i class="material-icons">language</i>
-                    ${this.getLanguageDisplayName(this.currentLang)}
-                </button>
-            `;
+        // 将语言按钮添加到顶部导航栏
+        const headerRight = document.querySelector('.header-right');
+        if (headerRight) {
+            const langButton = document.createElement('button');
+            langButton.id = 'language-button';
+            langButton.className = 'md-button icon-only';
+            langButton.innerHTML = `<i class="material-icons">language</i>`;
+            langButton.setAttribute('title', this.getLanguageDisplayName(this.currentLang));
+            
+            headerRight.insertBefore(langButton, headerRight.firstChild);
             
             // 添加按钮点击事件
-            document.getElementById('language-button')?.addEventListener('click', () => {
+            langButton.addEventListener('click', () => {
                 this.showLanguageDialog();
             });
         }
@@ -245,7 +236,7 @@ const languageManager = {
         this.supportedLangs = [...new Set(this.supportedLangs)];
     },
     
-    // 设置语言
+    // 设置语言 - 不再使用本地存储
     async setLanguage(lang) {
         if (!this.supportedLangs.includes(lang)) {
             console.error(`不支持的语言: ${lang}`);
@@ -254,9 +245,6 @@ const languageManager = {
         
         try {
             this.currentLang = lang;
-            
-            // 保存语言设置到本地存储
-            localStorage.setItem('selectedLanguage', lang);
             
             // 更新配置文件中的语言设置
             await this.updateConfigLanguage(lang);
@@ -267,10 +255,7 @@ const languageManager = {
             // 更新语言按钮文本
             const langButton = document.getElementById('language-button');
             if (langButton) {
-                langButton.innerHTML = `
-                    <i class="material-icons">language</i>
-                    ${this.getLanguageDisplayName(lang)}
-                `;
+                langButton.setAttribute('title', this.getLanguageDisplayName(lang));
             }
             
             return true;

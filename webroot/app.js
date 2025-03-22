@@ -56,6 +56,20 @@ class App {
             // 显示加载指示器
             this.showLoading();
             
+            // 设置加载超时
+            const loadingTimeout = setTimeout(() => {
+                // 如果5秒后仍在加载，强制隐藏加载指示器并显示内容
+                this.hideLoading();
+                console.warn('加载超时，强制显示内容');
+                
+                // 显示可能的错误提示
+                statusManager.showToast('加载时间过长，部分功能可能不可用', 'warning');
+                
+                // 标记初始化完成
+                this.initialized = true;
+                document.dispatchEvent(new CustomEvent('appInitialized'));
+            }, 5000);
+            
             // 确保配置文件可访问
             const configAccessible = await this.ensureConfigAccess();
             if (configAccessible) {
@@ -64,49 +78,53 @@ class App {
                 console.warn('无法确保配置文件可访问，将使用默认配置');
             }
             
+            // 初始化主题模块
+            if (window.themeManager) {
+                // 主题模块已在HTML中通过script标签加载
+                console.log('主题模块已加载');
+            } else {
+                console.warn('主题模块未加载，将使用默认主题');
+            }
+            
             // 初始化工具模块
             if (!window.utils) {
-                console.error('工具模块未加载');
-                this.showError('工具模块初始化失败');
+                this.showError('无法初始化工具模块');
+                clearTimeout(loadingTimeout);
                 return;
-            }
-            
-            // 确保utils模块初始化
-            if (typeof window.utils.init === 'function') {
-                await window.utils.init();
-            }
-            
-            // 初始化主题模块
-            if (window.themeManager && typeof window.themeManager.init === 'function') {
-                window.themeManager.init();
             }
             
             // 初始化语言模块
             if (window.languageManager) {
-                await window.languageManager.init();
+                await window.languageManager.init().catch(err => {
+                    console.error('语言模块初始化出错:', err);
+                    // 继续执行，使用默认语言
+                });
             } else {
-                console.error('语言模块未加载');
-                this.showError('语言模块初始化失败');
-                return;
+                console.warn('语言模块未加载，将使用默认语言');
             }
             
             // 初始化状态管理模块
             if (window.statusManager) {
-                await window.statusManager.init();
+                await window.statusManager.init().catch(err => {
+                    console.error('状态模块初始化出错:', err);
+                    // 继续执行
+                });
             } else {
-                console.error('状态模块未加载');
-                this.showError(languageManager.translate('STATUS_INIT_ERROR', '状态模块初始化失败'));
-                return;
+                console.warn('状态模块未加载');
             }
             
             // 初始化导航模块
             if (window.navigationManager) {
-                await window.navigationManager.init();
+                await window.navigationManager.init().catch(err => {
+                    console.error('导航模块初始化出错:', err);
+                    // 继续执行
+                });
             } else {
-                console.error('导航模块未加载');
-                this.showError(languageManager.translate('NAVIGATION_INIT_ERROR', '导航模块初始化失败'));
-                return;
+                console.warn('导航模块未加载');
             }
+            
+            // 清除超时
+            clearTimeout(loadingTimeout);
             
             // 隐藏加载指示器
             this.hideLoading();
@@ -119,7 +137,8 @@ class App {
             document.dispatchEvent(new CustomEvent('appInitialized'));
         } catch (error) {
             console.error('应用初始化出错:', error);
-            this.showError('初始化应用时出错: ' + error.message);
+            this.hideLoading();
+            this.showError('初始化应用时出错');
         }
     }
     

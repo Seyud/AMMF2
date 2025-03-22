@@ -316,6 +316,12 @@ input:focus, select:focus, textarea:focus {
     align-items: center;
     justify-content: center;
     height: 200px;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.loading-indicator.hidden {
+    opacity: 0;
+    visibility: hidden;
 }
 
 .spinner {
@@ -403,20 +409,80 @@ input:focus, select:focus, textarea:focus {
     background-color: rgba(var(--md-onPrimary-rgb), 0.08);
 }
 
-/* 卡片样式 - 更现代的卡片设计 */
 .card {
     background-color: var(--md-surface);
     border-radius: var(--card-border-radius);
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: var(--spacing-lg);
     margin-bottom: var(--spacing-md);
-    box-shadow: var(--elevation-2);
-    transition: box-shadow 0.2s;
+    border: 1px solid var(--md-outlineVariant);
+    transition: transform 0.2s;
     overflow: hidden;
 }
 
 .card:hover {
-    box-shadow: var(--elevation-2); /* 不改变阴影 */
-    transform: none; /* 移除上移效果 */
+    transform: translateY(-2px);
+}
+
+/* 修复触摸按钮 */
+button, .md-button, .nav-item, .language-option, .setting-item, .touchable {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 添加触摸反馈 */
+@media (hover: none) {
+    button:active, .md-button:active, .nav-item:active, 
+    .language-option:active, .setting-item:active, .touchable:active {
+        background-color: rgba(var(--md-primary-rgb), 0.1);
+    }
+}
+
+/* 修改语言选择器位置和样式 */
+.language-selector-container {
+    display: none; /* 隐藏原来的容器 */
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--md-outlineVariant);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* 主题切换按钮 */
+#theme-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 语言按钮 */
+#language-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .card h2, .card h3 {
@@ -616,7 +682,6 @@ input:checked + .slider:before {
     visibility: hidden;
     opacity: 0;
     transition: visibility 0.3s, opacity 0.3s;
-    backdrop-filter: blur(4px);
     background-color: rgba(0, 0, 0, 0.4);
 }
 
@@ -628,7 +693,7 @@ input:checked + .slider:before {
 .dialog-content {
     background-color: var(--md-surface);
     border-radius: var(--dialog-border-radius);
-    box-shadow: var(--elevation-3);
+    border: 1px solid var(--md-outlineVariant);
     width: 90%;
     max-width: 500px;
     max-height: 85vh;
@@ -642,6 +707,7 @@ input:checked + .slider:before {
 .dialog.visible .dialog-content {
     transform: scale(1);
 }
+
 
 .dialog-header {
     padding: var(--spacing-lg);
