@@ -124,6 +124,9 @@ const navigationManager = {
                     this.pageModules[pageId].afterRender();
                 }
                 
+                // 强制重绘以确保动画正确执行
+                void contentContainer.offsetWidth;
+                
                 // 添加进入动画
                 contentContainer.classList.remove('page-transition-out');
                 contentContainer.classList.add('page-transition-in');

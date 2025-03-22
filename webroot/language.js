@@ -241,7 +241,12 @@ const languageManager = {
     
     // 设置语言
     async setLanguage(lang) {
-        if (this.supportedLangs.includes(lang)) {
+        if (!this.supportedLangs.includes(lang)) {
+            console.error(`不支持的语言: ${lang}`);
+            return false;
+        }
+        
+        try {
             this.currentLang = lang;
             
             // 保存语言设置到本地存储
@@ -256,11 +261,14 @@ const languageManager = {
                     config.print_languages = lang;
                     
                     // 保存配置
-                    await settingsManager.saveConfig(config);
-                    console.log(`配置文件语言更新成功: ${lang}`);
+                    if (window.settingsManager && typeof window.settingsManager.saveConfig === 'function') {
+                        await window.settingsManager.saveConfig(config);
+                        console.log(`配置文件语言更新成功: ${lang}`);
+                    }
                 }
             } catch (error) {
                 console.error('更新配置文件语言设置出错:', error);
+                // 继续执行，不要因为配置保存失败而阻止语言切换
             }
             
             // 应用语言
@@ -276,8 +284,77 @@ const languageManager = {
             }
             
             return true;
+        } catch (error) {
+            console.error('设置语言时出错:', error);
+            return false;
         }
-        return false;
+    },
+    
+    // 显示语言选择对话框
+    showLanguageDialog() {
+        try {
+            // 创建对话框
+            const dialogHTML = `
+                <div class="dialog language-dialog">
+                    <div class="dialog-content">
+                        <div class="dialog-header">
+                            <h3>${this.translate('WEBUI_LANGUAGE_TITLE', '选择语言')}</h3>
+                            <button class="icon-button close-dialog">
+                                <i class="material-icons">close</i>
+                            </button>
+                        </div>
+                        <div class="dialog-body">
+                            <div class="language-options">
+                                ${this.generateLanguageOptionsHTML()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到DOM
+            const dialogContainer = document.createElement('div');
+            dialogContainer.innerHTML = dialogHTML;
+            document.body.appendChild(dialogContainer.firstElementChild);
+            
+            // 获取对话框元素
+            const dialog = document.querySelector('.language-dialog');
+            
+            // 添加关闭按钮事件
+            const closeButton = dialog.querySelector('.close-dialog');
+            if (closeButton) {
+                closeButton.addEventListener('click', () => {
+                    this.closeLanguageDialog();
+                });
+            }
+            
+            // 添加语言选项点击事件
+            const options = dialog.querySelectorAll('.language-option');
+            if (options) {
+                options.forEach(option => {
+                    option.addEventListener('click', async (e) => {
+                        try {
+                            const lang = e.currentTarget.getAttribute('data-lang');
+                            if (lang) {
+                                // 先关闭对话框，避免卡死
+                                this.closeLanguageDialog();
+                                // 然后设置语言
+                                await this.setLanguage(lang);
+                            }
+                        } catch (error) {
+                            console.error('选择语言时出错:', error);
+                        }
+                    });
+                });
+            }
+            
+            // 显示对话框
+            setTimeout(() => {
+                dialog.classList.add('visible');
+            }, 10);
+        } catch (error) {
+            console.error('显示语言对话框时出错:', error);
+        }
     },
     
     // 应用语言到页面

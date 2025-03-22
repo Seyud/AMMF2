@@ -66,15 +66,27 @@ class App {
             
             // 初始化工具模块
             if (!window.utils) {
-                this.showError(languageManager.translate('UTILS_INIT_ERROR', 'Failed to initialize utils module'));
+                console.error('工具模块未加载');
+                this.showError('工具模块初始化失败');
                 return;
+            }
+            
+            // 确保utils模块初始化
+            if (typeof window.utils.init === 'function') {
+                await window.utils.init();
+            }
+            
+            // 初始化主题模块
+            if (window.themeManager && typeof window.themeManager.init === 'function') {
+                window.themeManager.init();
             }
             
             // 初始化语言模块
             if (window.languageManager) {
                 await window.languageManager.init();
             } else {
-                this.showError(languageManager.translate('LANGUAGE_INIT_ERROR', 'Failed to initialize language module'));
+                console.error('语言模块未加载');
+                this.showError('语言模块初始化失败');
                 return;
             }
             
@@ -82,7 +94,8 @@ class App {
             if (window.statusManager) {
                 await window.statusManager.init();
             } else {
-                this.showError(languageManager.translate('STATUS_INIT_ERROR', 'Failed to initialize status module'));
+                console.error('状态模块未加载');
+                this.showError(languageManager.translate('STATUS_INIT_ERROR', '状态模块初始化失败'));
                 return;
             }
             
@@ -90,7 +103,8 @@ class App {
             if (window.navigationManager) {
                 await window.navigationManager.init();
             } else {
-                this.showError(languageManager.translate('NAVIGATION_INIT_ERROR', 'Failed to initialize navigation module'));
+                console.error('导航模块未加载');
+                this.showError(languageManager.translate('NAVIGATION_INIT_ERROR', '导航模块初始化失败'));
                 return;
             }
             
@@ -105,7 +119,7 @@ class App {
             document.dispatchEvent(new CustomEvent('appInitialized'));
         } catch (error) {
             console.error('应用初始化出错:', error);
-            this.showError(languageManager.translate('INIT_ERROR', '初始化应用时出错'));
+            this.showError('初始化应用时出错: ' + error.message);
         }
     }
     

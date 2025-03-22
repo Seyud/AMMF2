@@ -140,14 +140,23 @@ function getSystemTheme() {
 }
 
 // 设置主题
-function setTheme(theme = 'auto') {
-    const actualTheme = theme === 'auto' ? getSystemTheme() : theme;
-    document.documentElement.setAttribute('data-theme', actualTheme);
-    
-    // 更新Material You颜色
-    if (window.materialYou) {
-        window.materialYou.updateColors(actualTheme);
+function setTheme(theme) {
+    try {
+        if (theme === 'auto') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            this.updateColors(prefersDark ? 'dark' : 'light');
+        } else {
+            this.updateColors(theme);
+        }
+        return true;
+    } catch (error) {
+        console.error('设置主题时出错:', error);
+        return false;
     }
+}
+
+function updateColors(theme) {
+    this.applyColors(this.colors[theme] || this.colors['light']);
 }
 
 // Material You 颜色系统

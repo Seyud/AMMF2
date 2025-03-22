@@ -33,11 +33,30 @@
     
     /* RGB变量 - 用于透明度计算 */
     --md-primary-rgb: 0, 104, 116;
+    --md-onPrimary-rgb: 255, 255, 255;
     --md-secondary-rgb: 74, 98, 103;
+    --md-onSecondary-rgb: 255, 255, 255;
     --md-tertiary-rgb: 82, 94, 125;
+    --md-onTertiary-rgb: 255, 255, 255;
     --md-error-rgb: 186, 26, 26;
+    --md-onError-rgb: 255, 255, 255;
     --md-surfaceVariant-rgb: 219, 228, 230;
-    
+    --md-onSurfaceVariant-rgb: 63, 72, 74;
+}
+
+[data-theme="dark"] {
+    --md-primary-rgb: 79, 216, 235;
+    --md-onPrimary-rgb: 0, 54, 61;
+    --md-secondary-rgb: 177, 203, 208;
+    --md-onSecondary-rgb: 28, 52, 56;
+    --md-tertiary-rgb: 187, 198, 234;
+    --md-onTertiary-rgb: 36, 48, 77;
+    --md-error-rgb: 255, 180, 171;
+    --md-onError-rgb: 105, 0, 5;
+    --md-surfaceVariant-rgb: 63, 72, 74;
+    --md-onSurfaceVariant-rgb: 191, 200, 202;
+}
+
     /* 动画变量 */
     --animation-duration: 0.3s;
     --animation-timing: cubic-bezier(0.4, 0, 0.2, 1);
@@ -227,14 +246,26 @@ input:focus, select:focus, textarea:focus {
 /* 页面过渡动画 */
 .page-transition-out {
     opacity: 0;
-    transform: translateY(10px);
-    transition: opacity var(--animation-duration), transform var(--animation-duration);
+    transform: translateY(20px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .page-transition-in {
     opacity: 1;
     transform: translateY(0);
-    transition: opacity var(--animation-duration), transform var(--animation-duration);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* 确保内容容器有固定高度和溢出处理 */
+#content-container {
+    position: relative;
+    min-height: 300px;
+    overflow: hidden;
+    transform: translateZ(0); /* 启用硬件加速 */
+}
+
+.page-container {
+    padding: var(--spacing-md) 0;
 }
 
 /* 加载指示器 */
@@ -737,4 +768,142 @@ input:checked + .slider:before {
 
 .slide-up {
     animation: slideUp var(--animation-duration) var(--animation-timing);
+}
+
+/* 按钮样式改进 */
+.md-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: var(--button-border-radius);
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--md-primary);
+    background-color: transparent;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.md-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(var(--md-primary-rgb), 0.3);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1) translate(-50%, -50%);
+    transform-origin: 50% 50%;
+}
+
+.md-button:active {
+    transform: scale(0.96);
+}
+
+.md-button:active::after {
+    opacity: 1;
+    width: 300px;
+    height: 300px;
+    animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0) translate(-50%, -50%);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(1) translate(-50%, -50%);
+        opacity: 0;
+    }
+}
+
+.md-button:hover {
+    background-color: rgba(var(--md-primary-rgb), 0.08);
+}
+
+.md-button.primary {
+    color: var(--md-onPrimary);
+    background-color: var(--md-primary);
+}
+
+.md-button.primary:hover {
+    background-color: rgba(var(--md-primary-rgb), 0.9);
+}
+
+.md-button.primary::after {
+    background: rgba(var(--md-onPrimary-rgb), 0.3);
+}
+
+.md-button.secondary {
+    color: var(--md-onSecondaryContainer);
+    background-color: var(--md-secondaryContainer);
+}
+
+.md-button.secondary:hover {
+    background-color: rgba(var(--md-secondary-rgb), 0.2);
+}
+
+.md-button.secondary::after {
+    background: rgba(var(--md-secondary-rgb), 0.3);
+}
+
+.md-button i {
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+/* 图标按钮样式 */
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: var(--md-onSurfaceVariant);
+    background-color: transparent;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.icon-button:hover {
+    background-color: rgba(var(--md-onSurfaceVariant-rgb), 0.08);
+}
+
+.icon-button:active {
+    transform: scale(0.9);
+}
+
+.icon-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(var(--md-onSurfaceVariant-rgb), 0.3);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1) translate(-50%, -50%);
+    transform-origin: 50% 50%;
+}
+
+.icon-button:active::after {
+    opacity: 1;
+    width: 100px;
+    height: 100px;
+    animation: ripple 0.6s ease-out;
+}
+
+/* 移除旧的动画 */
+.icon-button:not(.loading) {
+    animation: none;
 }
