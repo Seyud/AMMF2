@@ -1,88 +1,115 @@
-// 主题控制 - 立即执行以防止闪烁
-(function() {
-    // 立即检测系统暗色模式并应用
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.style.backgroundColor = '#1c1b1f'; // 深色背景色
-        document.documentElement.style.color = '#e6e1e5'; // 深色文本色
-        document.body.setAttribute('data-theme', 'dark');
+// 主题管理和莫奈取色系统
+class ThemeManager {
+    constructor() {
+        this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        this.themeButton = document.getElementById('theme-button');
+        this.themeIcon = this.themeButton.querySelector('.material-symbols-outlined');
+        this.monetColors = null;
+        
+        this.init();
     }
     
-    // 存储主题状态供后续脚本使用
-    window.initialThemeIsDark = window.matchMedia && 
-                               window.matchMedia('(prefers-color-scheme: dark)').matches;
-})();
-
-// 监听系统主题变化
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-    document.body.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-});
-
-// 确保DOM加载完成后绑定事件
-document.addEventListener('DOMContentLoaded', function() {
-    // 获取主题切换按钮
-    const themeToggle = document.getElementById('theme-toggle');
-    
-    // 检查按钮是否存在
-    if (themeToggle) {
-        // 绑定点击事件
-        themeToggle.addEventListener('click', function() {
-            // 获取当前主题
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            
-            // 切换主题
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            // 应用新主题
-            document.documentElement.setAttribute('data-theme', newTheme);
-            
-            // 更新状态
-            state.isDarkMode = newTheme === 'dark';
-            
-            // 更新图标
-            const themeIcon = this.querySelector('.material-symbols-outlined');
-            if (themeIcon) {
-                themeIcon.textContent = state.isDarkMode ? 'light_mode' : 'dark_mode';
-            }
-            
-            // 保存主题设置到本地存储
-            localStorage.setItem('theme', newTheme);
-            
-            console.log('主题已切换为:', newTheme);
+    async init() {
+        // 监听系统主题变化
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            this.isDarkMode = e.matches;
+            this.updateThemeIcon();
+            this.applyMonetColors();
         });
         
-        console.log('主题切换按钮事件已绑定');
-    } else {
-        console.error('未找到主题切换按钮元素');
+        // 主题切换按钮点击事件
+        this.themeButton.addEventListener('click', () => {
+            this.toggleTheme();
+        });
+        
+        // 初始化主题图标
+        this.updateThemeIcon();
+        
+        // 获取莫奈取色
+        await this.fetchMonetColors();
     }
-});
-
-// 初始化主题
-function initTheme() {
-    // 从本地存储获取主题设置
-    const savedTheme = localStorage.getItem('theme');
     
-    // 如果有保存的主题设置，应用它
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        state.isDarkMode = savedTheme === 'dark';
-    } else {
-        // 否则检查系统偏好
-        const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDarkMode) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            state.isDarkMode = true;
+    updateThemeIcon() {
+        this.themeIcon.textContent = this.isDarkMode ? 'light_mode' : 'dark_mode';
+    }
+    
+    toggleTheme() {
+        this.isDarkMode = !this.isDarkMode;
+        document.documentElement.classList.toggle('force-dark', this.isDarkMode);
+        document.documentElement.classList.toggle('force-light', !this.isDarkMode);
+        this.updateThemeIcon();
+        this.applyMonetColors();
+    }
+    
+    async fetchMonetColors() {
+        try {
+            // 从Android系统获取莫奈取色
+            const command = 'cat /data/system/theme/monet_colors.json 2>/dev/null || echo "{}"';
+            const result = await execCommand(command);
+            
+            if (result && result !== '{}') {
+                this.monetColors = JSON.parse(result);
+                this.applyMonetColors();
+            } else {
+                console.log('莫奈取色数据不可用，使用默认颜色');
+            }
+        } catch (error) {
+            console.error('获取莫奈取色失败:', error);
         }
     }
     
-    // 更新主题图标
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        const themeIcon = themeToggle.querySelector('.material-symbols-outlined');
-        if (themeIcon) {
-            themeIcon.textContent = state.isDarkMode ? 'light_mode' : 'dark_mode';
+    applyMonetColors() {
+        if (!this.monetColors) return;
+        
+        const colors = this.isDarkMode ? this.monetColors.dark : this.monetColors.light;
+        
+        if (!colors) return;
+        
+        const root = document.documentElement;
+        
+        // 应用主色调
+        if (colors.accent1) {
+            root.style.setProperty('--md-sys-color-primary', colors.accent1[500]);
+            root.style.setProperty('--md-sys-color-on-primary', colors.accent1[0]);
+            root.style.setProperty('--md-sys-color-primary-container', colors.accent1[100]);
+            root.style.setProperty('--md-sys-color-on-primary-container', colors.accent1[900]);
+        }
+        
+        // 应用次要色调
+        if (colors.accent2) {
+            root.style.setProperty('--md-sys-color-secondary', colors.accent2[500]);
+            root.style.setProperty('--md-sys-color-on-secondary', colors.accent2[0]);
+            root.style.setProperty('--md-sys-color-secondary-container', colors.accent2[100]);
+            root.style.setProperty('--md-sys-color-on-secondary-container', colors.accent2[900]);
+        }
+        
+        // 应用第三色调
+        if (colors.accent3) {
+            root.style.setProperty('--md-sys-color-tertiary', colors.accent3[500]);
+            root.style.setProperty('--md-sys-color-on-tertiary', colors.accent3[0]);
+            root.style.setProperty('--md-sys-color-tertiary-container', colors.accent3[100]);
+            root.style.setProperty('--md-sys-color-on-tertiary-container', colors.accent3[900]);
+        }
+        
+        // 应用背景色
+        if (colors.neutral1) {
+            root.style.setProperty('--md-sys-color-background', colors.neutral1[10]);
+            root.style.setProperty('--md-sys-color-on-background', colors.neutral1[900]);
+            root.style.setProperty('--md-sys-color-surface', colors.neutral1[10]);
+            root.style.setProperty('--md-sys-color-on-surface', colors.neutral1[900]);
+        }
+        
+        // 应用表面变体色
+        if (colors.neutral2) {
+            root.style.setProperty('--md-sys-color-surface-variant', colors.neutral2[100]);
+            root.style.setProperty('--md-sys-color-on-surface-variant', colors.neutral2[700]);
+            root.style.setProperty('--md-sys-color-outline', colors.neutral2[500]);
+            root.style.setProperty('--md-sys-color-outline-variant', colors.neutral2[200]);
         }
     }
 }
 
-// 页面加载时初始化主题
-document.addEventListener('DOMContentLoaded', initTheme);
+// 当DOM加载完成后初始化主题管理器
+document.addEventListener('DOMContentLoaded', () => {
+    window.themeManager = new ThemeManager();
+});

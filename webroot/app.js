@@ -1,188 +1,153 @@
-// 应用程序入口点
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        // 初始化状态
-        window.state = {
-            settings: {},
-            excludedSettings: [],
-            settingsDescriptions: {},
-            settingsOptions: {},
-            language: 'zh', // 默认语言
-            isDarkMode: window.initialThemeIsDark || false,
-            availableLanguages: ['en', 'zh'], // 默认可用语言
-            initRetryCount: 0 // 添加初始化重试计数
-        };
+// 应用主控制器
+class AppController {
+    constructor() {
+        this.menuButton = document.getElementById('menu-button');
+        this.navDrawer = document.getElementById('nav-drawer');
+        this.overlay = document.getElementById('overlay');
+        this.navItems = document.querySelectorAll('.nav-item');
+        this.pages = document.querySelectorAll('.page');
+        this.currentPage = 'home';
         
-        // 添加页面加载动画
-        document.body.classList.add('fade-in');
+        this.init();
+    }
+    
+    init() {
+        // 初始化导航抽屉
+        this.initNavDrawer();
         
-        // 初始化各个模块
-        await initializeApp();
+        // 初始化页面导航
+        this.initPageNavigation();
         
-    } catch (error) {
-        console.error('Application initialization error:', error);
-        // 显示全局错误
-        if (typeof showLoadingError === 'function') {
-            showLoadingError('初始化应用程序出错，请刷新界面后重试', () => {
-                // 重试初始化
-                window.location.reload();
+        // 初始化页面加载动画
+        this.initPageTransitions();
+        
+        // 检查URL参数
+        this.checkUrlParams();
+    }
+    
+    initNavDrawer() {
+        // 菜单按钮点击事件
+        this.menuButton.addEventListener('click', () => {
+            this.toggleNavDrawer();
+        });
+        
+        // 点击遮罩层关闭导航抽屉
+        this.overlay.addEventListener('click', () => {
+            this.closeNavDrawer();
+        });
+        
+        // 导航项点击事件
+        this.navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const targetPage = item.getAttribute('data-page');
+                if (targetPage) {
+                    this.navigateTo(targetPage);
+                    this.closeNavDrawer();
+                }
             });
+        });
+    }
+    
+    toggleNavDrawer() {
+        this.navDrawer.classList.toggle('open');
+        this.overlay.classList.toggle('visible');
+    }
+    
+    closeNavDrawer() {
+        this.navDrawer.classList.remove('open');
+        this.overlay.classList.remove('visible');
+    }
+    
+    initPageNavigation() {
+        // 获取所有页面链接
+        const pageLinks = document.querySelectorAll('[data-page]');
+        
+        // 为每个链接添加点击事件
+        pageLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                const targetPage = link.getAttribute('data-page');
+                if (targetPage) {
+                    e.preventDefault();
+                    this.navigateTo(targetPage);
+                }
+            });
+        });
+    }
+    
+    navigateTo(pageId) {
+        // 如果是当前页面，不做任何操作
+        if (pageId === this.currentPage) {
+            return;
+        }
+        
+        // 更新当前页面
+        this.currentPage = pageId;
+        
+        // 更新URL
+        history.pushState({ page: pageId }, '', `?page=${pageId}`);
+        
+        // 隐藏所有页面
+        this.pages.forEach(page => {
+            page.classList.remove('active');
+        });
+        
+        // 显示目标页面
+        const targetPage = document.getElementById(`${pageId}-page`);
+        if (targetPage) {
+            targetPage.classList.add('active');
+        }
+        
+        // 更新导航项的活动状态
+        this.navItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-page') === pageId) {
+                item.classList.add('active');
+            }
+        });
+        
+        // 如果是在移动设备上，关闭导航抽屉
+        if (window.innerWidth < 1024) {
+            this.closeNavDrawer();
+        }
+    }
+    
+    initPageTransitions() {
+        // 为页面添加过渡动画
+        this.pages.forEach(page => {
+            page.addEventListener('animationend', () => {
+                if (page.classList.contains('page-exit')) {
+                    page.classList.remove('page-exit');
+                    page.classList.remove('active');
+                }
+            });
+        });
+    }
+    
+    checkUrlParams() {
+        // 检查URL参数中是否有页面指定
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageParam = urlParams.get('page');
+        
+        if (pageParam) {
+            // 检查页面是否存在
+            const targetPage = document.getElementById(`${pageParam}-page`);
+            if (targetPage) {
+                this.navigateTo(pageParam);
+            }
+        }
+    }
+}
+
+// 当DOM加载完成后初始化应用控制器
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new AppController();
+    
+    // 处理浏览器后退/前进按钮
+    window.addEventListener('popstate', (event) => {
+        if (event.state && event.state.page) {
+            window.app.navigateTo(event.state.page);
         } else {
-            alert('初始化应用程序出错，请刷新界面后重试');
+            window.app.navigateTo('home');
         }
-    }
-});
-
-// 将初始化逻辑提取到单独的函数中，便于重试
-async function initializeApp() {
-    try {
-        // 初始化各个模块
-        await Promise.all([
-            // 加载设置配置（整合了排除设置、设置描述和设置选项）
-            loadSettingsConfig(),
-            // 检测系统暗色模式
-            checkDarkMode()
-        ]);
-        
-        // 加载可用语言
-        await loadLanguages();
-        
-        // 初始化UI组件
-        initUI();
-        
-        // 初始化导航
-        navigation.init();
-        
-        // 初始化状态监控
-        moduleStatus.init();
-        
-        // 初始化日志管理
-        logsManager.init();
-        
-        // 修复返回按钮事件绑定
-        initBackButtons();
-        
-        // 移除页面加载动画
-        setTimeout(() => {
-            document.body.classList.remove('fade-in');
-        }, 500);
-        
-        // 显示主页
-        navigation.navigateTo('home');
-        
-        // 添加主页卡片动画
-        navigation.animateHomeCards();
-        
-    } catch (error) {
-        console.error('Module initialization error:', error);
-        
-        // 增加重试计数
-        state.initRetryCount++;
-        
-        // 如果重试次数小于3次，自动重试
-        if (state.initRetryCount < 3) {
-            console.log(`Auto retrying initialization (${state.initRetryCount}/3)...`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return initializeApp();
-        }
-        
-        // 超过重试次数，显示错误
-        throw new Error('初始化失败，已重试' + state.initRetryCount + '次');
-    }
-}
-
-// 初始化返回按钮
-function initBackButtons() {
-    // 设置页面返回按钮
-    const backToHomeSettings = document.getElementById('back-to-home-settings');
-    if (backToHomeSettings) {
-        backToHomeSettings.addEventListener('click', () => {
-            navigation.navigateTo('home');
-            navigation.addButtonClickAnimation('back-to-home-settings');
-        });
-    }
-    
-    // 日志页面返回按钮
-    const backToHomeLogs = document.getElementById('back-to-home-logs');
-    if (backToHomeLogs) {
-        backToHomeLogs.addEventListener('click', () => {
-            navigation.navigateTo('home');
-            navigation.addButtonClickAnimation('back-to-home-logs');
-        });
-    }
-    
-    // 兼容旧版返回按钮
-    const backToHome = document.getElementById('back-to-home');
-    if (backToHome) {
-        backToHome.addEventListener('click', () => {
-            navigation.navigateTo('home');
-            navigation.addButtonClickAnimation('back-to-home');
-        });
-    }
-    
-    console.log('返回按钮初始化完成');
-}
-
-// 移除重复的初始化代码
-// 以下代码已被上面的初始化逻辑替代，删除以避免冲突
-// document.addEventListener('DOMContentLoaded', function() {
-//     // 初始化页面导航
-//     initNavigation();
-//     
-//     // 默认显示首页
-//     if (window.navigation && typeof window.navigation.showPage === 'function') {
-//         window.navigation.showPage('home-page');
-//     }
-// });
-
-// 移除旧的导航初始化函数，使用navigation.js中的方法
-// function initNavigation() {
-//     // 设置卡片点击事件
-//     const settingsCard = document.getElementById('settings-card');
-//     if (settingsCard) {
-//         settingsCard.addEventListener('click', function() {
-//             if (window.navigation && typeof window.navigation.showPage === 'function') {
-//                 window.navigation.showPage('settings-page');
-//             }
-//         });
-//     }
-//     
-//     // 日志卡片点击事件
-//     const logsCard = document.getElementById('logs-card');
-//     if (logsCard) {
-//         logsCard.addEventListener('click', function() {
-//             if (window.navigation && typeof window.navigation.showPage === 'function') {
-//                 window.navigation.showPage('logs-page');
-//             }
-//         });
-//     }
-// }
-
-
-// 初始化应用
-function initApp() {
-    // 初始化导航
-    if (navigation && typeof navigation.init === 'function') {
-        navigation.init();
-    }
-    
-    // 初始化状态模块
-    if (moduleStatus && typeof moduleStatus.init === 'function') {
-        moduleStatus.init();
-    }
-    
-    // 初始化日志管理器
-    if (logsManager && typeof logsManager.init === 'function') {
-        logsManager.init();
-    }
-    
-    // 加载语言
-    loadLanguages().then(() => {
-        updateLanguage();
     });
-    
-    console.log('应用初始化完成');
-}
-
-// 页面加载完成后初始化应用
-document.addEventListener('DOMContentLoaded', initApp);
+});
