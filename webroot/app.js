@@ -22,11 +22,47 @@ class App {
         }
     }
     
+    // 确保配置文件可访问
+    async ensureConfigAccess() {
+        const sourceConfigPath = `${utils.MODULE_PATH}module_settings/config.sh`;
+        const webConfigPath = 'config.sh';  // 相对于webroot的路径
+        
+        try {
+            // 检查源配置文件是否存在
+            const sourceExists = await utils.fileExists(sourceConfigPath);
+            if (!sourceExists) {
+                console.error(`源配置文件不存在: ${sourceConfigPath}`);
+                return false;
+            }
+            
+            // 复制配置文件到webroot
+            await utils.execCommand(`cp "${sourceConfigPath}" "${webConfigPath}"`);
+            console.log(`配置文件已复制到: ${webConfigPath}`);
+            
+            // 设置权限
+            await utils.execCommand(`chmod 644 "${webConfigPath}"`);
+            console.log('已设置配置文件权限');
+            
+            return true;
+        } catch (error) {
+            console.error('确保配置文件访问时出错:', error);
+            return false;
+        }
+    }
+    
     // 初始化应用
     async initApp() {
         try {
             // 显示加载指示器
             this.showLoading();
+            
+            // 确保配置文件可访问
+            const configAccessible = await this.ensureConfigAccess();
+            if (configAccessible) {
+                console.log('配置文件现在可以访问');
+            } else {
+                console.warn('无法确保配置文件可访问，将使用默认配置');
+            }
             
             // 初始化工具模块
             if (!window.utils) {
@@ -68,8 +104,8 @@ class App {
             // 触发应用初始化完成事件
             document.dispatchEvent(new CustomEvent('appInitialized'));
         } catch (error) {
-            console.error('初始化应用失败:', error);
-            this.showError(languageManager.translate('APP_INIT_ERROR', 'Failed to initialize application'));
+            console.error('应用初始化出错:', error);
+            this.showError(languageManager.translate('INIT_ERROR', '初始化应用时出错'));
         }
     }
     

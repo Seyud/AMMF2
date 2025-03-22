@@ -156,7 +156,7 @@ const statusManager = {
             this.showToast(languageManager.translate('RESTARTING_SERVICE', 'Restarting service...'));
             
             // 执行重启命令
-            await utils.execCommand(`sh -c "killall -TERM sh ${utils.MODULE_PATH}service.sh; sh ${utils.MODULE_PATH}service.sh &"`);
+            await utils.execCommand(`sh -c "killall -TERM sh ${utils.MODULE_PATH}service.sh; busybox sh ${utils.MODULE_PATH}service.sh &"`);
             
             // 等待一段时间后刷新状态
             setTimeout(() => {

@@ -16,36 +16,38 @@ const languageManager = {
                 this.parseLanguagesFile(languagesContent);
             }
             
-            // 读取配置文件中的默认语言
-            const configContent = await utils.readFile(`${utils.MODULE_PATH}module_settings/config.sh`);
-            if (configContent) {
-                const config = utils.parseConfigFile(configContent);
-                if (config.print_languages && this.supportedLangs.includes(config.print_languages)) {
-                    this.currentLang = config.print_languages;
-                }
+            // 使用新的getConfig函数获取配置
+            const config = await utils.getConfig();
+            if (config && config.print_languages && this.supportedLangs.includes(config.print_languages)) {
+                this.currentLang = config.print_languages;
+                console.log(`从配置中读取语言设置: ${this.currentLang}`);
+            } else {
+                console.log('配置中没有有效的语言设置');
             }
             
             // 如果没有设置语言或语言不支持，尝试使用系统语言
             if (!this.currentLang || !this.supportedLangs.includes(this.currentLang)) {
                 const systemLang = navigator.language.split('-')[0];
                 this.currentLang = this.supportedLangs.includes(systemLang) ? systemLang : 'en';
+                console.log(`使用系统语言或默认语言: ${this.currentLang}`);
             }
             
             // 从本地存储加载语言设置
             const savedLanguage = localStorage.getItem('selectedLanguage');
             if (savedLanguage && this.supportedLangs.includes(savedLanguage)) {
                 this.currentLang = savedLanguage;
+                console.log(`从本地存储加载语言设置: ${this.currentLang}`);
             }
             
             // 应用语言
             this.applyLanguage();
             
-            console.log(`Language initialized: ${this.currentLang}`);
+            console.log(`语言初始化完成: ${this.currentLang}`);
             
             // 添加语言选择按钮
             this.addLanguageButton();
         } catch (error) {
-            console.error('Error initializing language system:', error);
+            console.error('初始化语言系统出错:', error);
             // 默认使用英语
             this.currentLang = 'en';
             this.applyLanguage();

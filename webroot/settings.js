@@ -1,7 +1,8 @@
 // 设置管理模块
 const settingsManager = {
-    // 配置文件路径
-    configPath: `${utils.MODULE_PATH}module_settings/config.sh`,
+    // 配置文件路径 - 使用相对路径和备用路径
+    configPath: 'config.sh',  // 相对于webroot的路径
+    originalConfigPath: `${utils.MODULE_PATH}module_settings/config.sh`,
     settingsJsonPath: `${utils.MODULE_PATH}module_settings/settings.json`,
     
     // 配置数据
@@ -56,21 +57,44 @@ const settingsManager = {
     // 加载配置
     loadConfig: async function(showToast = false) {
         try {
+            console.log(`尝试加载配置文件: ${this.configPath}`);
+            
+            // 检查文件是否存在
+            const exists = await utils.fileExists(this.configPath);
+            if (!exists) {
+                console.error(`配置文件不存在: ${this.configPath}`);
+                if (showToast) {
+                    statusManager.showToast(languageManager.translate('CONFIG_FILE_NOT_FOUND', '找不到配置文件'), 'error');
+                }
+                return;
+            }
+            
             // 读取配置文件
             const configContent = await utils.readFile(this.configPath);
-            this.originalConfigContent = configContent || '';
+            if (!configContent) {
+                console.error(`无法读取配置文件内容: ${this.configPath}`);
+                if (showToast) {
+                    statusManager.showToast(languageManager.translate('CONFIG_READ_ERROR', '读取配置文件失败'), 'error');
+                }
+                return;
+            }
+            
+            this.originalConfigContent = configContent;
             this.configData = utils.parseConfigFile(configContent);
+            console.log('成功解析配置数据:', this.configData);
             
             // 读取settings.json
             const settingsJsonContent = await utils.readFile(this.settingsJsonPath);
             if (settingsJsonContent) {
                 try {
                     this.settingsJson = JSON.parse(settingsJsonContent);
+                    console.log('成功解析settings.json');
                 } catch (e) {
-                    console.error('Error parsing settings.json:', e);
+                    console.error('解析settings.json出错:', e);
                     this.settingsJson = { excluded: [], descriptions: {}, options: {} };
                 }
             } else {
+                console.log('settings.json不存在或为空，使用默认值');
                 this.settingsJson = { excluded: [], descriptions: {}, options: {} };
             }
             
@@ -82,13 +106,13 @@ const settingsManager = {
             }
             
             if (showToast) {
-                statusManager.showToast(languageManager.translate('SETTINGS_REFRESHED', 'Settings refreshed'));
+                statusManager.showToast(languageManager.translate('SETTINGS_REFRESHED', '设置已刷新'));
             }
         } catch (error) {
-            console.error('Error loading config:', error);
+            console.error('加载配置出错:', error);
             
             if (showToast) {
-                statusManager.showToast(languageManager.translate('SETTINGS_REFRESH_ERROR', 'Error refreshing settings'), 'error');
+                statusManager.showToast(languageManager.translate('SETTINGS_REFRESH_ERROR', '刷新设置时出错'), 'error');
             }
         }
     },
@@ -99,16 +123,24 @@ const settingsManager = {
             // 生成新的配置文件内容
             const newConfigContent = utils.generateConfigContent(this.configData, this.originalConfigContent);
             
-            // 写入配置文件
+            // 写入webroot中的配置文件
             await utils.writeFile(this.configPath, newConfigContent);
+            
+            // 尝试写入原始配置文件
+            try {
+                await utils.writeFile(this.originalConfigPath, newConfigContent);
+                console.log('已更新原始配置文件');
+            } catch (originalError) {
+                console.warn('无法更新原始配置文件，但已更新webroot中的副本', originalError);
+            }
             
             // 更新原始内容
             this.originalConfigContent = newConfigContent;
             
-            statusManager.showToast(languageManager.translate('SETTINGS_SAVED', 'Settings saved'));
+            statusManager.showToast(languageManager.translate('SETTINGS_SAVED', '设置已保存'));
         } catch (error) {
-            console.error('Error saving config:', error);
-            statusManager.showToast(languageManager.translate('SETTINGS_SAVE_ERROR', 'Error saving settings'), 'error');
+            console.error('保存配置时出错:', error);
+            statusManager.showToast(languageManager.translate('SETTINGS_SAVE_ERROR', '保存设置时出错'), 'error');
         }
     },
     
