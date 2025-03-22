@@ -118,8 +118,8 @@ const settingsManager = {
     },
     
     // 保存配置
-    // 保存配置
-    saveConfig: async function(configData = null) {
+    // 修改 saveConfig 方法，添加更严格的文件保存条件
+    saveConfig: async function(configData) {
         try {
             // 如果没有提供配置数据，使用当前的配置数据
             const dataToSave = configData || this.configData;
@@ -128,8 +128,13 @@ const settingsManager = {
                 return false;
             }
             
-            // 生成新的配置文件内容
+            // 检查是否真的有变化，避免不必要的覆写
             const newConfigContent = utils.generateConfigContent(dataToSave, this.originalConfigContent);
+            if (newConfigContent === this.originalConfigContent) {
+                console.log('配置未发生变化，跳过保存');
+                statusManager.showToast(languageManager.translate('SETTINGS_NO_CHANGE', '设置未发生变化'));
+                return true;
+            }
             
             // 写入webroot中的配置文件
             await utils.writeFile(this.configPath, newConfigContent);
