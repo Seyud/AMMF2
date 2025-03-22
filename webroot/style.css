@@ -1,0 +1,393 @@
+:root {
+    /* Material You 颜色变量 - 将由JS动态设置 */
+    --md-primary: #006874;
+    --md-onPrimary: #ffffff;
+    --md-primaryContainer: #a2eeff;
+    --md-onPrimaryContainer: #001f24;
+    --md-secondary: #4a6267;
+    --md-onSecondary: #ffffff;
+    --md-secondaryContainer: #cde7ec;
+    --md-onSecondaryContainer: #051f23;
+    --md-tertiary: #525e7d;
+    --md-onTertiary: #ffffff;
+    --md-tertiaryContainer: #dae2ff;
+    --md-onTertiaryContainer: #0e1b37;
+    --md-error: #ba1a1a;
+    --md-onError: #ffffff;
+    --md-errorContainer: #ffdad6;
+    --md-onErrorContainer: #410002;
+    --md-background: #fafdfd;
+    --md-onBackground: #191c1d;
+    --md-surface: #fafdfd;
+    --md-onSurface: #191c1d;
+    --md-surfaceVariant: #dbe4e6;
+    --md-onSurfaceVariant: #3f484a;
+    --md-outline: #6f797a;
+    --md-outlineVariant: #bfc8ca;
+    --md-shadow: #000000;
+    --md-scrim: #000000;
+    --md-inverseSurface: #2e3132;
+    --md-inverseOnSurface: #eff1f1;
+    --md-inversePrimary: #4fd8eb;
+    
+    /* 动画变量 */
+    --animation-duration: 0.3s;
+    --animation-timing: ease-in-out;
+    
+    /* 圆角变量 */
+    --button-border-radius: 20px;
+    --card-border-radius: 12px;
+    --input-border-radius: 4px;
+    --dialog-border-radius: 28px;
+    --snackbar-border-radius: 4px;
+}
+
+[data-theme="dark"] {
+    --md-primary: #4fd8eb;
+    --md-onPrimary: #00363d;
+    --md-primaryContainer: #004f58;
+    --md-onPrimaryContainer: #a2eeff;
+    --md-secondary: #b1cbd0;
+    --md-onSecondary: #1c3438;
+    --md-secondaryContainer: #334b4f;
+    --md-onSecondaryContainer: #cde7ec;
+    --md-tertiary: #bbc6ea;
+    --md-onTertiary: #24304d;
+    --md-tertiaryContainer: #3b4664;
+    --md-onTertiaryContainer: #dae2ff;
+    --md-error: #ffb4ab;
+    --md-onError: #690005;
+    --md-errorContainer: #93000a;
+    --md-onErrorContainer: #ffdad6;
+    --md-background: #191c1d;
+    --md-onBackground: #e1e3e3;
+    --md-surface: #191c1d;
+    --md-onSurface: #e1e3e3;
+    --md-surfaceVariant: #3f484a;
+    --md-onSurfaceVariant: #bfc8ca;
+    --md-outline: #899294;
+    --md-outlineVariant: #3f484a;
+    --md-shadow: #000000;
+    --md-scrim: #000000;
+    --md-inverseSurface: #e1e3e3;
+    --md-inverseOnSurface: #2e3132;
+    --md-inversePrimary: #006874;
+}
+
+/* 基础样式 */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+    background-color: var(--md-background);
+    color: var(--md-onBackground);
+    line-height: 1.6;
+    transition: background-color var(--animation-duration), color var(--animation-duration);
+    overflow-x: hidden;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+}
+
+input, select {
+    font-family: inherit;
+    padding: 8px 12px;
+    border: 1px solid var(--md-outline);
+    border-radius: var(--input-border-radius);
+    background-color: var(--md-surface);
+    color: var(--md-onSurface);
+    transition: border-color 0.2s;
+}
+
+input:focus, select:focus {
+    border-color: var(--md-primary);
+}
+
+/* 开关样式 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--md-surfaceVariant);
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: var(--md-onSurfaceVariant);
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--md-primary);
+}
+
+input:checked + .slider:before {
+    background-color: var(--md-onPrimary);
+    transform: translateX(24px);
+}
+
+/* 按钮样式 */
+.icon-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 语言选择器样式 */
+.language-selector-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1001;
+}
+
+#language-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--md-surface);
+    color: var(--md-onSurface);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 对话框样式 */
+.dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--animation-duration), visibility var(--animation-duration);
+}
+
+.dialog.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dialog-content {
+    background-color: var(--md-surface);
+    border-radius: var(--dialog-border-radius);
+    width: 90%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: transform var(--animation-duration), opacity var(--animation-duration);
+}
+
+.dialog.visible .dialog-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.dialog-header {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--md-outlineVariant);
+}
+
+.dialog-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--md-onSurface);
+}
+
+.dialog-body {
+    padding: 16px;
+    overflow-y: auto;
+    max-height: calc(80vh - 120px);
+}
+
+.dialog-footer {
+    padding: 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid var(--md-outlineVariant);
+}
+
+/* 语言选择对话框样式 */
+.language-dialog .dialog-content {
+    max-width: 320px;
+}
+
+.language-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.language-option {
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.language-option:hover {
+    background-color: var(--md-surfaceVariant);
+}
+
+.language-option.selected {
+    background-color: var(--md-primaryContainer);
+    color: var(--md-onPrimaryContainer);
+}
+
+/* 响应式布局 */
+@media (max-width: 600px) {
+    .container {
+        padding: 12px;
+    }
+    
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .theme-toggle {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+    }
+    
+    .status-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .status-icon {
+        margin-right: 0;
+        margin-bottom: 16px;
+    }
+    
+    .button-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .logs-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .logs-actions-bottom {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .setting-control-container {
+        margin-top: 8px;
+        width: 100%;
+    }
+}
+
+/* RGB变量 - 用于透明度计算 */
+:root {
+    --md-primary-rgb: 0, 104, 116;
+    --md-secondary-rgb: 74, 98, 103;
+    --md-tertiary-rgb: 82, 94, 125;
+    --md-error-rgb: 186, 26, 26;
+    --md-surfaceVariant-rgb: 219, 228, 230;
+}
+
+[data-theme="dark"] {
+    --md-primary-rgb: 79, 216, 235;
+    --md-secondary-rgb: 177, 203, 208;
+    --md-tertiary-rgb: 187, 198, 234;
+    --md-error-rgb: 255, 180, 171;
+    --md-surfaceVariant-rgb: 63, 72, 74;
+}
+
+/* 卡片样式 */
+.card {
+    background-color: var(--md-surface);
+    border-radius: var(--card-border-radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    color: var(--md-onSurface);
+}
+
+/* 覆盖层 */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--animation-duration), visibility var(--animation-duration);
+}
+
+.overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}

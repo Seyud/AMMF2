@@ -5,492 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMMF Module Manager</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <style>
-        :root {
-            /* Material You 颜色变量 - 将由JS动态设置 */
-            --md-primary: #006874;
-            --md-onPrimary: #ffffff;
-            --md-primaryContainer: #a2eeff;
-            --md-onPrimaryContainer: #001f24;
-            --md-secondary: #4a6267;
-            --md-onSecondary: #ffffff;
-            --md-secondaryContainer: #cde7ec;
-            --md-onSecondaryContainer: #051f23;
-            --md-tertiary: #525e7d;
-            --md-onTertiary: #ffffff;
-            --md-tertiaryContainer: #dae2ff;
-            --md-onTertiaryContainer: #0e1b37;
-            --md-error: #ba1a1a;
-            --md-onError: #ffffff;
-            --md-errorContainer: #ffdad6;
-            --md-onErrorContainer: #410002;
-            --md-background: #fafdfd;
-            --md-onBackground: #191c1d;
-            --md-surface: #fafdfd;
-            --md-onSurface: #191c1d;
-            --md-surfaceVariant: #dbe4e6;
-            --md-onSurfaceVariant: #3f484a;
-            --md-outline: #6f797a;
-            
-            /* 动画时间 */
-            --animation-duration: 0.3s;
-        }
-        
-        /* 基础样式 */
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
-            background-color: var(--md-background);
-            color: var(--md-onBackground);
-            line-height: 1.6;
-            transition: background-color var(--animation-duration), color var(--animation-duration);
-            overflow-x: hidden;
-        }
-        
-        /* 卡片样式 */
-        .card {
-            background-color: var(--md-surface);
-            color: var(--md-onSurface);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        /* 按钮样式 */
-        .md-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 16px;
-            border-radius: 20px;
-            border: none;
-            background-color: var(--md-surfaceVariant);
-            color: var(--md-onSurfaceVariant);
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            outline: none;
-            gap: 8px;
-        }
-        
-        .md-button:hover {
-            background-color: rgba(var(--md-surfaceVariant-rgb), 0.8);
-        }
-        
-        .md-button:active {
-            transform: scale(0.98);
-        }
-        
-        .md-button.primary {
-            background-color: var(--md-primary);
-            color: var(--md-onPrimary);
-        }
-        
-        .md-button.primary:hover {
-            background-color: rgba(var(--md-primary-rgb), 0.9);
-        }
-        
-        .md-button.secondary {
-            background-color: var(--md-secondary);
-            color: var(--md-onSecondary);
-        }
-        
-        .md-button.secondary:hover {
-            background-color: rgba(var(--md-secondary-rgb), 0.9);
-        }
-        
-        .md-button.warning {
-            background-color: var(--md-error);
-            color: var(--md-onError);
-        }
-        
-        .md-button.warning:hover {
-            background-color: rgba(var(--md-error-rgb), 0.9);
-        }
-        
-        /* 输入框样式 */
-        input, select {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--md-outline);
-            background-color: var(--md-surface);
-            color: var(--md-onSurface);
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        
-        input:focus, select:focus {
-            border-color: var(--md-primary);
-        }
-        
-        /* 开关样式 */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 48px;
-            height: 24px;
-        }
-        
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: var(--md-surfaceVariant);
-            transition: .4s;
-        }
-        
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: var(--md-onSurfaceVariant);
-            transition: .4s;
-        }
-        
-        input:checked + .slider {
-            background-color: var(--md-primary);
-        }
-        
-        input:checked + .slider:before {
-            background-color: var(--md-onPrimary);
-            transform: translateX(24px);
-        }
-        
-        .slider.round {
-            border-radius: 24px;
-        }
-        
-        .slider.round:before {
-            border-radius: 50%;
-        }
-        
-        /* 布局 */
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 16px;
-            padding-bottom: 72px; /* 为底部导航留出空间 */
-        }
-        
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 0;
-            margin-bottom: 16px;
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            font-weight: 500;
-            color: var(--md-primary);
-        }
-        
-        /* 导航栏 */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-around;
-            background-color: var(--md-surface);
-            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            padding: 8px 0;
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px 16px;
-            color: var(--md-onSurfaceVariant);
-            background: none;
-            border: none;
-            cursor: pointer;
-            transition: color 0.2s;
-            font-size: 12px;
-        }
-        
-        .nav-item i {
-            font-size: 24px;
-            margin-bottom: 4px;
-        }
-        
-        .nav-item.active {
-            color: var(--md-primary);
-        }
-        
-        /* 页面容器 */
-        .page-container {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        /* 状态页面 */
-        .status-card {
-            display: flex;
-            align-items: center;
-            padding: 24px;
-        }
-        
-        .status-icon {
-            margin-right: 24px;
-        }
-        
-        .status-icon i {
-            font-size: 48px;
-        }
-        
-        .status-info h2 {
-            margin-bottom: 8px;
-        }
-        
-        .status-text {
-            font-size: 18px;
-            font-weight: 500;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 8px;
-            margin-top: 16px;
-        }
-        
-        /* 日志页面 */
-        .logs-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-        
-        .logs-content {
-            height: 400px;
-            overflow-y: auto;
-            padding: 16px;
-            background-color: var(--md-surfaceVariant);
-            color: var(--md-onSurfaceVariant);
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        
-        .logs-actions-bottom {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 16px;
-        }
-        
-        .auto-refresh-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        /* 日志级别颜色 */
-        .log-error {
-            color: var(--md-error);
-        }
-        
-        .log-warn {
-            color: #f57c00; /* 橙色 */
-        }
-        
-        .log-info {
-            color: var(--md-primary);
-        }
-        
-        .log-debug {
-            color: var(--md-tertiary);
-        }
-        
-        /* 设置页面 */
-        .settings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .settings-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 0;
-            border-bottom: 1px solid var(--md-surfaceVariant);
-        }
-        
-        .setting-item:last-child {
-            border-bottom: none;
-        }
-        
-        .setting-info {
-            flex: 1;
-        }
-        
-        .setting-label {
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-        
-        .setting-description {
-            font-size: 12px;
-            color: var(--md-onSurfaceVariant);
-        }
-        
-        .setting-control-container {
-            min-width: 120px;
-            display: flex;
-            justify-content: flex-end;
-        }
-        
-        .number-input-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
-        }
-        
-        /* 关于页面 */
-        .module-info-card {
-            margin-bottom: 24px;
-        }
-        
-        .info-item {
-            display: flex;
-            margin: 8px 0;
-        }
-        
-        .info-item .label {
-            font-weight: 500;
-            min-width: 100px;
-        }
-        
-        /* Toast消息 */
-        .toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background-color: var(--md-surfaceVariant);
-            color: var(--md-onSurfaceVariant);
-            padding: 12px 24px;
-            border-radius: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            z-index: 2000;
-            opacity: 0;
-            transition: transform 0.3s, opacity 0.3s;
-        }
-        
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-        
-        .toast.error {
-            background-color: var(--md-error);
-            color: var(--md-onError);
-        }
-        
-        .toast.success {
-            background-color: #4caf50; /* 绿色 */
-            color: #ffffff;
-        }
-        
-        /* 页面切换动画 */
-        .page-transition-out {
-            opacity: 0;
-            transform: translateX(20px);
-            transition: opacity 0.15s, transform 0.15s;
-        }
-        
-        .page-transition-in {
-            opacity: 1;
-            transform: translateX(0);
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        
-        /* 动画 */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* 响应式设计 */
-        @media (max-width: 600px) {
-            .status-card {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .status-icon {
-                margin-right: 0;
-                margin-bottom: 16px;
-            }
-            
-            .logs-header, .settings-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .logs-actions, .settings-actions {
-                margin-top: 16px;
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .setting-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .setting-control-container {
-                margin-top: 8px;
-                width: 100%;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
@@ -505,169 +20,88 @@
         
         <div id="content-container">
             <!-- 页面内容将由JS动态加载 -->
-                <div class="loading-indicator">
-                    <div class="spinner"></div>
-                    <p>加载中...</p>
-                </div>
-                </div>
+            <div class="loading-indicator">
+                <div class="spinner"></div>
+                <p>加载中...</p>
+            </div>
+        </div>
+        
+        <div id="nav-container">
+            <!-- 导航栏将由JS动态加载 -->
+        </div>
+    </div>
+    
+    <!-- 语言选择器将在页面右上角显示 -->
+    <div id="language-selector-container" class="language-selector-container"></div>
+    
+    <!-- 脚本引用 -->
+    <script src="utils.js"></script>
+    <script src="language.js"></script>
+    <script src="status.js"></script>
+    <script src="logs.js"></script>
+    <script src="settings.js"></script>
+    <script src="navigation.js"></script>
+    <script src="app.js"></script>
+    
+    <script>
+        // 初始化主题切换按钮
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const themeIcon = themeToggleBtn.querySelector('i');
+            
+            // 获取当前主题
+            const getCurrentTheme = () => {
+                return document.documentElement.getAttribute('data-theme') || 'auto';
+            };
+            
+            // 更新主题图标
+            const updateThemeIcon = (theme) => {
+                if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    themeIcon.textContent = 'light_mode';
+                } else {
+                    themeIcon.textContent = 'dark_mode';
+                }
+            };
+            
+            // 初始化图标
+            updateThemeIcon(getCurrentTheme());
+            
+            // 切换主题
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = getCurrentTheme();
+                let newTheme;
                 
-                <div id="nav-container">
-                    <!-- 导航栏将由JS动态加载 -->
-                </div>
-                </div>
+                if (currentTheme === 'auto') {
+                    newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
+                } else if (currentTheme === 'dark') {
+                    newTheme = 'light';
+                } else {
+                    newTheme = 'dark';
+                }
                 
-                <!-- 语言选择器将在页面右上角显示 -->
-                <div id="language-selector-container" class="language-selector-container"></div>
+                document.documentElement.setAttribute('data-theme', newTheme);
+                utils.setTheme(newTheme);
+                updateThemeIcon(newTheme);
                 
-                <!-- 脚本引用 -->
-                <script src="utils.js"></script>
-                <script src="language.js"></script>
-                <script src="status.js"></script>
-                <script src="logs.js"></script>
-                <script src="settings.js"></script>
-                <script src="navigation.js"></script>
-                <script src="app.js"></script>
-                
-                <script>
-                    // 初始化主题切换按钮
-                    document.addEventListener('DOMContentLoaded', () => {
-                        const themeToggleBtn = document.getElementById('theme-toggle-btn');
-                        const themeIcon = themeToggleBtn.querySelector('i');
-                        
-                        // 获取当前主题
-                        const getCurrentTheme = () => {
-                            return document.documentElement.getAttribute('data-theme') || 'auto';
-                        };
-                        
-                        // 更新主题图标
-                        const updateThemeIcon = (theme) => {
-                            if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                                themeIcon.textContent = 'light_mode';
-                            } else {
-                                themeIcon.textContent = 'dark_mode';
-                            }
-                        };
-                        
-                        // 初始化图标
-                        updateThemeIcon(getCurrentTheme());
-                        
-                        // 切换主题
-                        themeToggleBtn.addEventListener('click', () => {
-                            const currentTheme = getCurrentTheme();
-                            let newTheme;
-                            
-                            if (currentTheme === 'auto') {
-                                newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
-                            } else if (currentTheme === 'dark') {
-                                newTheme = 'light';
-                            } else {
-                                newTheme = 'dark';
-                            }
-                            
-                            document.documentElement.setAttribute('data-theme', newTheme);
-                            utils.setTheme(newTheme);
-                            updateThemeIcon(newTheme);
-                            
-                            // 保存主题设置到本地存储
-                            localStorage.setItem('theme', newTheme);
-                        });
-                        
-                        // 从本地存储加载主题设置
-                        const savedTheme = localStorage.getItem('theme');
-                        if (savedTheme) {
-                            document.documentElement.setAttribute('data-theme', savedTheme);
-                            utils.setTheme(savedTheme);
-                            updateThemeIcon(savedTheme);
-                        }
-                        
-                        // 监听系统主题变化
-                        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                            if (getCurrentTheme() === 'auto') {
-                                updateThemeIcon('auto');
-                            }
-                        });
-                        
-                        // 添加语言选择器到容器
-                        document.getElementById('language-selector-container').addEventListener('click', (e) => {
-                            e.stopPropagation();
-                        });
-                        
-                        // 在语言初始化完成后添加语言选择器
-                        document.addEventListener('languageChanged', () => {
-                            const container = document.getElementById('language-selector-container');
-                            if (container) {
-                                container.innerHTML = languageManager.getLanguageSelectorHTML();
-                            }
-                            
-                            // 更新模块标题
-                            const moduleTitle = document.getElementById('module-title');
-                            if (moduleTitle) {
-                                moduleTitle.textContent = languageManager.translate('MODULE_MANAGER_TITLE', 'AMMF Module Manager');
-                            }
-                        });
-                    });
-                    
-                    // 添加加载动画样式
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        .loading-indicator {
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            justify-content: center;
-                            height: 200px;
-                        }
-                        
-                        .spinner {
-                            width: 40px;
-                            height: 40px;
-                            border: 4px solid var(--md-surfaceVariant);
-                            border-top: 4px solid var(--md-primary);
-                            border-radius: 50%;
-                            animation: spin 1s linear infinite;
-                            margin-bottom: 16px;
-                        }
-                        
-                        @keyframes spin {
-                            0% { transform: rotate(0deg); }
-                            100% { transform: rotate(360deg); }
-                        }
-                        
-                        .language-selector-container {
-                            position: fixed;
-                            top: 16px;
-                            right: 16px;
-                            z-index: 1001;
-                            background-color: var(--md-surface);
-                            border-radius: 8px;
-                            padding: 8px;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                        }
-                        
-                        .language-selector {
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                        }
-                        
-                        /* 修复RGB变量 */
-                        :root {
-                            --md-primary-rgb: 0, 104, 116;
-                            --md-secondary-rgb: 74, 98, 103;
-                            --md-tertiary-rgb: 82, 94, 125;
-                            --md-error-rgb: 186, 26, 26;
-                            --md-surfaceVariant-rgb: 219, 228, 230;
-                        }
-                        
-                        [data-theme="dark"] {
-                            --md-primary-rgb: 79, 216, 235;
-                            --md-secondary-rgb: 177, 203, 208;
-                            --md-tertiary-rgb: 187, 198, 234;
-                            --md-error-rgb: 255, 180, 171;
-                            --md-surfaceVariant-rgb: 63, 72, 74;
-                        }
-                    `;
-                    document.head.appendChild(style);
-                </script>
-            </body>
-            </html>
+                // 保存主题设置到本地存储
+                localStorage.setItem('theme', newTheme);
+            });
+            
+            // 从本地存储加载主题设置
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                utils.setTheme(savedTheme);
+                updateThemeIcon(savedTheme);
+            }
+            
+            // 监听系统主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (getCurrentTheme() === 'auto') {
+                    updateThemeIcon('auto');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
