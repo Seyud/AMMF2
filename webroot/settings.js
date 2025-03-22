@@ -1,21 +1,17 @@
-// 设置管理
+/**
+ * 设置页面管理
+ * 处理config.sh和settings.json的读取和保存
+ */
 class SettingsManager {
     constructor() {
+        this.configData = null;
+        this.settingsData = null;
         this.configForm = document.getElementById('config-form');
         this.settingsForm = document.getElementById('settings-form');
         this.configLoading = document.getElementById('config-loading');
         this.settingsLoading = document.getElementById('settings-loading');
-        this.saveConfigButton = document.getElementById('save-config');
-        this.saveSettingsButton = document.getElementById('save-settings');
-        this.tabButtons = document.querySelectorAll('.tab');
-        this.tabContents = document.querySelectorAll('.tab-content');
-        
-        // 排除的设置项
-        this.excludedSettings = [];
-        // 设置项描述
-        this.settingsDescriptions = {};
-        // 设置项选项
-        this.settingsOptions = {};
+        this.saveConfigBtn = document.getElementById('save-config');
+        this.saveSettingsBtn = document.getElementById('save-settings');
         
         this.init();
     }
@@ -24,107 +20,69 @@ class SettingsManager {
         // 初始化标签页切换
         this.initTabs();
         
-        // 加载settings.json
-        await this.loadSettingsJson();
-        
-        // 加载配置文件
+        // 加载配置和设置
         await this.loadConfig();
-        
-        // 加载设置文件
         await this.loadSettings();
         
-        // 保存按钮事件
-        this.saveConfigButton.addEventListener('click', () => {
-            this.saveConfig();
-        });
-        
-        this.saveSettingsButton.addEventListener('click', () => {
-            this.saveSettings();
-        });
+        // 绑定保存按钮事件
+        this.saveConfigBtn.addEventListener('click', () => this.saveConfig());
+        this.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
     }
     
     initTabs() {
-        this.tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
                 // 移除所有标签页的active类
-                this.tabButtons.forEach(btn => btn.classList.remove('active'));
-                this.tabContents.forEach(content => content.classList.remove('active'));
-                
+                tabs.forEach(t => t.classList.remove('active'));
                 // 添加当前标签页的active类
-                button.classList.add('active');
-                const targetId = button.getAttribute('data-target');
+                tab.classList.add('active');
+                
+                // 隐藏所有内容
+                const tabContents = document.querySelectorAll('.tab-content');
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // 显示当前标签页对应的内容
+                const targetId = tab.getAttribute('data-target');
                 document.getElementById(targetId).classList.add('active');
             });
         });
     }
     
-    async loadSettingsJson() {
-        try {
-            // 读取settings.json文件
-            const command = 'cat /data/adb/modules/AMMF/module_settings/settings.json';
-            const content = await execCommand(command);
-            
-            if (content) {
-                const settingsJson = JSON.parse(content);
-                
-                // 设置排除项
-                if (settingsJson.excluded && Array.isArray(settingsJson.excluded)) {
-                    this.excludedSettings = settingsJson.excluded;
-                }
-                
-                // 设置描述
-                if (settingsJson.descriptions && typeof settingsJson.descriptions === 'object') {
-                    this.settingsDescriptions = settingsJson.descriptions;
-                }
-                
-                // 设置选项
-                if (settingsJson.options && typeof settingsJson.options === 'object') {
-                    this.settingsOptions = settingsJson.options;
-                }
-                
-                console.log('已加载settings.json');
-            }
-        } catch (error) {
-            console.error('加载settings.json失败:', error);
-        }
-    }
-    
     async loadConfig() {
         try {
             this.configLoading.style.display = 'flex';
-            this.configForm.style.display = 'none';
             
             // 读取config.sh文件
             const command = 'cat /data/adb/modules/AMMF/config.sh';
             const content = await execCommand(command);
             
-            if (content) {
-                // 解析配置文件
-                const config = this.parseConfigFile(content);
-                
-                // 创建表单
-                this.createConfigForm(config);
-            }
+            // 解析配置项
+            this.configData = this.parseConfigFile(content);
+            
+            // 生成表单
+            this.generateConfigForm();
             
             this.configLoading.style.display = 'none';
-            this.configForm.style.display = 'block';
         } catch (error) {
-            console.error('加载config.sh失败:', error);
+            console.error('加载配置文件失败:', error);
             this.configLoading.style.display = 'none';
-            this.configForm.innerHTML = `<p class="error-message">${error.message || '加载配置文件失败'}</p>`;
-            this.configForm.style.display = 'block';
+            showSnackbar(i18n.translate('WEBUI_SETTINGS_LOAD_FAILED'), 'error');
         }
     }
     
     parseConfigFile(content) {
-        const config = {};
-        const lines = content.split('\n');
-        
-        // 当前注释
+        const configItems = [];
         let currentComment = '';
         
-        for (let line of lines) {
-            line = line.trim();
+        // 按行分割
+        const lines = content.split('\n');
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            // 跳过空行
+            if (!line) continue;
             
             // 收集注释
             if (line.startsWith('#')) {
@@ -132,17 +90,11 @@ class SettingsManager {
                 continue;
             }
             
-            // 解析变量赋值
+            // 解析配置项
             const match = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
             if (match) {
                 const key = match[1];
                 let value = match[2];
-                
-                // 如果是排除项，则跳过
-                if (this.excludedSettings.includes(key)) {
-                    currentComment = '';
-                    continue;
-                }
                 
                 // 处理引号
                 if ((value.startsWith('"') && value.endsWith('"')) || 
@@ -150,207 +102,143 @@ class SettingsManager {
                     value = value.substring(1, value.length - 1);
                 }
                 
-                // 处理布尔值
-                if (value === 'true' || value === 'false') {
-                    config[key] = {
-                        type: 'boolean',
-                        value: value === 'true',
-                        comment: currentComment.trim()
-                    };
+                // 确定类型
+                let type = 'text';
+                if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
+                    type = 'boolean';
+                    value = value.toLowerCase() === 'true';
+                } else if (!isNaN(value) && value.trim() !== '') {
+                    type = 'number';
+                    value = parseFloat(value);
                 }
-                // 处理数字
-                else if (!isNaN(value) && value !== '') {
-                    config[key] = {
-                        type: 'number',
-                        value: parseFloat(value),
-                        comment: currentComment.trim()
-                    };
-                }
-                // 处理字符串
-                else {
-                    // 检查是否有预定义选项
-                    if (this.settingsOptions[key]) {
-                        config[key] = {
-                            type: 'select',
-                            value: value,
-                            comment: currentComment.trim(),
-                            options: this.settingsOptions[key].options
-                        };
-                    } else {
-                        config[key] = {
-                            type: 'text',
-                            value: value,
-                            comment: currentComment.trim()
-                        };
-                    }
-                }
+                
+                // 添加到配置项列表
+                configItems.push({
+                    key,
+                    value,
+                    type,
+                    description: currentComment.trim()
+                });
                 
                 // 重置注释
                 currentComment = '';
             }
         }
         
-        return config;
+        return configItems;
     }
     
-    createConfigForm(config) {
+    generateConfigForm() {
         this.configForm.innerHTML = '';
         
-        for (const [key, setting] of Object.entries(config)) {
+        if (!this.configData || this.configData.length === 0) {
+            this.configForm.innerHTML = `<div class="empty-state">
+                <span class="material-symbols-outlined">settings</span>
+                <p>${i18n.translate('WEBUI_NO_CONFIG')}</p>
+            </div>`;
+            return;
+        }
+        
+        // 为每个配置项创建表单元素
+        this.configData.forEach(item => {
             const formGroup = document.createElement('div');
             formGroup.className = 'form-group';
             
             // 标签
             const label = document.createElement('label');
-            label.textContent = key;
+            label.textContent = item.key;
             formGroup.appendChild(label);
             
-            // 描述（来自注释或settings.json）
-            let description = '';
-            if (this.settingsDescriptions[key] && this.settingsDescriptions[key][window.i18n.currentLanguage]) {
-                description = this.settingsDescriptions[key][window.i18n.currentLanguage];
-            } else if (setting.comment) {
-                description = setting.comment;
-            }
-            
-            if (description) {
-                const descElement = document.createElement('div');
-                descElement.className = 'description';
-                descElement.textContent = description;
-                formGroup.appendChild(descElement);
+            // 描述
+            if (item.description) {
+                const description = document.createElement('div');
+                description.className = 'description';
+                description.textContent = item.description;
+                formGroup.appendChild(description);
             }
             
             // 根据类型创建不同的输入控件
-            switch (setting.type) {
-                case 'boolean':
-                    const switchContainer = document.createElement('div');
-                    switchContainer.className = 'switch-container';
-                    
-                    const switchLabel = document.createElement('label');
-                    switchLabel.className = 'switch';
-                    
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.name = key;
-                    checkbox.checked = setting.value;
-                    
-                    const slider = document.createElement('span');
-                    slider.className = 'slider';
-                    
-                    switchLabel.appendChild(checkbox);
-                    switchLabel.appendChild(slider);
-                    switchContainer.appendChild(switchLabel);
-                    
-                    const valueLabel = document.createElement('span');
-                    valueLabel.textContent = setting.value ? '开启' : '关闭';
-                    switchContainer.appendChild(valueLabel);
-                    
-                    // 更新值标签
-                    checkbox.addEventListener('change', () => {
-                        valueLabel.textContent = checkbox.checked ? '开启' : '关闭';
-                    });
-                    
-                    formGroup.appendChild(switchContainer);
-                    break;
-                    
-                case 'number':
-                    const numberContainer = document.createElement('div');
-                    numberContainer.className = 'number-input';
-                    
-                    const numberInput = document.createElement('input');
-                    numberInput.type = 'number';
-                    numberInput.className = 'form-control';
-                    numberInput.name = key;
-                    numberInput.value = setting.value;
-                    
-                    numberContainer.appendChild(numberInput);
-                    
-                    // 添加滑块（如果适用）
-                    if (setting.value >= 0 && setting.value <= 100) {
-                        const sliderContainer = document.createElement('div');
-                        sliderContainer.className = 'slider-container';
-                        
-                        const slider = document.createElement('input');
-                        slider.type = 'range';
-                        slider.min = 0;
-                        slider.max = 100;
-                        slider.value = setting.value;
-                        
-                        const sliderValue = document.createElement('div');
-                        sliderValue.className = 'slider-value';
-                        sliderValue.textContent = setting.value;
-                        
-                        // 同步滑块和数字输入
-                        slider.addEventListener('input', () => {
-                            numberInput.value = slider.value;
-                            sliderValue.textContent = slider.value;
-                        });
-                        
-                        numberInput.addEventListener('input', () => {
-                            slider.value = numberInput.value;
-                            sliderValue.textContent = numberInput.value;
-                        });
-                        
-                        sliderContainer.appendChild(slider);
-                        sliderContainer.appendChild(sliderValue);
-                        formGroup.appendChild(sliderContainer);
-                    }
-                    
-                    formGroup.appendChild(numberContainer);
-                    break;
-                    
-                case 'select':
-                    const selectContainer = document.createElement('div');
-                    selectContainer.className = 'select-container';
-                    
-                    const select = document.createElement('select');
-                    select.className = 'form-control';
-                    select.name = key;
-                    
-                    // 添加选项
-                    if (setting.options && Array.isArray(setting.options)) {
-                        setting.options.forEach(option => {
-                            const optionElement = document.createElement('option');
-                            optionElement.value = option.value;
-                            
-                            // 获取当前语言的标签
-                            if (option.label && option.label[window.i18n.currentLanguage]) {
-                                optionElement.textContent = option.label[window.i18n.currentLanguage];
-                            } else if (option.label && option.label.en) {
-                                optionElement.textContent = option.label.en;
-                            } else {
-                                optionElement.textContent = option.value;
-                            }
-                            
-                            if (option.value === setting.value) {
-                                optionElement.selected = true;
-                            }
-                            
-                            select.appendChild(optionElement);
-                        });
-                    }
-                    
-                    selectContainer.appendChild(select);
-                    formGroup.appendChild(selectContainer);
-                    break;
-                    
-                case 'text':
-                default:
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'form-control';
-                    input.name = key;
-                    input.value = setting.value;
-                    formGroup.appendChild(input);
-                    break;
+            let input;
+            
+            if (item.type === 'boolean') {
+                // 开关
+                const switchContainer = document.createElement('div');
+                switchContainer.className = 'switch-container';
+                
+                const switchLabel = document.createElement('label');
+                switchLabel.className = 'switch';
+                
+                input = document.createElement('input');
+                input.type = 'checkbox';
+                input.name = item.key;
+                input.checked = item.value;
+                
+                const slider = document.createElement('span');
+                slider.className = 'slider';
+                
+                switchLabel.appendChild(input);
+                switchLabel.appendChild(slider);
+                switchContainer.appendChild(switchLabel);
+                
+                formGroup.appendChild(switchContainer);
+            } else if (item.type === 'number') {
+                // 数字输入
+                const numberInput = document.createElement('div');
+                numberInput.className = 'number-input';
+                
+                input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'form-control';
+                input.name = item.key;
+                input.value = item.value;
+                
+                const controls = document.createElement('div');
+                controls.className = 'number-controls';
+                
+                const upBtn = document.createElement('button');
+                upBtn.type = 'button';
+                upBtn.className = 'number-control';
+                upBtn.innerHTML = '<span class="material-symbols-outlined">keyboard_arrow_up</span>';
+                upBtn.addEventListener('click', () => {
+                    input.value = parseFloat(input.value) + 1;
+                });
+                
+                const downBtn = document.createElement('button');
+                downBtn.type = 'button';
+                downBtn.className = 'number-control';
+                downBtn.innerHTML = '<span class="material-symbols-outlined">keyboard_arrow_down</span>';
+                downBtn.addEventListener('click', () => {
+                    input.value = Math.max(0, parseFloat(input.value) - 1);
+                });
+                
+                controls.appendChild(upBtn);
+                controls.appendChild(downBtn);
+                
+                numberInput.appendChild(input);
+                numberInput.appendChild(controls);
+                
+                formGroup.appendChild(numberInput);
+            } else {
+                // 文本输入
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control';
+                input.name = item.key;
+                input.value = item.value;
+                
+                formGroup.appendChild(input);
             }
             
             this.configForm.appendChild(formGroup);
-        }
+        });
     }
     
     async saveConfig() {
         try {
+            // 显示加载状态
+            this.saveConfigBtn.disabled = true;
+            this.saveConfigBtn.innerHTML = '<span class="spinner-small"></span> ' + i18n.translate('WEBUI_SAVING');
+            
             // 收集表单数据
             const formData = new FormData(this.configForm);
             const config = {};
@@ -360,18 +248,12 @@ class SettingsManager {
             }
             
             // 处理复选框（未选中的不会出现在formData中）
-            const checkboxes = this.configForm.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                if (!formData.has(checkbox.name)) {
-                    config[checkbox.name] = 'false';
-                } else {
-                    config[checkbox.name] = 'true';
-                }
+            this.configForm.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                config[checkbox.name] = checkbox.checked ? 'true' : 'false';
             });
             
             // 构建config.sh内容
-            const originalCommand = 'cat /data/adb/modules/AMMF/config.sh';
-            const originalContent = await execCommand(originalCommand);
+            const originalContent = await execCommand('cat /data/adb/modules/AMMF/config.sh');
             
             if (!originalContent) {
                 throw new Error('无法读取原始配置文件');
@@ -395,18 +277,21 @@ class SettingsManager {
                 if (match) {
                     const key = match[1];
                     
-                    // 如果是排除项，保持原样
-                    if (this.excludedSettings.includes(key)) {
-                        newContent += line + '\n';
-                        continue;
-                    }
-                    
                     // 如果表单中有该变量，则更新值
                     if (config.hasOwnProperty(key)) {
                         let value = config[key];
                         
                         // 处理字符串值的引号
-                        if (typeof value === 'string' && !['true', 'false'].includes(value) && isNaN(value)) {
+                        const originalValue = match[2];
+                        const hasQuotes = (originalValue.startsWith('"') && originalValue.endsWith('"')) || 
+                                         (originalValue.startsWith("'") && originalValue.endsWith("'"));
+                        
+                        if (hasQuotes) {
+                            // 保持原有的引号风格
+                            const quoteChar = originalValue.charAt(0);
+                            value = `${quoteChar}${value}${quoteChar}`;
+                        } else if (typeof value === 'string' && !['true', 'false'].includes(value.toLowerCase()) && isNaN(value)) {
+                            // 如果是字符串且不是布尔值或数字，添加双引号
                             value = `"${value}"`;
                         }
                         
@@ -422,73 +307,95 @@ class SettingsManager {
             }
             
             // 保存配置文件
-            const saveCommand = `echo '${newContent}' > /data/adb/modules/AMMF/config.sh`;
-            await execCommand(saveCommand);
+            await execCommand(`echo '${newContent.replace(/'/g, "'\\''")}' > /data/adb/modules/AMMF/config.sh`);
             
             // 显示成功消息
-            showSnackbar(window.i18n.translate('WEBUI_SETTINGS_SAVED'));
+            showSnackbar(i18n.translate('WEBUI_SETTINGS_SAVED'), 'success');
+            
+            // 恢复按钮状态
+            this.saveConfigBtn.disabled = false;
+            this.saveConfigBtn.textContent = i18n.translate('WEBUI_SAVE');
             
             // 重新加载配置
             await this.loadConfig();
         } catch (error) {
             console.error('保存配置失败:', error);
-            showSnackbar(window.i18n.translate('WEBUI_SETTINGS_SAVE_FAILED'));
+            showSnackbar(i18n.translate('WEBUI_SETTINGS_SAVE_FAILED'), 'error');
+            
+            // 恢复按钮状态
+            this.saveConfigBtn.disabled = false;
+            this.saveConfigBtn.textContent = i18n.translate('WEBUI_SAVE');
         }
     }
     
     async loadSettings() {
         try {
             this.settingsLoading.style.display = 'flex';
-            this.settingsForm.style.display = 'none';
             
-            // 读取settings.sh文件
-            const command = 'cat /data/adb/modules/AMMF/settings.sh';
-            const content = await execCommand(command);
+            // 读取settings.json文件
+            const content = await execCommand('cat /data/adb/modules/AMMF/settings.json');
             
-            if (content) {
-                // 解析设置文件
-                const settings = this.parseConfigFile(content);
-                
-                // 创建表单
-                this.createSettingsForm(settings);
+            if (!content || content.trim() === '') {
+                this.settingsForm.innerHTML = `<div class="empty-state">
+                    <span class="material-symbols-outlined">settings</span>
+                    <p>${i18n.translate('WEBUI_NO_SETTINGS')}</p>
+                </div>`;
+                this.settingsLoading.style.display = 'none';
+                return;
             }
             
+            // 解析JSON
+            this.settingsData = JSON.parse(content);
+            
+            // 生成表单
+            this.generateSettingsForm();
+            
             this.settingsLoading.style.display = 'none';
-            this.settingsForm.style.display = 'block';
         } catch (error) {
-            console.error('加载settings.sh失败:', error);
+            console.error('加载设置文件失败:', error);
             this.settingsLoading.style.display = 'none';
-            this.settingsForm.innerHTML = `<p class="error-message">${error.message || '加载设置文件失败'}</p>`;
-            this.settingsForm.style.display = 'block';
+            showSnackbar(i18n.translate('WEBUI_SETTINGS_LOAD_FAILED'), 'error');
+            
+            this.settingsForm.innerHTML = `<div class="empty-state">
+                <span class="material-symbols-outlined">error</span>
+                <p>${error.message || i18n.translate('WEBUI_SETTINGS_LOAD_FAILED')}</p>
+            </div>`;
         }
     }
     
-    createSettingsForm(settings) {
-        // 使用与createConfigForm相同的逻辑
+    generateSettingsForm() {
         this.settingsForm.innerHTML = '';
         
-        for (const [key, setting] of Object.entries(settings)) {
+        if (!this.settingsData || !this.settingsData.settings || Object.keys(this.settingsData.settings).length === 0) {
+            this.settingsForm.innerHTML = `<div class="empty-state">
+                <span class="material-symbols-outlined">settings</span>
+                <p>${i18n.translate('WEBUI_NO_SETTINGS')}</p>
+            </div>`;
+            return;
+        }
+        
+        // 为每个设置项创建表单元素
+        for (const [key, setting] of Object.entries(this.settingsData.settings)) {
             const formGroup = document.createElement('div');
             formGroup.className = 'form-group';
             
-            // 标签
+            // 标签 - 使用翻译或原始键名
             const label = document.createElement('label');
-            label.textContent = key;
+            if (setting.label && setting.label[i18n.currentLanguage]) {
+                label.textContent = setting.label[i18n.currentLanguage];
+            } else if (setting.label && setting.label.en) {
+                label.textContent = setting.label.en;
+            } else {
+                label.textContent = key;
+            }
             formGroup.appendChild(label);
             
-            // 描述（来自注释或settings.json）
-            let description = '';
-            if (this.settingsDescriptions[key] && this.settingsDescriptions[key][window.i18n.currentLanguage]) {
-                description = this.settingsDescriptions[key][window.i18n.currentLanguage];
-            } else if (setting.comment) {
-                description = setting.comment;
-            }
-            
-            if (description) {
-                const descElement = document.createElement('div');
-                descElement.className = 'description';
-                descElement.textContent = description;
-                formGroup.appendChild(descElement);
+            // 描述
+            if (setting.description && (setting.description[i18n.currentLanguage] || setting.description.en)) {
+                const description = document.createElement('div');
+                description.className = 'description';
+                description.textContent = setting.description[i18n.currentLanguage] || setting.description.en;
+                formGroup.appendChild(description);
             }
             
             // 根据类型创建不同的输入控件
@@ -503,7 +410,7 @@ class SettingsManager {
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.name = key;
-                    checkbox.checked = setting.value;
+                    checkbox.checked = setting.value === true || setting.value === 'true';
                     
                     const slider = document.createElement('span');
                     slider.className = 'slider';
@@ -512,62 +419,51 @@ class SettingsManager {
                     switchLabel.appendChild(slider);
                     switchContainer.appendChild(switchLabel);
                     
-                    const valueLabel = document.createElement('span');
-                    valueLabel.textContent = setting.value ? '开启' : '关闭';
-                    switchContainer.appendChild(valueLabel);
-                    
-                    // 更新值标签
-                    checkbox.addEventListener('change', () => {
-                        valueLabel.textContent = checkbox.checked ? '开启' : '关闭';
-                    });
-                    
                     formGroup.appendChild(switchContainer);
                     break;
                     
                 case 'number':
-                    const numberContainer = document.createElement('div');
-                    numberContainer.className = 'number-input';
+                    const numberInput = document.createElement('div');
+                    numberInput.className = 'number-input';
                     
-                    const numberInput = document.createElement('input');
-                    numberInput.type = 'number';
-                    numberInput.className = 'form-control';
-                    numberInput.name = key;
-                    numberInput.value = setting.value;
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.className = 'form-control';
+                    input.name = key;
+                    input.value = setting.value;
                     
-                    numberContainer.appendChild(numberInput);
+                    if (setting.min !== undefined) input.min = setting.min;
+                    if (setting.max !== undefined) input.max = setting.max;
+                    if (setting.step !== undefined) input.step = setting.step;
                     
-                    // 添加滑块（如果适用）
-                    if (setting.value >= 0 && setting.value <= 100) {
+                    numberInput.appendChild(input);
+                    
+                    // 如果有范围限制，添加滑块
+                    if (setting.min !== undefined && setting.max !== undefined) {
                         const sliderContainer = document.createElement('div');
                         sliderContainer.className = 'slider-container';
                         
-                        const slider = document.createElement('input');
-                        slider.type = 'range';
-                        slider.min = 0;
-                        slider.max = 100;
-                        slider.value = setting.value;
+                        const rangeSlider = document.createElement('input');
+                        rangeSlider.type = 'range';
+                        rangeSlider.min = setting.min;
+                        rangeSlider.max = setting.max;
+                        rangeSlider.step = setting.step || 1;
+                        rangeSlider.value = setting.value;
                         
-                        const sliderValue = document.createElement('div');
-                        sliderValue.className = 'slider-value';
-                        sliderValue.textContent = setting.value;
-                        
-                        // 同步滑块和数字输入
-                        slider.addEventListener('input', () => {
-                            numberInput.value = slider.value;
-                            sliderValue.textContent = slider.value;
+                        // 同步滑块和输入框
+                        rangeSlider.addEventListener('input', () => {
+                            input.value = rangeSlider.value;
                         });
                         
-                        numberInput.addEventListener('input', () => {
-                            slider.value = numberInput.value;
-                            sliderValue.textContent = numberInput.value;
+                        input.addEventListener('input', () => {
+                            rangeSlider.value = input.value;
                         });
                         
-                        sliderContainer.appendChild(slider);
-                        sliderContainer.appendChild(sliderValue);
-                        formGroup.appendChild(sliderContainer);
+                        sliderContainer.appendChild(rangeSlider);
+                        numberInput.appendChild(sliderContainer);
                     }
                     
-                    formGroup.appendChild(numberContainer);
+                    formGroup.appendChild(numberInput);
                     break;
                     
                 case 'select':
@@ -585,8 +481,8 @@ class SettingsManager {
                             optionElement.value = option.value;
                             
                             // 获取当前语言的标签
-                            if (option.label && option.label[window.i18n.currentLanguage]) {
-                                optionElement.textContent = option.label[window.i18n.currentLanguage];
+                            if (option.label && option.label[i18n.currentLanguage]) {
+                                optionElement.textContent = option.label[i18n.currentLanguage];
                             } else if (option.label && option.label.en) {
                                 optionElement.textContent = option.label.en;
                             } else {
@@ -607,12 +503,12 @@ class SettingsManager {
                     
                 case 'text':
                 default:
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'form-control';
-                    input.name = key;
-                    input.value = setting.value;
-                    formGroup.appendChild(input);
+                    const textInput = document.createElement('input');
+                    textInput.type = 'text';
+                    textInput.className = 'form-control';
+                    textInput.name = key;
+                    textInput.value = setting.value;
+                    formGroup.appendChild(textInput);
                     break;
             }
             
@@ -622,88 +518,58 @@ class SettingsManager {
     
     async saveSettings() {
         try {
+            // 显示加载状态
+            this.saveSettingsBtn.disabled = true;
+            this.saveSettingsBtn.innerHTML = '<span class="spinner-small"></span> ' + i18n.translate('WEBUI_SAVING');
+            
             // 收集表单数据
             const formData = new FormData(this.settingsForm);
-            const settings = {};
+            const updatedSettings = JSON.parse(JSON.stringify(this.settingsData));
             
+            // 更新设置值
             for (const [key, value] of formData.entries()) {
-                settings[key] = value;
+                if (updatedSettings.settings[key]) {
+                    // 根据类型转换值
+                    switch (updatedSettings.settings[key].type) {
+                        case 'boolean':
+                            updatedSettings.settings[key].value = value === 'on';
+                            break;
+                        case 'number':
+                            updatedSettings.settings[key].value = parseFloat(value);
+                            break;
+                        default:
+                            updatedSettings.settings[key].value = value;
+                    }
+                }
             }
             
             // 处理复选框（未选中的不会出现在formData中）
-            const checkboxes = this.settingsForm.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                if (!formData.has(checkbox.name)) {
-                    settings[checkbox.name] = 'false';
-                } else {
-                    settings[checkbox.name] = 'true';
+            this.settingsForm.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                if (updatedSettings.settings[checkbox.name]) {
+                    updatedSettings.settings[checkbox.name].value = checkbox.checked;
                 }
             });
             
-            // 构建settings.sh内容
-            const originalCommand = 'cat /data/adb/modules/AMMF/settings.sh';
-            const originalContent = await execCommand(originalCommand);
-            
-            if (!originalContent) {
-                throw new Error('无法读取原始设置文件');
-            }
-            
-            // 保留原始文件的注释和结构，只更新变量值
-            let newContent = '';
-            const lines = originalContent.split('\n');
-            
-            for (let line of lines) {
-                const trimmedLine = line.trim();
-                
-                // 保留注释和空行
-                if (trimmedLine === '' || trimmedLine.startsWith('#')) {
-                    newContent += line + '\n';
-                    continue;
-                }
-                
-                // 更新变量值
-                const match = trimmedLine.match(/^([A-Za-z0-9_]+)=(.*)$/);
-                if (match) {
-                    const key = match[1];
-                    
-                    // 如果是排除项，保持原样
-                    if (this.excludedSettings.includes(key)) {
-                        newContent += line + '\n';
-                        continue;
-                    }
-                    
-                    // 如果表单中有该变量，则更新值
-                    if (settings.hasOwnProperty(key)) {
-                        let value = settings[key];
-                        
-                        // 处理字符串值的引号
-                        if (typeof value === 'string' && !['true', 'false'].includes(value) && isNaN(value)) {
-                            value = `"${value}"`;
-                        }
-                        
-                        newContent += `${key}=${value}\n`;
-                    } else {
-                        // 否则保持原样
-                        newContent += line + '\n';
-                    }
-                } else {
-                    // 其他行保持原样
-                    newContent += line + '\n';
-                }
-            }
-            
             // 保存设置文件
-            const saveCommand = `echo '${newContent}' > /data/adb/modules/AMMF/settings.sh`;
-            await execCommand(saveCommand);
+            const jsonString = JSON.stringify(updatedSettings, null, 4);
+            await execCommand(`echo '${jsonString.replace(/'/g, "'\\''")}' > /data/adb/modules/AMMF/settings.json`);
             
             // 显示成功消息
-            showSnackbar(window.i18n.translate('WEBUI_SETTINGS_SAVED'));
+            showSnackbar(i18n.translate('WEBUI_SETTINGS_SAVED'), 'success');
+            
+            // 恢复按钮状态
+            this.saveSettingsBtn.disabled = false;
+            this.saveSettingsBtn.textContent = i18n.translate('WEBUI_SAVE');
             
             // 重新加载设置
             await this.loadSettings();
         } catch (error) {
             console.error('保存设置失败:', error);
-            showSnackbar(window.i18n.translate('WEBUI_SETTINGS_SAVE_FAILED'));
+            showSnackbar(i18n.translate('WEBUI_SETTINGS_SAVE_FAILED'), 'error');
+            
+            // 恢复按钮状态
+            this.saveSettingsBtn.disabled = false;
+            this.saveSettingsBtn.textContent = i18n.translate('WEBUI_SAVE');
         }
     }
 }

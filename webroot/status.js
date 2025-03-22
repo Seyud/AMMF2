@@ -1,30 +1,11 @@
-// 状态管理
+// 模块状态管理
 class StatusManager {
     constructor() {
-        this.statusValue = document.getElementById('module-status');
-        this.uptimeValue = document.getElementById('module-uptime');
+        this.moduleStatus = document.getElementById('module-status');
+        this.moduleUptime = document.getElementById('module-uptime');
         this.refreshButton = document.getElementById('refresh-status');
         this.restartButton = document.getElementById('restart-module');
         
-        // 状态颜色映射
-        this.statusColors = {
-            'RUNNING': 'var(--md-sys-color-primary)',
-            'PAUSED': 'var(--md-sys-color-tertiary)',
-            'ERROR': 'var(--md-sys-color-error)',
-            'NORMAL_EXIT': 'var(--md-sys-color-secondary)',
-            'STOPPED': 'var(--md-sys-color-error)'
-        };
-        
-        // 状态翻译键
-        this.statusTranslationKeys = {
-            'RUNNING': 'STATUS_RUNNING',
-            'PAUSED': 'STATUS_PAUSED',
-            'ERROR': 'STATUS_ERROR',
-            'NORMAL_EXIT': 'STATUS_NORMAL_EXIT',
-            'STOPPED': 'STATUS_STOPPED'
-        };
-        
-        // 初始化
         this.init();
     }
     
@@ -49,111 +30,129 @@ class StatusManager {
     async refreshStatus(silent = false) {
         try {
             if (!silent) {
-                this.statusValue.textContent = window.i18n.translate('WEBUI_LOADING');
-                this.uptimeValue.textContent = window.i18n.translate('WEBUI_LOADING');
+                this.moduleStatus.textContent = i18n.translate('WEBUI_LOADING');
+                this.moduleUptime.textContent = i18n.translate('WEBUI_LOADING');
             }
             
-            // 获取模块状态
-            const status = await this.getModuleStatus();
+            // 检查模块状态
+            const isRunning = await this.checkModuleRunning();
             
-            // 获取运行时间
-            const uptime = await this.getModuleUptime();
-            
-            // 更新UI
-            this.updateStatusUI(status, uptime);
+            // 更新状态显示
+            if (isRunning) {
+                this.moduleStatus.textContent = i18n.translate('WEBUI_STATUS_RUNNING');
+                this.moduleStatus.className = 'status-value status-running';
+                
+                // 获取运行时间
+                const uptime = await this.getModuleUptime();
+                this.moduleUptime.textContent = uptime;
+            } else {
+                this.moduleStatus.textContent = i18n.translate('WEBUI_STATUS_STOPPED');
+                this.moduleStatus.className = 'status-value status-stopped';
+                this.moduleUptime.textContent = '-';
+            }
         } catch (error) {
             console.error('刷新状态失败:', error);
+            
             if (!silent) {
-                this.statusValue.textContent = window.i18n.translate('WEBUI_STATUS_ERROR');
-                this.statusValue.style.color = 'var(--md-sys-color-error)';
+                this.moduleStatus.textContent = i18n.translate('WEBUI_STATUS_UNKNOWN');
+                this.moduleStatus.className = 'status-value status-unknown';
+                this.moduleUptime.textContent = '-';
+                
+                showSnackbar(i18n.translate('WEBUI_STATUS_REFRESH_FAILED'), 'error');
             }
         }
     }
     
-    async getModuleStatus() {
+    async checkModuleRunning() {
         try {
-            // 读取状态文件
-            const command = 'cat /data/adb/modules/AMMF/status.txt 2>/dev/null || echo "UNKNOWN"';
-            const status = await execCommand(command);
-            return status.trim();
+            // 检查模块服务是否运行
+            const result = await execCommand('pgrep -f "ammf_service" || echo ""');
+            return result.trim() !== '';
         } catch (error) {
-            console.error('获取模块状态失败:', error);
-            return 'ERROR';
+            console.error('检查模块运行状态失败:', error);
+            return false;
         }
     }
     
     async getModuleUptime() {
         try {
-            // 检查模块是否运行
-            const status = await this.getModuleStatus();
-            if (status !== 'RUNNING') {
-                return 0;
-            }
-            
             // 获取模块启动时间
-            const command = 'stat -c %Y /data/adb/modules/AMMF/logs/service.log 2>/dev/null || echo 0';
-            const result = await execCommand(command);
-            const startTime = parseInt(result.trim());
+            const pid = await execCommand('pgrep -f "ammf_service" || echo ""');
             
-            if (startTime === 0) {
-                return 0;
+            if (!pid || pid.trim() === '') {
+                return '-';
             }
             
-            // 计算运行时间（秒）
-            const currentTime = Math.floor(Date.now() / 1000);
-            return currentTime - startTime;
+            // 获取进程启动时间
+            const startTime = await execCommand(`ps -p ${pid.trim()} -o lstart= 2>/dev/null || echo ""`);
+            
+            if (!startTime || startTime.trim() === '') {
+                return i18n.translate('WEBUI_UNKNOWN');
+            }
+            
+            // 计算运行时间
+            const startDate = new Date(startTime);
+            const now = new Date();
+            const diffMs = now - startDate;
+            
+            // 格式化运行时间
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            let uptimeStr = '';
+            if (days > 0) {
+                uptimeStr += `${days}${i18n.translate('WEBUI_DAYS')} `;
+            }
+            if (hours > 0 || days > 0) {
+                uptimeStr += `${hours}${i18n.translate('WEBUI_HOURS')} `;
+            }
+            uptimeStr += `${minutes}${i18n.translate('WEBUI_MINUTES')}`;
+            
+            return uptimeStr;
         } catch (error) {
             console.error('获取模块运行时间失败:', error);
-            return 0;
+            return i18n.translate('WEBUI_UNKNOWN');
         }
-    }
-    
-    updateStatusUI(status, uptime) {
-        // 更新状态文本
-        const translationKey = this.statusTranslationKeys[status] || 'STATUS_UNKNOWN';
-        this.statusValue.textContent = window.i18n.translate(translationKey) || status;
-        
-        // 更新状态颜色
-        this.statusValue.style.color = this.statusColors[status] || 'var(--md-sys-color-on-surface)';
-        
-        // 更新运行时间
-        if (status === 'RUNNING' && uptime > 0) {
-            this.uptimeValue.textContent = formatDuration(uptime);
-        } else {
-            this.uptimeValue.textContent = window.i18n.translate('STATUS_NOT_RUNNING');
-        }
-        
-        // 更新重启按钮状态
-        this.restartButton.disabled = status !== 'RUNNING' && status !== 'PAUSED';
     }
     
     confirmRestartModule() {
+        // 显示确认对话框
         showConfirmDialog(
-            window.i18n.translate('WEBUI_CONFIRM'),
-            window.i18n.translate('WEBUI_CONFIRM_RESTART'),
-            () => {
-                this.restartModule();
-            }
+            i18n.translate('WEBUI_RESTART_MODULE_TITLE'),
+            i18n.translate('WEBUI_RESTART_MODULE_CONFIRM'),
+            () => this.restartModule()
         );
     }
     
     async restartModule() {
         try {
-            this.statusValue.textContent = window.i18n.translate('WEBUI_RESTARTING');
-            this.statusValue.style.color = 'var(--md-sys-color-tertiary)';
+            // 禁用重启按钮
+            this.restartButton.disabled = true;
+            this.restartButton.innerHTML = '<span class="spinner-small"></span> ' + i18n.translate('WEBUI_RESTARTING');
             
-            // 执行重启命令
-            await execCommand('sh /data/adb/modules/AMMF/service.sh restart');
+            // 重启模块
+            await execCommand('/data/adb/modules/AMMF/service.sh restart');
             
-            // 显示成功消息
-            showSnackbar(window.i18n.translate('WEBUI_MODULE_RESTARTED'));
+            // 等待模块重启
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
-            // 等待一段时间后刷新状态
-            setTimeout(() => this.refreshStatus(), 3000);
+            // 刷新状态
+            await this.refreshStatus();
+            
+            // 恢复按钮状态
+            this.restartButton.disabled = false;
+            this.restartButton.textContent = i18n.translate('WEBUI_RESTART_MODULE');
+            
+            showSnackbar(i18n.translate('WEBUI_MODULE_RESTARTED'), 'success');
         } catch (error) {
             console.error('重启模块失败:', error);
-            showSnackbar(window.i18n.translate('WEBUI_MODULE_RESTART_FAILED'));
-            this.refreshStatus();
+            
+            // 恢复按钮状态
+            this.restartButton.disabled = false;
+            this.restartButton.textContent = i18n.translate('WEBUI_RESTART_MODULE');
+            
+            showSnackbar(i18n.translate('WEBUI_MODULE_RESTART_FAILED'), 'error');
         }
     }
 }

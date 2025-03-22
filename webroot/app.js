@@ -6,6 +6,7 @@ class AppController {
         this.overlay = document.getElementById('overlay');
         this.navItems = document.querySelectorAll('.nav-item');
         this.pages = document.querySelectorAll('.page');
+        this.pageTitle = document.getElementById('page-title');
         this.currentPage = 'home';
         
         this.init();
@@ -31,50 +32,56 @@ class AppController {
             this.toggleNavDrawer();
         });
         
-        // 点击遮罩层关闭导航抽屉
+        // 遮罩层点击事件
         this.overlay.addEventListener('click', () => {
             this.closeNavDrawer();
         });
         
-        // 导航项点击事件
-        this.navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const targetPage = item.getAttribute('data-page');
-                if (targetPage) {
-                    this.navigateTo(targetPage);
-                    this.closeNavDrawer();
-                }
-            });
+        // 窗口大小变化事件
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+                // 在大屏幕上，始终显示导航抽屉
+                this.navDrawer.classList.remove('open');
+                this.overlay.classList.remove('visible');
+                document.body.classList.remove('drawer-open');
+            }
         });
     }
     
     toggleNavDrawer() {
         this.navDrawer.classList.toggle('open');
         this.overlay.classList.toggle('visible');
+        document.body.classList.toggle('drawer-open');
     }
     
     closeNavDrawer() {
         this.navDrawer.classList.remove('open');
         this.overlay.classList.remove('visible');
+        document.body.classList.remove('drawer-open');
     }
     
     initPageNavigation() {
-        // 获取所有页面链接
-        const pageLinks = document.querySelectorAll('[data-page]');
-        
-        // 为每个链接添加点击事件
-        pageLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                const targetPage = link.getAttribute('data-page');
-                if (targetPage) {
-                    e.preventDefault();
-                    this.navigateTo(targetPage);
-                }
+        // 导航项点击事件
+        this.navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const href = item.getAttribute('href');
+                const pageId = href.substring(1); // 移除#前缀
+                
+                this.navigateTo(pageId);
+                this.closeNavDrawer();
             });
+        });
+        
+        // 监听浏览器历史记录变化
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.page) {
+                this.navigateTo(e.state.page, false);
+            }
         });
     }
     
-    navigateTo(pageId) {
+    navigateTo(pageId, pushState = true) {
         // 如果是当前页面，不做任何操作
         if (pageId === this.currentPage) {
             return;
@@ -84,7 +91,9 @@ class AppController {
         this.currentPage = pageId;
         
         // 更新URL
-        history.pushState({ page: pageId }, '', `?page=${pageId}`);
+        if (pushState) {
+            history.pushState({ page: pageId }, '', `#${pageId}`);
+        }
         
         // 隐藏所有页面
         this.pages.forEach(page => {
@@ -92,15 +101,24 @@ class AppController {
         });
         
         // 显示目标页面
-        const targetPage = document.getElementById(`${pageId}-page`);
+        const targetPage = document.getElementById(pageId);
         if (targetPage) {
             targetPage.classList.add('active');
+            
+            // 更新页面标题
+            const pageTitle = targetPage.querySelector('.page-header h2');
+            if (pageTitle) {
+                this.pageTitle.textContent = pageTitle.textContent;
+            } else {
+                this.pageTitle.textContent = 'AMMF';
+            }
         }
         
         // 更新导航项的活动状态
         this.navItems.forEach(item => {
             item.classList.remove('active');
-            if (item.getAttribute('data-page') === pageId) {
+            const href = item.getAttribute('href');
+            if (href && href.substring(1) === pageId) {
                 item.classList.add('active');
             }
         });
