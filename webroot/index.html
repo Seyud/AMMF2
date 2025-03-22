@@ -1,289 +1,673 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMMF</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200" />
-    <link rel="stylesheet" href="styles.css">
+    <title>AMMF Module Manager</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            /* Material You 颜色变量 - 将由JS动态设置 */
+            --md-primary: #006874;
+            --md-onPrimary: #ffffff;
+            --md-primaryContainer: #a2eeff;
+            --md-onPrimaryContainer: #001f24;
+            --md-secondary: #4a6267;
+            --md-onSecondary: #ffffff;
+            --md-secondaryContainer: #cde7ec;
+            --md-onSecondaryContainer: #051f23;
+            --md-tertiary: #525e7d;
+            --md-onTertiary: #ffffff;
+            --md-tertiaryContainer: #dae2ff;
+            --md-onTertiaryContainer: #0e1b37;
+            --md-error: #ba1a1a;
+            --md-onError: #ffffff;
+            --md-errorContainer: #ffdad6;
+            --md-onErrorContainer: #410002;
+            --md-background: #fafdfd;
+            --md-onBackground: #191c1d;
+            --md-surface: #fafdfd;
+            --md-onSurface: #191c1d;
+            --md-surfaceVariant: #dbe4e6;
+            --md-onSurfaceVariant: #3f484a;
+            --md-outline: #6f797a;
+            
+            /* 动画时间 */
+            --animation-duration: 0.3s;
+        }
+        
+        /* 基础样式 */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            background-color: var(--md-background);
+            color: var(--md-onBackground);
+            line-height: 1.6;
+            transition: background-color var(--animation-duration), color var(--animation-duration);
+            overflow-x: hidden;
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background-color: var(--md-surface);
+            color: var(--md-onSurface);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 按钮样式 */
+        .md-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            background-color: var(--md-surfaceVariant);
+            color: var(--md-onSurfaceVariant);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            outline: none;
+            gap: 8px;
+        }
+        
+        .md-button:hover {
+            background-color: rgba(var(--md-surfaceVariant-rgb), 0.8);
+        }
+        
+        .md-button:active {
+            transform: scale(0.98);
+        }
+        
+        .md-button.primary {
+            background-color: var(--md-primary);
+            color: var(--md-onPrimary);
+        }
+        
+        .md-button.primary:hover {
+            background-color: rgba(var(--md-primary-rgb), 0.9);
+        }
+        
+        .md-button.secondary {
+            background-color: var(--md-secondary);
+            color: var(--md-onSecondary);
+        }
+        
+        .md-button.secondary:hover {
+            background-color: rgba(var(--md-secondary-rgb), 0.9);
+        }
+        
+        .md-button.warning {
+            background-color: var(--md-error);
+            color: var(--md-onError);
+        }
+        
+        .md-button.warning:hover {
+            background-color: rgba(var(--md-error-rgb), 0.9);
+        }
+        
+        /* 输入框样式 */
+        input, select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--md-outline);
+            background-color: var(--md-surface);
+            color: var(--md-onSurface);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--md-primary);
+        }
+        
+        /* 开关样式 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--md-surfaceVariant);
+            transition: .4s;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--md-onSurfaceVariant);
+            transition: .4s;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--md-primary);
+        }
+        
+        input:checked + .slider:before {
+            background-color: var(--md-onPrimary);
+            transform: translateX(24px);
+        }
+        
+        .slider.round {
+            border-radius: 24px;
+        }
+        
+        .slider.round:before {
+            border-radius: 50%;
+        }
+        
+        /* 布局 */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 16px;
+            padding-bottom: 72px; /* 为底部导航留出空间 */
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            margin-bottom: 16px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--md-primary);
+        }
+        
+        /* 导航栏 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--md-surface);
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding: 8px 0;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 16px;
+            color: var(--md-onSurfaceVariant);
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: color 0.2s;
+            font-size: 12px;
+        }
+        
+        .nav-item i {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .nav-item.active {
+            color: var(--md-primary);
+        }
+        
+        /* 页面容器 */
+        .page-container {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        /* 状态页面 */
+        .status-card {
+            display: flex;
+            align-items: center;
+            padding: 24px;
+        }
+        
+        .status-icon {
+            margin-right: 24px;
+        }
+        
+        .status-icon i {
+            font-size: 48px;
+        }
+        
+        .status-info h2 {
+            margin-bottom: 8px;
+        }
+        
+        .status-text {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        /* 日志页面 */
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .logs-content {
+            height: 400px;
+            overflow-y: auto;
+            padding: 16px;
+            background-color: var(--md-surfaceVariant);
+            color: var(--md-onSurfaceVariant);
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .logs-actions-bottom {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+        
+        .auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 日志级别颜色 */
+        .log-error {
+            color: var(--md-error);
+        }
+        
+        .log-warn {
+            color: #f57c00; /* 橙色 */
+        }
+        
+        .log-info {
+            color: var(--md-primary);
+        }
+        
+        .log-debug {
+            color: var(--md-tertiary);
+        }
+        
+        /* 设置页面 */
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .settings-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--md-surfaceVariant);
+        }
+        
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-info {
+            flex: 1;
+        }
+        
+        .setting-label {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .setting-description {
+            font-size: 12px;
+            color: var(--md-onSurfaceVariant);
+        }
+        
+        .setting-control-container {
+            min-width: 120px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .number-input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        /* 关于页面 */
+        .module-info-card {
+            margin-bottom: 24px;
+        }
+        
+        .info-item {
+            display: flex;
+            margin: 8px 0;
+        }
+        
+        .info-item .label {
+            font-weight: 500;
+            min-width: 100px;
+        }
+        
+        /* Toast消息 */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--md-surfaceVariant);
+            color: var(--md-onSurfaceVariant);
+            padding: 12px 24px;
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.error {
+            background-color: var(--md-error);
+            color: var(--md-onError);
+        }
+        
+        .toast.success {
+            background-color: #4caf50; /* 绿色 */
+            color: #ffffff;
+        }
+        
+        /* 页面切换动画 */
+        .page-transition-out {
+            opacity: 0;
+            transform: translateX(20px);
+            transition: opacity 0.15s, transform 0.15s;
+        }
+        
+        .page-transition-in {
+            opacity: 1;
+            transform: translateX(0);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        /* 动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 600px) {
+            .status-card {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .status-icon {
+                margin-right: 0;
+                margin-bottom: 16px;
+            }
+            
+            .logs-header, .settings-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .logs-actions, .settings-actions {
+                margin-top: 16px;
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .setting-control-container {
+                margin-top: 8px;
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div id="app">
-        <!-- 顶部应用栏 -->
-        <header class="app-bar">
-            <div class="app-bar-start">
-                <button id="menu-button" class="icon-button">
-                    <span class="material-symbols-outlined">menu</span>
+    <div class="container">
+        <div class="header">
+            <h1 id="module-title">AMMF Module Manager</h1>
+            <div class="theme-toggle">
+                <button id="theme-toggle-btn" class="md-button">
+                    <i class="material-icons">dark_mode</i>
                 </button>
-                <h1 id="page-title">AMMF</h1>
-            </div>
-            <div class="app-bar-end">
-                <button id="language-button" class="icon-button">
-                    <span class="material-symbols-outlined">translate</span>
-                </button>
-                <button id="theme-button" class="icon-button">
-                    <span class="material-symbols-outlined">dark_mode</span>
-                </button>
-            </div>
-        </header>
-
-        <!-- 侧边导航栏 -->
-        <nav id="nav-drawer" class="nav-drawer">
-            <div class="nav-header">
-                <h2>AMMF</h2>
-            </div>
-            <div class="nav-content">
-                <a href="#home" class="nav-item active" data-i18n="WEBUI_SETTINGS_TITLE">
-                    <span class="material-symbols-outlined">home</span>
-                    <span class="nav-label">首页</span>
-                </a>
-                <a href="#settings" class="nav-item" data-i18n="WEBUI_SETTINGS_TITLE">
-                    <span class="material-symbols-outlined">settings</span>
-                    <span class="nav-label">设置</span>
-                </a>
-                <a href="#system-prop" class="nav-item" data-i18n="WEBUI_SYSTEM_PROP_TITLE">
-                    <span class="material-symbols-outlined">build</span>
-                    <span class="nav-label">系统属性</span>
-                </a>
-                <a href="#logs" class="nav-item" data-i18n="WEBUI_LOGS_TITLE">
-                    <span class="material-symbols-outlined">article</span>
-                    <span class="nav-label">日志</span>
-                </a>
-                <a href="#about" class="nav-item" data-i18n="WEBUI_ABOUT_TITLE">
-                    <span class="material-symbols-outlined">info</span>
-                    <span class="nav-label">关于</span>
-                </a>
-            </div>
-        </nav>
-
-        <!-- 语言选择对话框 -->
-        <div id="language-dialog" class="dialog">
-            <div class="dialog-content">
-                <div class="dialog-header">
-                    <h2 data-i18n="WEBUI_LANGUAGE_TITLE">可用语言</h2>
-                    <button class="icon-button dialog-close">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
-                </div>
-                <div class="dialog-body">
-                    <div id="language-list" class="language-list">
-                        <!-- 语言选项将在这里动态生成 -->
-                    </div>
-                </div>
             </div>
         </div>
-
-        <!-- 遮罩层 -->
-        <div id="overlay" class="overlay"></div>
-
-        <!-- 主内容区域 -->
-        <main id="main-content" class="main-content">
-            <!-- 首页 -->
-            <section id="home" class="page active">
-                <div class="status-card">
-                    <div class="status-header">
-                        <h2 data-i18n="WEBUI_STATUS_TITLE">模块状态</h2>
-                        <button id="refresh-status" class="button-text" data-i18n="WEBUI_REFRESH_STATUS">刷新</button>
-                    </div>
-                    <div class="status-content">
-                        <div class="status-item">
-                            <span data-i18n="WEBUI_STATUS_LABEL">当前状态:</span>
-                            <span id="module-status" class="status-value">加载中...</span>
-                        </div>
-                        <div class="status-item">
-                            <span data-i18n="WEBUI_UPTIME_LABEL">运行时间:</span>
-                            <span id="module-uptime" class="status-value">加载中...</span>
-                        </div>
-                    </div>
-                    <div class="status-actions">
-                        <button id="restart-module" class="button-filled" data-i18n="WEBUI_RESTART_MODULE">重启模块</button>
-                    </div>
-                </div>
-
-                <div class="card-grid">
-                    <a href="#settings" class="feature-card">
-                        <span class="material-symbols-outlined">settings</span>
-                        <div class="card-content">
-                            <h3 data-i18n="WEBUI_SETTINGS_TITLE">模块设置</h3>
-                            <p data-i18n="WEBUI_SETTINGS_DESCRIPTION">配置AMMF模块的各项参数</p>
-                        </div>
-                    </a>
-                    <a href="#system-prop" class="feature-card">
-                        <span class="material-symbols-outlined">build</span>
-                        <div class="card-content">
-                            <h3 data-i18n="WEBUI_SYSTEM_PROP_TITLE">系统属性</h3>
-                            <p data-i18n="WEBUI_SYSTEM_PROP_DESCRIPTION">编辑system.prop文件中的系统属性</p>
-                        </div>
-                    </a>
-                    <a href="#logs" class="feature-card">
-                        <span class="material-symbols-outlined">article</span>
-                        <div class="card-content">
-                            <h3 data-i18n="WEBUI_LOGS_TITLE">运行日志</h3>
-                            <p data-i18n="WEBUI_LOGS_DESCRIPTION">查看模块运行日志</p>
-                        </div>
-                    </a>
-                    <a href="#about" class="feature-card">
-                        <span class="material-symbols-outlined">info</span>
-                        <div class="card-content">
-                            <h3 data-i18n="WEBUI_ABOUT_TITLE">关于</h3>
-                            <p data-i18n="WEBUI_ABOUT_DESCRIPTION">查看模块信息和版本</p>
-                        </div>
-                    </a>
-                </div>
-            </section>
-
-            <!-- 设置页面 -->
-            <section id="settings" class="page">
-                <div class="page-header">
-                    <h2 data-i18n="WEBUI_SETTINGS_TITLE">模块设置</h2>
-                </div>
-                <div class="tabs">
-                    <button class="tab active" data-target="config-tab" data-i18n="WEBUI_CONFIG_SH_TITLE">模块配置</button>
-                    <button class="tab" data-target="settings-tab" data-i18n="WEBUI_SETTINGS_SH_TITLE">模块设置</button>
-                </div>
-                <div id="config-tab" class="tab-content active">
-                    <div class="settings-loading" id="config-loading">
-                        <div class="spinner"></div>
-                        <p data-i18n="WEBUI_LOADING">加载设置中...</p>
-                    </div>
-                    <form id="config-form" class="settings-form">
-                        <!-- 配置项将在这里动态生成 -->
-                    </form>
-                    <div class="form-actions">
-                        <button type="button" id="save-config" class="button-filled" data-i18n="WEBUI_SAVE">保存</button>
-                    </div>
-                </div>
-                <div id="settings-tab" class="tab-content">
-                    <div class="settings-loading" id="settings-loading">
-                        <div class="spinner"></div>
-                        <p data-i18n="WEBUI_LOADING">加载设置中...</p>
-                    </div>
-                    <form id="settings-form" class="settings-form">
-                        <!-- 设置项将在这里动态生成 -->
-                    </form>
-                    <div class="form-actions">
-                        <button type="button" id="save-settings" class="button-filled" data-i18n="WEBUI_SAVE">保存</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 系统属性页面 -->
-            <section id="system-prop" class="page">
-                <div class="page-header">
-                    <h2 data-i18n="WEBUI_SYSTEM_PROP_TITLE">系统属性</h2>
-                </div>
-                <div class="settings-loading" id="system-prop-loading">
+        
+        <div id="content-container">
+            <!-- 页面内容将由JS动态加载 -->
+                <div class="loading-indicator">
                     <div class="spinner"></div>
-                    <p data-i18n="WEBUI_LOADING">加载设置中...</p>
+                    <p>加载中...</p>
                 </div>
-                <div id="system-prop-container">
-                    <div id="create-prop-container" class="empty-state hidden">
-                        <span class="material-symbols-outlined">warning</span>
-                        <p data-i18n="WEBUI_SYSTEM_PROP_NOT_FOUND">system.prop文件不存在</p>
-                        <p data-i18n="WEBUI_CREATE_SYSTEM_PROP_HINT">您可以创建一个新的system.prop文件来添加系统属性</p>
-                        <button id="create-system-prop" class="button-filled" data-i18n="WEBUI_CREATE_SYSTEM_PROP">创建system.prop</button>
-                    </div>
-                    <div id="no-properties" class="empty-state hidden">
-                        <span class="material-symbols-outlined">info</span>
-                        <p data-i18n="WEBUI_NO_PROPERTIES">暂无系统属性</p>
-                        <p data-i18n="WEBUI_ADD_PROPERTY_HINT">点击下方的"添加属性"按钮添加新的系统属性</p>
-                    </div>
-                    <form id="system-prop-form">
-                        <!-- 属性项将在这里动态生成 -->
-                        <div class="form-actions">
-                            <button type="button" id="add-property" class="button-outlined">
-                                <span class="material-symbols-outlined">add</span>
-                                <span data-i18n="WEBUI_ADD_PROPERTY">添加属性</span>
-                            </button>
-                            <button type="button" id="save-system-prop" class="button-filled" data-i18n="WEBUI_SAVE">保存</button>
-                        </div>
-                    </form>
                 </div>
-            </section>
-
-            <!-- 日志页面 -->
-            <section id="logs" class="page">
-                <div class="page-header">
-                    <h2 data-i18n="WEBUI_LOGS_TITLE">运行日志</h2>
-                    <div class="page-actions">
-                        <div class="search-box">
-                            <span class="material-symbols-outlined">search</span>
-                            <input type="text" id="log-filter" placeholder="筛选日志" data-i18n-placeholder="WEBUI_FILTER_LOGS">
-                        </div>
-                        <button id="refresh-logs" class="button-text" data-i18n="WEBUI_REFRESH_LOGS">刷新日志</button>
-                        <button id="clear-logs" class="button-text" data-i18n="WEBUI_CLEAR_LOGS">清空日志</button>
-                    </div>
+                
+                <div id="nav-container">
+                    <!-- 导航栏将由JS动态加载 -->
                 </div>
-                <div class="settings-loading" id="logs-loading">
-                    <div class="spinner"></div>
-                    <p data-i18n="WEBUI_LOADING">加载日志中...</p>
                 </div>
-                <div id="logs-content">
-                    <div id="no-logs" class="empty-state hidden">
-                        <span class="material-symbols-outlined">article</span>
-                        <p data-i18n="WEBUI_NO_LOGS">暂无日志</p>
-                    </div>
-                    <pre id="logs-display" class="logs-display hidden"></pre>
-                </div>
-            </section>
-
-            <!-- 关于页面 -->
-            <section id="about" class="page">
-                <div class="page-header">
-                    <h2 data-i18n="WEBUI_ABOUT_TITLE">关于</h2>
-                </div>
-                <div class="about-content">
-                    <div class="about-logo">
-                        <span class="material-symbols-outlined">android</span>
-                    </div>
-                    <h3 id="module-name">AMMF</h3>
-                    <p id="module-version">版本: 1.0.0</p>
-                    <p id="module-author">作者: AMMF Team</p>
-                    <p data-i18n="WEBUI_ABOUT_INFO">AMMF模块 - 一个Magisk/KernelSU模块框架</p>
-                    <div class="about-actions">
-                        <a href="https://github.com/AMMF-Team/AMMF" target="_blank" class="button-outlined">
-                            <span class="material-symbols-outlined">code</span>
-                            <span>GitHub</span>
-                        </a>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- 底部提示 -->
-        <div id="snackbar" class="snackbar">
-            <span id="snackbar-message"></span>
-            <button id="snackbar-action" class="snackbar-action">确定</button>
-        </div>
-
-        <!-- 确认对话框 -->
-        <div id="confirm-dialog" class="dialog">
-            <div class="dialog-content">
-                <div class="dialog-header">
-                    <h2 id="confirm-title">确认</h2>
-                    <button class="icon-button dialog-close">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
-                </div>
-                <div class="dialog-body">
-                    <p id="confirm-message"></p>
-                </div>
-                <div class="dialog-actions">
-                    <button id="confirm-cancel" class="button-text">取消</button>
-                    <button id="confirm-ok" class="button-filled">确定</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="utils.js"></script>
-    <script src="theme.js"></script>
-    <script src="i18n.js"></script>
-    <script src="settings.js"></script>
-    <script src="system-prop.js"></script>
-    <script src="logs.js"></script>
-    <script src="about.js"></script>
-    <script src="status.js"></script>
-    <script src="app.js"></script>
-</body>
-</html>
+                
+                <!-- 语言选择器将在页面右上角显示 -->
+                <div id="language-selector-container" class="language-selector-container"></div>
+                
+                <!-- 脚本引用 -->
+                <script src="utils.js"></script>
+                <script src="language.js"></script>
+                <script src="status.js"></script>
+                <script src="logs.js"></script>
+                <script src="settings.js"></script>
+                <script src="navigation.js"></script>
+                <script src="app.js"></script>
+                
+                <script>
+                    // 初始化主题切换按钮
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+                        const themeIcon = themeToggleBtn.querySelector('i');
+                        
+                        // 获取当前主题
+                        const getCurrentTheme = () => {
+                            return document.documentElement.getAttribute('data-theme') || 'auto';
+                        };
+                        
+                        // 更新主题图标
+                        const updateThemeIcon = (theme) => {
+                            if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                                themeIcon.textContent = 'light_mode';
+                            } else {
+                                themeIcon.textContent = 'dark_mode';
+                            }
+                        };
+                        
+                        // 初始化图标
+                        updateThemeIcon(getCurrentTheme());
+                        
+                        // 切换主题
+                        themeToggleBtn.addEventListener('click', () => {
+                            const currentTheme = getCurrentTheme();
+                            let newTheme;
+                            
+                            if (currentTheme === 'auto') {
+                                newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
+                            } else if (currentTheme === 'dark') {
+                                newTheme = 'light';
+                            } else {
+                                newTheme = 'dark';
+                            }
+                            
+                            document.documentElement.setAttribute('data-theme', newTheme);
+                            utils.setTheme(newTheme);
+                            updateThemeIcon(newTheme);
+                            
+                            // 保存主题设置到本地存储
+                            localStorage.setItem('theme', newTheme);
+                        });
+                        
+                        // 从本地存储加载主题设置
+                        const savedTheme = localStorage.getItem('theme');
+                        if (savedTheme) {
+                            document.documentElement.setAttribute('data-theme', savedTheme);
+                            utils.setTheme(savedTheme);
+                            updateThemeIcon(savedTheme);
+                        }
+                        
+                        // 监听系统主题变化
+                        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                            if (getCurrentTheme() === 'auto') {
+                                updateThemeIcon('auto');
+                            }
+                        });
+                        
+                        // 添加语言选择器到容器
+                        document.getElementById('language-selector-container').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                        });
+                        
+                        // 在语言初始化完成后添加语言选择器
+                        document.addEventListener('languageChanged', () => {
+                            const container = document.getElementById('language-selector-container');
+                            if (container) {
+                                container.innerHTML = languageManager.getLanguageSelectorHTML();
+                            }
+                            
+                            // 更新模块标题
+                            const moduleTitle = document.getElementById('module-title');
+                            if (moduleTitle) {
+                                moduleTitle.textContent = languageManager.translate('MODULE_MANAGER_TITLE', 'AMMF Module Manager');
+                            }
+                        });
+                    });
+                    
+                    // 添加加载动画样式
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        .loading-indicator {
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            height: 200px;
+                        }
+                        
+                        .spinner {
+                            width: 40px;
+                            height: 40px;
+                            border: 4px solid var(--md-surfaceVariant);
+                            border-top: 4px solid var(--md-primary);
+                            border-radius: 50%;
+                            animation: spin 1s linear infinite;
+                            margin-bottom: 16px;
+                        }
+                        
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                        
+                        .language-selector-container {
+                            position: fixed;
+                            top: 16px;
+                            right: 16px;
+                            z-index: 1001;
+                            background-color: var(--md-surface);
+                            border-radius: 8px;
+                            padding: 8px;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                        }
+                        
+                        .language-selector {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        }
+                        
+                        /* 修复RGB变量 */
+                        :root {
+                            --md-primary-rgb: 0, 104, 116;
+                            --md-secondary-rgb: 74, 98, 103;
+                            --md-tertiary-rgb: 82, 94, 125;
+                            --md-error-rgb: 186, 26, 26;
+                            --md-surfaceVariant-rgb: 219, 228, 230;
+                        }
+                        
+                        [data-theme="dark"] {
+                            --md-primary-rgb: 79, 216, 235;
+                            --md-secondary-rgb: 177, 203, 208;
+                            --md-tertiary-rgb: 187, 198, 234;
+                            --md-error-rgb: 255, 180, 171;
+                            --md-surfaceVariant-rgb: 63, 72, 74;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                </script>
+            </body>
+            </html>
