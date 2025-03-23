@@ -31,11 +31,21 @@ const Logger = {
             const dirExistsResult = await Core.execCommand(`[ -d "${logsDir}" ] && echo "true" || echo "false"`);
             if (dirExistsResult.trim() !== "true") {
                 console.warn('日志目录不存在，尝试创建');
+                // 使用-p参数确保创建完整路径
                 await Core.execCommand(`mkdir -p "${logsDir}"`);
+                // 设置目录权限
+                await Core.execCommand(`chmod 755 "${logsDir}"`);
             }
             
             // 设置完整的日志文件路径
             this.logFile = `${Core.MODULE_PATH}logs/webui.log`;
+            
+            // 检查日志文件是否存在，如果不存在则创建
+            const fileExistsResult = await Core.execCommand(`[ -f "${this.logFile}" ] && echo "true" || echo "false"`);
+            if (fileExistsResult.trim() !== "true") {
+                await Core.execCommand(`touch "${this.logFile}"`);
+                await Core.execCommand(`chmod 644 "${this.logFile}"`);
+            }
             
             // 写入启动日志
             this.info('WebUI 日志系统初始化完成');
@@ -62,6 +72,53 @@ const Logger = {
         } catch (error) {
             console.error(`检查目录存在性失败: ${path}`, error);
             return false;
+        }
+    },
+    
+   // 检查日志系统状态
+    async checkStatus() {
+        try {
+            const logsDir = `${Core.MODULE_PATH}logs/`;
+            
+            // 检查目录是否存在
+            const dirExists = await this.checkDirectoryExists(logsDir);
+            if (!dirExists) {
+                this._originalConsole.warn('日志目录不存在');
+                return {
+                    status: 'error',
+                    message: '日志目录不存在',
+                    directory: logsDir
+                };
+            }
+            
+            // 检查文件是否存在
+            const fileExistsResult = await Core.execCommand(`[ -f "${this.logFile}" ] && echo "true" || echo "false"`);
+            if (fileExistsResult.trim() !== "true") {
+                this._originalConsole.warn('日志文件不存在');
+                return {
+                    status: 'error',
+                    message: '日志文件不存在',
+                    file: this.logFile
+                };
+            }
+            
+            // 检查文件权限
+            const permResult = await Core.execCommand(`ls -l "${this.logFile}" | awk '{print $1}'`);
+            
+            return {
+                status: 'ok',
+                directory: logsDir,
+                file: this.logFile,
+                permissions: permResult.trim(),
+                level: Object.keys(this.LEVELS).find(key => this.LEVELS[key] === this.currentLevel)
+            };
+        } catch (error) {
+            this._originalConsole.error('检查日志系统状态失败:', error);
+            return {
+                status: 'error',
+                message: '检查日志系统状态失败',
+                error: String(error)
+            };
         }
     },
     
@@ -118,7 +175,11 @@ const Logger = {
             await Core.execCommand(`mkdir -p "${logsDir}"`);
             
             // 使用追加模式写入文件
+            // 修改命令以确保在安卓环境下正确执行
             await Core.execCommand(`echo '${content.replace(/'/g, "'\\''")}' >> "${this.logFile}"`);
+            
+            // 添加同步命令，确保内容立即写入磁盘
+            await Core.execCommand(`sync`);
             
             // 确保文件权限正确
             await Core.execCommand(`chmod 644 "${this.logFile}"`);
@@ -257,15 +318,6 @@ const Logger = {
         }
     },
     
-    // 获取日志内容
-    async getLogContent() {
-        try {
-            return await Core.readFile(this.logFile);
-        } catch (error) {
-            this._originalConsole.error('读取日志内容失败:', error);
-            return '';
-        }
-    }
 };
 
 // 导出Logger模块
