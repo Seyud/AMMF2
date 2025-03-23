@@ -14,6 +14,8 @@
   left: 0;
   top: 0;
   pointer-events: none; /* 防止在过渡期间与元素交互 */
+  max-width: 100%; /* 防止水平溢出 */
+  overflow-x: hidden; /* 防止水平滚动 */
 }
 
 .page-enter.page-active {
@@ -32,6 +34,8 @@
   width: 100%;
   left: 0;
   top: 0;
+  max-width: 100%; /* 防止水平溢出 */
+  overflow-x: hidden; /* 防止水平滚动 */
 }
 
 .page-exit.page-active {
@@ -44,12 +48,15 @@
 #main-content {
   min-height: calc(100vh - var(--header-height) - var(--nav-height));
   position: relative; /* 为绝对定位的子元素提供参考 */
+  overflow-x: hidden; /* 防止水平滚动 */
 }
 
 /* 页面容器样式，确保一致的布局 */
 .page-container {
   width: 100%;
   min-height: calc(100vh - var(--header-height) - var(--nav-height));
+  max-width: 100%; /* 防止水平溢出 */
+  overflow-x: hidden; /* 防止水平滚动 */
 }
 
 /* 其余动画代码保持不变 */

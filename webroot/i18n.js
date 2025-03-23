@@ -529,7 +529,9 @@ const I18n = {
                 if (lang !== this.currentLang) {
                     await this.setLanguage(lang);
                 }
-                document.getElementById('language-selector')?.classList.remove('show');
+                languageSelector.classList.remove('show');
+                // 添加这一行以恢复滚动
+                document.body.style.overflow = '';
             });
             
             languageOptions.appendChild(option);

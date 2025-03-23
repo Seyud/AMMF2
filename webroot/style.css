@@ -1054,3 +1054,41 @@ input:focus + .slider {
   background-color: var(--md-outline);
   border-radius: 4px;
 }
+/* 隐藏滚动条但保留滚动功能 */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* 禁用WebView滑动过界反弹效果 */
+html {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none; /* 禁用滑动过界反弹 */
+}
+
+/* 防止元素向右抖动 */
+#main-content {
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* 确保页面容器不会导致水平滚动 */
+.page-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
