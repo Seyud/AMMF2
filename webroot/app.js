@@ -234,6 +234,12 @@ class App {
                 
                 // 缓存页面内容
                 this.pageCache[pageName] = pageContent;
+                
+                // 记录刷新时间
+                if (!this.pageLastRefresh) {
+                    this.pageLastRefresh = {};
+                }
+                this.pageLastRefresh[pageName] = Date.now();
             }
             
             // 移除加载指示器
@@ -303,7 +309,10 @@ class App {
         
         // 状态页面每60秒刷新一次
         if (pageName === 'status') {
-            const lastRefresh = this.pageLastRefresh?.[pageName] || 0;
+            if (!this.pageLastRefresh) {
+                this.pageLastRefresh = {};
+            }
+            const lastRefresh = this.pageLastRefresh[pageName] || 0;
             return (Date.now() - lastRefresh) > 60000;
         }
         
@@ -315,6 +324,9 @@ class App {
         // 清除当前页面的缓存
         if (this.currentPage) {
             delete this.pageCache[this.currentPage];
+            if (this.pageLastRefresh) {
+                this.pageLastRefresh[this.currentPage] = 0;
+            }
             this.navigateTo(this.currentPage);
         }
     }

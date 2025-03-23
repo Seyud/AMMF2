@@ -50,21 +50,6 @@ const StatusPage = {
                             <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
                             <span>${this.getStatusText()}</span>
                         </div>
-                        
-                        <div class="status-actions">
-                            <button id="start-service" class="md-button primary" ${this.moduleStatus === 'RUNNING' ? 'disabled' : ''}>
-                                <span class="material-symbols-rounded">play_arrow</span>
-                                <span data-i18n="START_SERVICE">启动服务</span>
-                            </button>
-                            <button id="stop-service" class="md-button warning" ${this.moduleStatus !== 'RUNNING' ? 'disabled' : ''}>
-                                <span class="material-symbols-rounded">stop</span>
-                                <span data-i18n="STOP_SERVICE">停止服务</span>
-                            </button>
-                            <button id="restart-service" class="md-button">
-                                <span class="material-symbols-rounded">refresh</span>
-                                <span data-i18n="RESTART_SERVICE">重启服务</span>
-                            </button>
-                        </div>
                     </div>
                     
                     <div class="module-info card">
@@ -83,19 +68,6 @@ const StatusPage = {
         // 绑定刷新按钮
         document.getElementById('refresh-status')?.addEventListener('click', () => {
             this.refreshStatus(true);
-        });
-        
-        // 绑定服务控制按钮
-        document.getElementById('start-service')?.addEventListener('click', () => {
-            this.startService();
-        });
-        
-        document.getElementById('stop-service')?.addEventListener('click', () => {
-            this.stopService();
-        });
-        
-        document.getElementById('restart-service')?.addEventListener('click', () => {
-            this.restartService();
         });
     },
     
