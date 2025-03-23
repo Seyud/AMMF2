@@ -29,6 +29,8 @@ const SettingsPage = {
             return true;
         } catch (error) {
             console.error('初始化设置页面失败:', error);
+            // 使用默认配置
+            this.configData = Core.getDefaultConfig();
             return false;
         }
     },
@@ -127,14 +129,20 @@ const SettingsPage = {
         }
         
         // 添加刷新按钮事件
-        document.getElementById('refresh-settings')?.addEventListener('click', () => {
-            this.loadConfig(true);
-        });
+        const refreshButton = document.getElementById('refresh-settings');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', () => {
+                this.loadConfig(true);
+            });
+        }
         
         // 添加保存按钮事件
-        document.getElementById('save-settings')?.addEventListener('click', () => {
-            this.saveConfig();
-        });
+        const saveButton = document.getElementById('save-settings');
+        if (saveButton) {
+            saveButton.addEventListener('click', () => {
+                this.saveConfig();
+            });
+        }
         
         // 添加设置项事件
         this.addSettingEventListeners();
@@ -175,6 +183,15 @@ const SettingsPage = {
                 if (showToast) {
                     Core.showToast(I18n.translate('CONFIG_FILE_NOT_FOUND', '找不到配置文件'), 'error');
                 }
+                // 使用默认配置
+                this.configData = Core.getDefaultConfig();
+                this.originalConfigContent = '';
+                
+                // 读取settings.json
+                await this.loadSettingsJson();
+                
+                // 更新UI
+                this.updateSettingsUI();
                 return;
             }
             
@@ -185,14 +202,43 @@ const SettingsPage = {
                 if (showToast) {
                     Core.showToast(I18n.translate('CONFIG_READ_ERROR', '读取配置文件失败'), 'error');
                 }
-                return;
+                // 使用默认配置
+                this.configData = Core.getDefaultConfig();
+                this.originalConfigContent = '';
+            } else {
+                this.originalConfigContent = configContent;
+                this.configData = Core.parseConfigFile(configContent);
+                console.log('成功解析配置数据:', this.configData);
             }
             
-            this.originalConfigContent = configContent;
-            this.configData = Core.parseConfigFile(configContent);
-            console.log('成功解析配置数据:', this.configData);
-            
             // 读取settings.json
+            await this.loadSettingsJson();
+            
+            // 更新UI
+            this.updateSettingsUI();
+            
+            if (showToast) {
+                Core.showToast(I18n.translate('SETTINGS_REFRESHED', '设置已刷新'));
+            }
+        } catch (error) {
+            console.error('加载配置出错:', error);
+            
+            // 使用默认配置
+            this.configData = Core.getDefaultConfig();
+            this.originalConfigContent = '';
+            
+            // 更新UI
+            this.updateSettingsUI();
+            
+            if (showToast) {
+                Core.showToast(I18n.translate('SETTINGS_REFRESH_ERROR', '刷新设置时出错'), 'error');
+            }
+        }
+    },
+    
+    // 新增方法：加载settings.json
+    async loadSettingsJson() {
+        try {
             const settingsJsonContent = await Core.readFile(this.settingsJsonPath);
             if (settingsJsonContent) {
                 try {
@@ -206,23 +252,18 @@ const SettingsPage = {
                 console.log('settings.json不存在或为空，使用默认值');
                 this.settingsJson = { excluded: [], descriptions: {}, options: {} };
             }
-            
-            // 更新UI
-            const settingsContent = document.querySelector('.settings-content');
-            if (settingsContent) {
-                settingsContent.innerHTML = this.generateSettingsHTML();
-                this.addSettingEventListeners();
-            }
-            
-            if (showToast) {
-                Core.showToast(I18n.translate('SETTINGS_REFRESHED', '设置已刷新'));
-            }
         } catch (error) {
-            console.error('加载配置出错:', error);
-            
-            if (showToast) {
-                Core.showToast(I18n.translate('SETTINGS_REFRESH_ERROR', '刷新设置时出错'), 'error');
-            }
+            console.error('加载settings.json出错:', error);
+            this.settingsJson = { excluded: [], descriptions: {}, options: {} };
+        }
+    },
+    
+    // 新增方法：更新设置UI
+    updateSettingsUI() {
+        const settingsContent = document.querySelector('.settings-content');
+        if (settingsContent) {
+            settingsContent.innerHTML = this.generateSettingsHTML();
+            this.addSettingEventListeners();
         }
     },
     
@@ -301,7 +342,6 @@ const SettingsPage = {
     
     // 收集表单数据
     collectFormData() {
-        // 保留原有代码
         const settingInputs = document.querySelectorAll('.setting-input');
         
         settingInputs.forEach(input => {
@@ -311,7 +351,31 @@ const SettingsPage = {
             let value;
             
             if (input.type === 'checkbox') {
-                value = input.checked ? '1' : '0';
+                // 获取原始值格式
+                const originalValue = input.getAttribute('data-original-value');
+                
+                if (originalValue) {
+                    // 保持原始格式
+                    if (originalValue.includes('"')) {
+                        // 带双引号的格式
+                        value = input.checked ? '"true"' : '"false"';
+                    } else if (originalValue.includes("'")) {
+                        // 带单引号的格式
+                        value = input.checked ? "'true'" : "'false'";
+                    } else if (originalValue === '0' || originalValue === '1') {
+                        // 数字格式
+                        value = input.checked ? '1' : '0';
+                    } else if (originalValue.toLowerCase() === 'yes' || originalValue.toLowerCase() === 'no') {
+                        // yes/no 格式
+                        value = input.checked ? 'yes' : 'no';
+                    } else {
+                        // 默认格式
+                        value = input.checked ? 'true' : 'false';
+                    }
+                } else {
+                    // 没有原始值信息，使用默认格式
+                    value = input.checked ? 'true' : 'false';
+                }
             } else if (input.type === 'select-one') {
                 value = input.value;
             } else {
@@ -393,26 +457,79 @@ const SettingsPage = {
     // 创建设置项
     createSettingItem(key, value) {
         // 获取描述
-        const description = this.settingsJson?.descriptions?.[key] || this.getDefaultDescription(key);
+        let description = this.getDefaultDescription(key);
+        
+        // 从settings.json获取描述，优先使用当前语言的描述
+        if (this.settingsJson?.descriptions?.[key]) {
+            const currentLang = I18n.getCurrentLanguage();
+            description = this.settingsJson.descriptions[key][currentLang] || 
+                          this.settingsJson.descriptions[key].en || 
+                          this.settingsJson.descriptions[key].zh || 
+                          description;
+        }
         
         // 获取选项
-        const options = this.settingsJson?.options?.[key] || [];
+        let options = [];
+        
+        // 从settings.json获取选项
+        if (this.settingsJson?.options?.[key]?.options) {
+            options = this.settingsJson.options[key].options;
+        }
+        
+        // 清理值中的引号，用于显示和类型判断
+        const cleanValue = value.replace(/^["'](.*)["']$/, '$1');
         
         // 确定输入类型
         let inputHtml;
         
-        if (value === '0' || value === '1') {
+        // 处理布尔值 - 检查更多布尔值的形式
+        const normalizedValue = value.replace(/"/g, '').replace(/'/g, '').toLowerCase();
+        const isBooleanValue = normalizedValue === '0' || normalizedValue === '1' || 
+                              normalizedValue === 'true' || normalizedValue === 'false' ||
+                              normalizedValue === 'yes' || normalizedValue === 'no';
+        
+        // 检查是否为数字
+        const isNumericValue = !isNaN(normalizedValue) && 
+                              !isBooleanValue && 
+                              this.settingsJson?.options?.[key]?.type === 'number';
+        
+        if (isBooleanValue) {
             // 布尔值 - 使用开关
+            const isChecked = normalizedValue === '1' || normalizedValue === 'true' || normalizedValue === 'yes';
             inputHtml = `
                 <label class="switch">
-                    <input type="checkbox" class="setting-input" data-key="${key}" ${value === '1' ? 'checked' : ''}>
+                    <input type="checkbox" class="setting-input" data-key="${key}" data-original-value="${value}" ${isChecked ? 'checked' : ''}>
                     <span class="slider round"></span>
                 </label>
             `;
+        } else if (isNumericValue) {
+            // 数字值 - 使用滑动条或数字输入框
+            const numValue = parseFloat(normalizedValue);
+            const min = this.settingsJson?.options?.[key]?.min || 0;
+            const max = this.settingsJson?.options?.[key]?.max || 100;
+            const step = this.settingsJson?.options?.[key]?.step || 1;
+            
+            inputHtml = `
+                <div class="number-input-container">
+                    <input type="range" class="setting-input setting-slider" data-key="${key}" 
+                           value="${numValue}" min="${min}" max="${max}" step="${step}">
+                    <input type="number" class="setting-input setting-number" data-key="${key}" 
+                           value="${numValue}" min="${min}" max="${max}" step="${step}">
+                </div>
+            `;
         } else if (options.length > 0) {
             // 有预定义选项 - 使用下拉菜单
+            const currentLang = I18n.getCurrentLanguage();
             const optionsHtml = options.map(option => {
-                return `<option value="${option}" ${value === option ? 'selected' : ''}>${option}</option>`;
+                // 获取选项标签，优先使用当前语言
+                let label = option.value;
+                if (option.label) {
+                    label = option.label[currentLang] || option.label.en || option.label.zh || option.value;
+                }
+                // 比较时去除引号
+                const optionValue = option.value.replace(/^["'](.*)["']$/, '$1');
+                const isSelected = cleanValue === optionValue;
+                return `<option value="${option.value}" ${isSelected ? 'selected' : ''}>${label}</option>`;
             }).join('');
             
             inputHtml = `
@@ -421,9 +538,9 @@ const SettingsPage = {
                 </select>
             `;
         } else {
-            // 默认 - 使用文本输入
+            // 默认 - 使用文本输入，显示时去除引号
             inputHtml = `
-                <input type="text" class="setting-input" data-key="${key}" value="${value}">
+                <input type="text" class="setting-input" data-key="${key}" value="${cleanValue}" data-original-value="${value}">
             `;
         }
         
@@ -463,6 +580,28 @@ const SettingsPage = {
                     timeout = setTimeout(() => {
                         // 可以在这里添加验证逻辑
                     }, 300);
+                });
+            }
+            
+            // 对于滑动条，同步更新数字输入框
+            if (input.type === 'range') {
+                input.addEventListener('input', (e) => {
+                    const key = e.target.getAttribute('data-key');
+                    const numberInput = document.querySelector(`.setting-number[data-key="${key}"]`);
+                    if (numberInput) {
+                        numberInput.value = e.target.value;
+                    }
+                });
+            }
+            
+            // 对于数字输入框，同步更新滑动条
+            if (input.type === 'number') {
+                input.addEventListener('input', (e) => {
+                    const key = e.target.getAttribute('data-key');
+                    const rangeInput = document.querySelector(`.setting-slider[data-key="${key}"]`);
+                    if (rangeInput) {
+                        rangeInput.value = e.target.value;
+                    }
                 });
             }
         });

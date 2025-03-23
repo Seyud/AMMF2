@@ -114,13 +114,37 @@ class App {
                 return false;
             }
     
-            // 复制配置文件到webroot
-            await Core.execCommand(`cp "${sourceConfigPath}" "${webConfigPath}"`);
-            console.log(`配置文件已复制到: ${webConfigPath}`);
+            // 检查目标文件是否存在及其修改时间
+            const targetExists = await Core.fileExists(webConfigPath);
+            let needsCopy = true;
+            
+            if (targetExists) {
+                // 比较源文件和目标文件的修改时间
+                try {
+                    const sourceTime = await Core.execCommand(`stat -c %Y "${sourceConfigPath}"`);
+                    const targetTime = await Core.execCommand(`stat -c %Y "${webConfigPath}"`);
+                    
+                    // 只有当源文件比目标文件新时才复制
+                    needsCopy = parseInt(sourceTime.trim()) > parseInt(targetTime.trim());
+                    
+                    if (!needsCopy) {
+                        console.log(`配置文件已是最新: ${webConfigPath}`);
+                    }
+                } catch (error) {
+                    console.warn('比较文件时间失败，将强制复制:', error);
+                    needsCopy = true;
+                }
+            }
     
-            // 设置权限
-            await Core.execCommand(`chmod 644 "${webConfigPath}"`);
-            console.log('已设置配置文件权限');
+            // 复制配置文件到webroot
+            if (needsCopy) {
+                await Core.execCommand(`cp "${sourceConfigPath}" "${webConfigPath}"`);
+                console.log(`配置文件已复制到: ${webConfigPath}`);
+    
+                // 设置权限
+                await Core.execCommand(`chmod 644 "${webConfigPath}"`);
+                console.log('已设置配置文件权限');
+            }
             
             // 复制其他配置文件
             try {
@@ -129,9 +153,28 @@ class App {
                     const files = result.split('\n').filter(file => file.trim() !== '' && file !== 'config.sh');
                     
                     for (const file of files) {
-                        await Core.execCommand(`cp "${Core.MODULE_PATH}module_settings/${file}" "${file}"`);
-                        await Core.execCommand(`chmod 644 "${file}"`);
-                        console.log(`已复制并设置权限: ${file}`);
+                        const targetFile = file;
+                        const sourceFile = `${Core.MODULE_PATH}module_settings/${file}`;
+                        
+                        // 检查目标文件是否需要更新
+                        let fileNeedsCopy = true;
+                        if (await Core.fileExists(targetFile)) {
+                            try {
+                                const sourceTime = await Core.execCommand(`stat -c %Y "${sourceFile}"`);
+                                const targetTime = await Core.execCommand(`stat -c %Y "${targetFile}"`);
+                                fileNeedsCopy = parseInt(sourceTime.trim()) > parseInt(targetTime.trim());
+                            } catch (error) {
+                                console.warn(`比较文件时间失败 ${file}，将强制复制:`, error);
+                            }
+                        }
+                        
+                        if (fileNeedsCopy) {
+                            await Core.execCommand(`cp "${sourceFile}" "${targetFile}"`);
+                            await Core.execCommand(`chmod 644 "${targetFile}"`);
+                            console.log(`已复制并设置权限: ${file}`);
+                        } else {
+                            console.log(`文件已是最新: ${file}`);
+                        }
                     }
                 }
             } catch (error) {
@@ -147,15 +190,24 @@ class App {
 
     // 初始化导航
     initNavigation() {
+        // 移除可能存在的旧事件监听器
         const navItems = document.querySelectorAll('.nav-item');
+        
         navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const page = item.getAttribute('data-page');
-                if (page) {
-                    this.navigateTo(page);
+            // 克隆并替换元素以移除所有事件监听器
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            // 添加新的事件监听器
+            newItem.addEventListener('click', () => {
+                const pageName = newItem.getAttribute('data-page');
+                if (pageName) {
+                    this.navigateTo(pageName);
                 }
             });
         });
+        
+        console.log('导航初始化完成');
     }
 
     // 导航到指定页面
@@ -185,6 +237,7 @@ class App {
 
     // 加载页面内容
     async loadPage(pageName) {
+        console.log(`loadPage: 开始加载 ${pageName} 页面`);
         const mainContent = document.getElementById('main-content');
         
         // 获取当前页面元素
@@ -214,6 +267,12 @@ class App {
             // 获取页面模块
             const pageModule = this.pageModules[pageName];
             
+            if (!pageModule) {
+                throw new Error(`页面模块未找到: ${pageName}`);
+            }
+            
+            console.log(`loadPage: 获取到页面模块 ${pageName}`);
+            
             // 检查缓存
             let pageContent;
             let needsInit = true;
@@ -226,10 +285,17 @@ class App {
             } else {
                 // 初始化页面模块
                 if (typeof pageModule.init === 'function') {
-                    await pageModule.init();
+                    console.log(`初始化页面模块: ${pageName}`);
+                    try {
+                        await pageModule.init();
+                    } catch (initError) {
+                        console.error(`初始化页面模块失败: ${pageName}`, initError);
+                        throw new Error(`初始化页面失败: ${initError.message}`);
+                    }
                 }
                 
                 // 渲染页面内容
+                console.log(`渲染页面内容: ${pageName}`);
                 pageContent = pageModule.render();
                 
                 // 缓存页面内容
@@ -246,6 +312,7 @@ class App {
             mainContent.removeChild(loadingContainer);
             
             // 添加页面内容
+            console.log(`添加页面内容到DOM: ${pageName}`);
             mainContent.innerHTML = pageContent;
             
             // 获取新添加的页面容器
@@ -266,7 +333,14 @@ class App {
             
             // 执行页面的afterRender回调
             if (typeof pageModule.afterRender === 'function') {
+                console.log(`执行页面的afterRender回调: ${pageName}`);
                 pageModule.afterRender();
+            }
+            
+            // 如果页面有addEventListeners方法，调用它
+            if (typeof pageModule.addEventListeners === 'function') {
+                console.log(`执行页面的addEventListeners方法: ${pageName}`);
+                pageModule.addEventListeners();
             }
             
             // 更新活动导航项
@@ -307,13 +381,22 @@ class App {
             return true;
         }
         
-        // 状态页面每60秒刷新一次
+        // 状态页面每30秒刷新一次（改为更频繁的刷新）
         if (pageName === 'status') {
             if (!this.pageLastRefresh) {
                 this.pageLastRefresh = {};
             }
             const lastRefresh = this.pageLastRefresh[pageName] || 0;
-            return (Date.now() - lastRefresh) > 60000;
+            return (Date.now() - lastRefresh) > 30000;
+        }
+        
+        // 设置页面每5分钟刷新一次
+        if (pageName === 'settings') {
+            if (!this.pageLastRefresh) {
+                this.pageLastRefresh = {};
+            }
+            const lastRefresh = this.pageLastRefresh[pageName] || 0;
+            return (Date.now() - lastRefresh) > 300000;
         }
         
         return false;
@@ -602,4 +685,39 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('load', () => {
         // 预加载由App类中的preloadPages方法处理
     });
+});
+
+// 在文件末尾添加全局错误处理
+
+// 添加全局错误处理
+window.addEventListener('error', (event) => {
+    console.error('全局错误:', event.error);
+    Logger.error('未捕获的错误', {
+        message: event.error?.message || '未知错误',
+        stack: event.error?.stack,
+        source: event.filename,
+        line: event.lineno,
+        column: event.colno
+    });
+    
+    // 显示友好的错误消息
+    Core.showToast(I18n.translate('UNEXPECTED_ERROR', '发生意外错误，请刷新页面'), 'error');
+    
+    // 防止错误传播
+    event.preventDefault();
+});
+
+// 处理未捕获的Promise异常
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('未处理的Promise拒绝:', event.reason);
+    Logger.error('未处理的Promise拒绝', {
+        message: event.reason?.message || '未知原因',
+        stack: event.reason?.stack
+    });
+    
+    // 显示友好的错误消息
+    Core.showToast(I18n.translate('ASYNC_ERROR', '异步操作失败，请重试'), 'error');
+    
+    // 防止错误传播
+    event.preventDefault();
 });

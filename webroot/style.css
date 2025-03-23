@@ -849,3 +849,52 @@ input:focus + .slider {
     border: 1px solid #ddd;
   }
 }
+
+/* 设备信息卡片样式 */
+.device-info {
+  margin-top: var(--spacing-md);
+}
+
+.device-info h3 {
+  margin-bottom: var(--spacing-md);
+  font-size: 1.125rem;
+  color: var(--md-onSurfaceVariant);
+}
+
+/* 数字输入容器 */
+.number-input-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.setting-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--md-outlineVariant);
+  border-radius: 3px;
+  outline: none;
+}
+
+.setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+}
+
+.setting-number {
+  width: 60px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--md-outline);
+  background-color: var(--md-surface);
+  color: var(--md-onSurface);
+  font-size: 0.875rem;
+  text-align: center;
+}

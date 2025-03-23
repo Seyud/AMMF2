@@ -12,14 +12,15 @@ const StatusPage = {
     
     // 自动刷新定时器
     refreshTimer: null,
-    
+
+    deviceInfo: {},
     // 初始化
     async init() {
         try {
             // 加载模块状态和信息
             await this.loadModuleStatus();
             await this.loadModuleInfo();
-            
+            await this.loadDeviceInfo();
             // 启动自动刷新
             this.startAutoRefresh();
             
@@ -30,7 +31,6 @@ const StatusPage = {
         }
     },
     
-    // 渲染页面
     render() {
         return `
             <div class="page-container status-page">
@@ -39,28 +39,26 @@ const StatusPage = {
                     <div class="status-actions">
                         <button id="refresh-status" class="md-button">
                             <span class="material-symbols-rounded">refresh</span>
-                            <span data-i18n="REFRESH">刷新</span>
-                        </button>
-                        <button id="run-action" class="md-button primary">
-                            <span class="material-symbols-rounded">play_arrow</span>
-                            <span data-i18n="RUN_ACTION">运行Action</span>
+                            <span data-i18n="REFRESH_STATUS">刷新状态</span>
                         </button>
                     </div>
                 </div>
                 
-                <div class="status-content">
-                    <div class="status-card card">
-                        <div class="status-indicator ${this.getStatusClass()}">
-                            <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
-                            <span>${this.getStatusText()}</span>
-                        </div>
+                <div class="status-card card">
+                    <div class="status-indicator ${this.getStatusClass()}">
+                        <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
+                        <span>${this.getStatusText()}</span>
                     </div>
                     
-                    <div class="module-info card">
-                        <h3>模块信息</h3>
-                        <div class="info-grid">
-                            ${this.renderModuleInfo()}
-                        </div>
+                    <div class="status-actions">
+                        ${this.renderStatusActions()}
+                    </div>
+                </div>
+                
+                <div class="device-info card">
+                    <h3 data-i18n="DEVICE_INFO">设备信息</h3>
+                    <div class="info-grid">
+                        ${this.renderDeviceInfo()}
                     </div>
                 </div>
             </div>
@@ -110,18 +108,50 @@ const StatusPage = {
             this.moduleStatus = 'ERROR';
         }
     },
-    
-    // 加载模块信息
-    async loadModuleInfo() {
+    async loadDeviceInfo() {
         try {
-            const config = await Core.getConfig();
-            this.moduleInfo = config || {};
+            // 获取设备信息
+            const androidInfo = await Core.execCommand('getprop ro.build.version.sdk');
+            const abiInfo = await Core.execCommand('getprop ro.product.cpu.abi');
+            const deviceModel = await Core.execCommand('getprop ro.product.model');
+            const androidVersion = await Core.execCommand('getprop ro.build.version.release');
+            
+            this.deviceInfo = {
+                android_api: androidInfo.trim(),
+                android_version: androidVersion.trim(),
+                device_abi: abiInfo.trim(),
+                device_model: deviceModel.trim()
+            };
+            
+            console.log('设备信息加载完成:', this.deviceInfo);
         } catch (error) {
-            console.error('加载模块信息失败:', error);
-            this.moduleInfo = {};
+            console.error('加载设备信息失败:', error);
+            this.deviceInfo = {};
         }
     },
-    
+    renderDeviceInfo() {
+        const infoItems = [
+            { key: 'android_version', label: 'Android 版本' },
+            { key: 'android_api', label: 'Android API' },
+            { key: 'device_abi', label: '设备架构' },
+            { key: 'device_model', label: '设备型号' }
+        ];
+        
+        let html = '';
+        
+        infoItems.forEach(item => {
+            if (this.deviceInfo[item.key]) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-label">${item.label}</div>
+                        <div class="info-value">${this.deviceInfo[item.key]}</div>
+                    </div>
+                `;
+            }
+        });
+        
+        return html || '<div class="no-info">无可用信息</div>';
+    },
     // 刷新状态
     async refreshStatus(showToast = false) {
         try {
