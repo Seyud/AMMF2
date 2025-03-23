@@ -67,7 +67,7 @@ enter_pause_mode() {
 
 # 记录启动信息
 log_info "${SERVICE_STARTED:-Service started}"
-
+start_script
 # 加载服务脚本
 if [ ! -f "$MODPATH/files/scripts/service_script.sh" ]; then
     log_error "${SERVICE_FILE_NOT_FOUND:-File not found}: $MODPATH/files/scripts/service_script.sh"

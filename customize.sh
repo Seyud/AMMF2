@@ -26,7 +26,6 @@ main() {
     fi
     
     start_script
-    # 模块ID替换已在构建时完成，无需在安装时执行
     version_check
     if [ "$ARCH" = "arm64" ]; then
         rm -f "$MODPATH/bin/filewatch-x86_64"
