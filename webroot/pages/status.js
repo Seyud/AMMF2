@@ -41,6 +41,10 @@ const StatusPage = {
                             <span class="material-symbols-rounded">refresh</span>
                             <span data-i18n="REFRESH">刷新</span>
                         </button>
+                        <button id="run-action" class="md-button primary">
+                            <span class="material-symbols-rounded">play_arrow</span>
+                            <span data-i18n="RUN_ACTION">运行Action</span>
+                        </button>
                     </div>
                 </div>
                 
@@ -62,13 +66,38 @@ const StatusPage = {
             </div>
         `;
     },
-    
+
     // 渲染后的回调
     afterRender() {
         // 绑定刷新按钮
         document.getElementById('refresh-status')?.addEventListener('click', () => {
             this.refreshStatus(true);
         });
+        
+        // 绑定运行Action按钮
+        document.getElementById('run-action')?.addEventListener('click', () => {
+            this.runAction();
+        });
+    },
+    
+    // 运行Action脚本
+    async runAction() {
+        try {
+            Core.showToast(I18n.translate('RUNNING_ACTION', '正在运行Action...'));
+            
+            // 使用busybox运行action.sh
+            await Core.execCommand(`cd "${Core.MODULE_PATH}" && busybox sh action.sh`);
+            
+            // 刷新状态
+            setTimeout(() => {
+                this.refreshStatus(true);
+            }, 2000);
+            
+            Core.showToast(I18n.translate('ACTION_COMPLETE', 'Action执行完成'), 'success');
+        } catch (error) {
+            console.error('运行Action失败:', error);
+            Core.showToast(I18n.translate('ACTION_ERROR', '运行Action失败'), 'error');
+        }
     },
     
     // 加载模块状态

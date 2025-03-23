@@ -160,27 +160,27 @@ class App {
 
     // 导航到指定页面
     async navigateTo(pageName) {
-        // 如果正在加载页面或者已经在当前页面，则不执行
-        if (this.pageLoading || (this.currentPage === pageName && document.querySelector('.page-container'))) {
-            return;
-        }
-
         if (!this.pageModules[pageName]) {
-            console.error(`页面模块不存在: ${pageName}`);
+            console.error(`页面不存在: ${pageName}`);
             return;
         }
-
-        // 标记正在加载
-        this.pageLoading = true;
-
-        // 保存当前页面
+        
+        // 如果当前有页面，调用其onDeactivate方法
+        if (this.currentPage && this.pageModules[this.currentPage] && 
+            typeof this.pageModules[this.currentPage].onDeactivate === 'function') {
+            this.pageModules[this.currentPage].onDeactivate();
+        }
+        
+        // 更新当前页面
         this.currentPage = pageName;
-
+        
         // 加载页面内容
         await this.loadPage(pageName);
         
-        // 标记加载完成
-        this.pageLoading = false;
+        // 调用新页面的onActivate方法
+        if (this.pageModules[pageName] && typeof this.pageModules[pageName].onActivate === 'function') {
+            this.pageModules[pageName].onActivate();
+        }
     }
 
     // 加载页面内容
