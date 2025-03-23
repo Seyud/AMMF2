@@ -13,16 +13,30 @@ start_script() {
         NOW_PATH="$MODPATH"
         SH_ON_MAGISK=true
     fi
+    
+    # 初始化日志系统
+    LOG_DIR="$NOW_PATH/logs"
+    mkdir -p "$LOG_DIR"
+    
+    # 加载日志系统
+    if [ -f "$NOW_PATH/files/scripts/default_scripts/logger.sh" ]; then
+        . "$NOW_PATH/files/scripts/default_scripts/logger.sh"
+        # 设置main脚本的日志文件
+        set_log_file "main"
+    fi
+    
+    if [ -z "$NOW_PATH" ]; then
+        MODPATH="$1"
+    fi
+    if [ -z "$NOW_PATH" ]; then
+        NOW_PATH="$MODPATH"
+        SH_ON_MAGISK=true
+    fi
     TMP_FOLDER="$NOW_PATH/TEMP"
     mkdir -p "$TMP_FOLDER"
     SDCARD="/storage/emulated/0"
     download_destination="/$SDCARD/Download/AMMF/"
-    
-    # 初始化日志系统
-    LOG_DIR="$NOW_PATH/logs"
-    LOG_FILE="$LOG_DIR/script.log"
-    mkdir -p "$LOG_DIR"
-    
+
     if [ ! -f "$NOW_PATH/module_settings/config.sh" ]; then
         abort "Notfound File!!!($NOW_PATH/module_settings/config.sh)"
     else
@@ -57,51 +71,50 @@ key_select() {
         fi
     done
 }
+# 修改 Aurora_ui_print 函数
 Aurora_ui_print() {
     sleep 0.02
-    # 添加日志记录
-    log_to_file "INFO" "$1"
+    # 使用新的日志系统
+    log_info "$1"
     echo "[${OUTPUT}] $1"
 }
 
+# 修改 Aurora_abort 函数
 Aurora_abort() {
-    # 添加日志记录
-    log_to_file "ERROR" "$1"
+    # 使用新的日志系统
+    log_error "$1"
     echo "[${ERROR_TEXT}] $1"
     abort "$ERROR_CODE_TEXT: $2"
 }
 
-# 添加日志记录函数
-log_to_file() {
-    local level="$1"
-    local message="$2"
-    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
-    
-    # 确保日志目录存在
-    if [ ! -d "$LOG_DIR" ]; then
-        mkdir -p "$LOG_DIR"
-    fi
-    
-    # 写入日志
-    echo "${timestamp} [${level}] ${message}" >> "$LOG_FILE"
-    
-    # 检查日志文件大小
-    check_log_size
-}
+# 移除旧的日志函数，使用logger.sh中的实现
+# log_to_file() { ... } - 删除此函数
+# check_log_size() { ... } - 删除此函数
 
-# 检查日志文件大小并轮换
-check_log_size() {
-    if [ -f "$LOG_FILE" ]; then
-        local size=$(stat -c %s "$LOG_FILE" 2>/dev/null || stat -f %z "$LOG_FILE" 2>/dev/null)
-        if [ "$size" -gt 102400 ]; then # 100KB
-            # 保留最近的日志
-            mv "$LOG_FILE" "${LOG_FILE}.old"
-            # 清空当前日志文件
-            echo "--- 日志已轮换 $(date) ---" > "$LOG_FILE"
-        fi
+# 修改 ui_print 函数
+ui_print() {
+    if [ "$1" = "- Setting permissions" ]; then
+        return
     fi
+    if [ "$1" = "- Extracting module files" ]; then
+        return
+    fi
+    if [ "$1" = "- Current boot slot: $SLOT" ]; then
+        return
+    fi
+    if [ "$1" = "- Device is system-as-root" ]; then
+        return
+    fi
+    if [ "$(echo "$1" | grep -c '^ - Mounting ')" -gt 0 ]; then
+        return
+    fi
+    if [ "$1" = "- Done" ]; then
+        return
+    fi
+    # 使用新的日志系统
+    log_info "$1"
+    echo "$1"
 }
-
 Aurora_test_input() {
     if [ -z "$3" ]; then
         Aurora_ui_print "$1 ( $2 ) $WARN_MISSING_PARAMETERS"
@@ -139,18 +152,6 @@ ui_print() {
 }
 #About_the_custom_script
 ###############
-un_zstd_tar() {
-    Aurora_test_input "un_zstd_tar" "1" "$1"
-    Aurora_test_input "un_zstd_tar" "2" "$2"
-    $zstd -d "$1" -o "$2/temp.tar"
-    tar -xf "$2/temp.tar" -C "$2"
-    rm "$2/temp.tar"
-    if [ $? -eq 0 ]; then
-        Aurora_ui_print "$UNZIP_FINNSH"
-    else
-        Aurora_ui_print "$UNZIP_ERROR"
-    fi
-}
 check_network() {
     ping -c 1 www.baidu.com >/dev/null 2>&1
     local baidu_status=$?
@@ -178,7 +179,7 @@ download_file() {
     local filename=$(wget --spider -S "$link" 2>&1 | grep -o -E 'filename="[^"]*"' | sed -e 's/^filename="//' -e 's/"$//')
     local local_path="$download_destination/$filename"
     local retry_count=0
-    local wget_file="$tempdir/wget_file"
+    local wget_file="$TMP_FOLDER/wget_file"
     mkdir -p "$download_destination"
 
     wget -S --spider "$link" 2>&1 | grep 'Content-Length:' | awk '{print $2}' >"$wget_file"
@@ -215,16 +216,15 @@ download_file() {
 # 文件列表
 select_on_magisk() {
     # 初始化文件列表和位置
-    mkdir -p "$NOW_PATH/TEMP"
-    CURRENT_FILES="$NOW_PATH/TEMP/current_files.tmp"
+    CURRENT_FILES="$TMP_FOLDER/current_files.tmp"
     CHAR_POS=1
 
     # 初始化当前文件列表
     cp "$1" "$CURRENT_FILES"
-    filtered_files="$NOW_PATH/TEMP/filtered.tmp"
-    filtered="$NOW_PATH/TEMP/filtered.tmp"
-    current_chars="$NOW_PATH/TEMP/current_chars.tmp"
-    group_chars="$NOW_PATH/TEMP/group_chars.tmp"
+    filtered_files="$TMP_FOLDER/filtered.tmp"
+    filtered="$TMP_FOLDER/filtered.tmp"
+    current_chars="$TMP_FOLDER/current_chars.tmp"
+    group_chars="$TMP_FOLDER/group_chars.tmp"
     # 主循环处理每个字符位置
     while [ "$(wc -l <"$CURRENT_FILES")" -gt 1 ]; do
         # 处理第N个字符
@@ -324,7 +324,7 @@ select_on_magisk() {
 
     SELECT_OUTPUT=$(cat "$CURRENT_FILES")
     Aurora_ui_print "$RESULT_TITLE $SELECT_OUTPUT"
-    rm -f "$MODPATH"/TEMP/*.tmp 2>/dev/null
+    rm -f $TMP_FOLDER/*.tmp 2>/dev/null
 }
 show_menu() {
     local clear_command="1"
@@ -368,11 +368,10 @@ show_menu() {
 
 # 数字选择函数
 number_select() {
-    mkdir -p "$NOW_PATH/TEMP"
-    CURRENT_FILES="$NOW_PATH/TEMP/current_files.tmp"
+    CURRENT_FILES="$TMP_FOLDER/current_files.tmp"
     # 初始化文件列表
     cp "$1" "$CURRENT_FILES"
-    selected="$NOW_PATH/TEMP/selected.tmp"
+    selected="$TMP_FOLDER/selected.tmp"
     clear
     cat -n "$CURRENT_FILES"
     sed -i -e '$a\' "$CURRENT_FILES"

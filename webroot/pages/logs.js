@@ -5,13 +5,10 @@
 
 const LogsPage = {
     // 日志文件路径
-    logFiles: {
-        'service': `${Core.MODULE_PATH}logs/service.log`,
-        'service_old': `${Core.MODULE_PATH}logs/service.log.old`
-    },
+    logFiles: {},
     
     // 当前选中的日志文件
-    currentLogFile: 'service',
+    currentLogFile: '',
     
     // 日志内容
     logContent: '',
@@ -24,6 +21,14 @@ const LogsPage = {
     // 初始化
     async init() {
         try {
+            // 扫描可用的日志文件
+            await this.scanLogFiles();
+            
+            // 设置默认日志文件
+            if (Object.keys(this.logFiles).length > 0) {
+                this.currentLogFile = Object.keys(this.logFiles)[0];
+            }
+            
             // 加载日志内容
             await this.loadLogContent();
             return true;
@@ -31,6 +36,55 @@ const LogsPage = {
             console.error('初始化日志页面失败:', error);
             return false;
         }
+    },
+    
+    // 扫描可用的日志文件
+    async scanLogFiles() {
+        try {
+            // 获取logs目录下的所有日志文件
+            const result = await Core.execCommand(`find "${Core.MODULE_PATH}logs/" -name "*.log" -o -name "*.log.old" | sort`);
+            
+            if (result) {
+                const files = result.split('\n').filter(file => file.trim() !== '');
+                
+                // 清空现有日志文件列表
+                this.logFiles = {};
+                
+                // 添加找到的日志文件
+                files.forEach(file => {
+                    const fileName = file.split('/').pop();
+                    const displayName = this.getDisplayName(fileName);
+                    this.logFiles[fileName] = file;
+                });
+                
+                console.log('可用日志文件:', this.logFiles);
+            }
+            
+            // 如果没有找到日志文件，添加默认的service.log
+            if (Object.keys(this.logFiles).length === 0) {
+                this.logFiles['service.log'] = `${Core.MODULE_PATH}logs/service.log`;
+            }
+        } catch (error) {
+            console.error('扫描日志文件失败:', error);
+            // 添加默认日志
+            this.logFiles['service.log'] = `${Core.MODULE_PATH}logs/service.log`;
+        }
+    },
+    
+    // 获取日志文件的显示名称
+    getDisplayName(fileName) {
+        // 移除.log和.old后缀
+        let name = fileName.replace(/\.log(\.old)?$/, '');
+        
+        // 首字母大写
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        
+        // 添加后缀说明
+        if (fileName.endsWith('.old')) {
+            name += ' (旧)';
+        }
+        
+        return name;
     },
     
     // 渲染页面
@@ -41,12 +95,7 @@ const LogsPage = {
                     <div class="logs-selector">
                         <label for="log-file-select" data-i18n="SELECT_LOG_FILE">选择日志文件</label>
                         <select id="log-file-select">
-                            <option value="service" ${this.currentLogFile === 'service' ? 'selected' : ''} data-i18n="SERVICE_LOG">
-                                服务日志
-                            </option>
-                            <option value="service_old" ${this.currentLogFile === 'service_old' ? 'selected' : ''} data-i18n="SERVICE_LOG_OLD">
-                                服务日志(旧)
-                            </option>
+                            ${this.renderLogFileOptions()}
                         </select>
                     </div>
                     <div class="logs-actions">
@@ -84,43 +133,16 @@ const LogsPage = {
         `;
     },
     
-    // 渲染后的回调
-    afterRender() {
-        // 添加日志文件选择事件
-        document.getElementById('log-file-select')?.addEventListener('change', (e) => {
-            this.currentLogFile = e.target.value;
-            this.loadLogContent(true);
+    // 渲染日志文件选项
+    renderLogFileOptions() {
+        let options = '';
+        
+        Object.keys(this.logFiles).forEach(fileName => {
+            const displayName = this.getDisplayName(fileName);
+            options += `<option value="${fileName}" ${this.currentLogFile === fileName ? 'selected' : ''}>${displayName}</option>`;
         });
         
-        // 添加刷新按钮事件
-        document.getElementById('refresh-logs')?.addEventListener('click', () => {
-            this.loadLogContent(true);
-        });
-        
-        // 添加自动刷新切换事件
-        document.getElementById('auto-refresh-checkbox')?.addEventListener('change', (e) => {
-            this.autoRefresh = e.target.checked;
-            if (this.autoRefresh) {
-                this.startAutoRefresh();
-            } else {
-                this.stopAutoRefresh();
-            }
-        });
-        
-        // 添加清除日志按钮事件
-        document.getElementById('clear-logs')?.addEventListener('click', () => {
-            this.clearLogs();
-        });
-        
-        // 添加导出日志按钮事件
-        document.getElementById('export-logs')?.addEventListener('click', () => {
-            this.exportLogs();
-        });
-        
-        // 如果设置了自动刷新，启动定时器
-        if (this.autoRefresh) {
-            this.startAutoRefresh();
-        }
+        return options;
     },
     
     // 加载日志内容
@@ -217,7 +239,7 @@ const LogsPage = {
         }
     },
     
-    // 启动自动刷新
+    // 开始自动刷新
     startAutoRefresh() {
         this.stopAutoRefresh(); // 先停止现有的定时器
         
@@ -243,8 +265,68 @@ const LogsPage = {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    },
+    
+    // 添加事件监听器
+    addEventListeners() {
+        // 日志文件选择
+        const logFileSelect = document.getElementById('log-file-select');
+        if (logFileSelect) {
+            logFileSelect.addEventListener('change', () => {
+                this.currentLogFile = logFileSelect.value;
+                this.loadLogContent(true);
+            });
+        }
+        
+        // 刷新按钮
+        const refreshButton = document.getElementById('refresh-logs');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', () => {
+                this.loadLogContent(true);
+            });
+        }
+        
+        // 自动刷新开关
+        const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
+        if (autoRefreshCheckbox) {
+            autoRefreshCheckbox.addEventListener('change', () => {
+                this.autoRefresh = autoRefreshCheckbox.checked;
+                if (this.autoRefresh) {
+                    this.startAutoRefresh();
+                } else {
+                    this.stopAutoRefresh();
+                }
+            });
+        }
+        
+        // 清除日志按钮
+        const clearButton = document.getElementById('clear-logs');
+        if (clearButton) {
+            clearButton.addEventListener('click', () => {
+                this.clearLogs();
+            });
+        }
+        
+        // 导出日志按钮
+        const exportButton = document.getElementById('export-logs');
+        if (exportButton) {
+            exportButton.addEventListener('click', () => {
+                this.exportLogs();
+            });
+        }
+    },
+    
+    // 页面激活时调用
+    onActivate() {
+        // 如果启用了自动刷新，开始刷新
+        if (this.autoRefresh) {
+            this.startAutoRefresh();
+        }
+    },
+    
+    // 页面停用时调用
+    onDeactivate() {
+        // 停止自动刷新
+        this.stopAutoRefresh();
     }
 };
-
-// 导出日志页面模块
-window.LogsPage = LogsPage;

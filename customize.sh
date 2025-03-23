@@ -5,27 +5,45 @@
 # shellcheck disable=SC2155
 # shellcheck disable=SC2046
 # shellcheck disable=SC3045
+
+# 初始化日志目录
+LOG_DIR="$MODPATH/logs"
+mkdir -p "$LOG_DIR"
+
 main() {
+    # 加载日志系统
+    if [ -f "$MODPATH/files/scripts/default_scripts/logger.sh" ]; then
+        . "$MODPATH/files/scripts/default_scripts/logger.sh"
+        # 设置安装脚本的日志文件
+        set_log_file "install"
+    fi
+    
     if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
+        log_error "Notfound File!!!($MODPATH/files/scripts/default_scripts/main.sh)"
         abort "Notfound File!!!($MODPATH/files/scripts/default_scripts/main.sh)"
     else
         . "$MODPATH/files/scripts/default_scripts/main.sh"
     fi
+    
     start_script
     # 模块ID替换已在构建时完成，无需在安装时执行
     version_check
     if [ "$ARCH" = "arm64" ]; then
-    rm -f "$MODPATH/bin/filewatch-x86_64"
-    mv "$MODPATH/bin/filewatch-aarch64" "$MODPATH/bin/filewatch"
+        rm -f "$MODPATH/bin/filewatch-x86_64"
+        mv "$MODPATH/bin/filewatch-aarch64" "$MODPATH/bin/filewatch"
+        log_info "Architecture: arm64, using aarch64 binary"
     fi
     if [ "$ARCH" = "x64" ]; then
-    rm -f "$MODPATH/bin/filewatch-aarch64"
-    mv "$MODPATH/bin/filewatch-x86_64" "$MODPATH/bin/filewatch"
+        rm -f "$MODPATH/bin/filewatch-aarch64"
+        mv "$MODPATH/bin/filewatch-x86_64" "$MODPATH/bin/filewatch"
+        log_info "Architecture: x64, using x86_64 binary"
     fi
         
     if [ ! -f "$MODPATH/files/scripts/install_custom_script.sh" ]; then
+        log_error "Notfound File!!!($MODPATH/files/scripts/install_custom_script.sh)"
         abort "Notfound File!!!($MODPATH/files/scripts/install_custom_script.sh)"
     else
+        log_info "Loading install_custom_script.sh"
         . "$MODPATH/files/scripts/install_custom_script.sh"
     fi
 }
