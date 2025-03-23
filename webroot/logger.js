@@ -112,12 +112,28 @@ const Logger = {
     // 追加内容到日志文件
     async appendToLogFile(content) {
         try {
+            // 确保日志目录存在
+            const logsDir = `${Core.MODULE_PATH}logs/`;
+            await Core.execCommand(`mkdir -p "${logsDir}"`);
+            
             // 使用追加模式写入文件
             await Core.execCommand(`echo '${content.replace(/'/g, "'\\''")}' >> "${this.logFile}"`);
+            
+            // 确保文件权限正确
+            await Core.execCommand(`chmod 644 "${this.logFile}"`);
             return true;
         } catch (error) {
-            this._originalConsole.error(`追加日志失败: ${this.logFile}`, error);
-            return false;
+            // 尝试使用备用方法写入
+            try {
+                await Core.writeFile(this.logFile, content, true); // 添加第三个参数表示追加模式
+                return true;
+            } catch (backupError) {
+                if (this._originalConsole && this._originalConsole.error) {
+                    this._originalConsole.error(`追加日志失败: ${this.logFile}`, error);
+                    this._originalConsole.error(`备用写入也失败:`, backupError);
+                }
+                return false;
+            }
         }
     },
     

@@ -19,7 +19,6 @@ const StatusPage = {
         try {
             // 加载模块状态和信息
             await this.loadModuleStatus();
-            await this.loadModuleInfo();
             await this.loadDeviceInfo();
             // 启动自动刷新
             this.startAutoRefresh();
@@ -156,7 +155,6 @@ const StatusPage = {
     async refreshStatus(showToast = false) {
         try {
             await this.loadModuleStatus();
-            await this.loadModuleInfo();
             
             // 更新UI
             const statusPage = document.querySelector('.status-page');
@@ -277,6 +275,42 @@ const StatusPage = {
             case 'ERROR': return I18n.translate('ERROR', '错误');
             default: return I18n.translate('UNKNOWN', '未知');
         }
+    },
+    
+    // 渲染状态操作按钮
+    renderStatusActions() {
+        let html = '';
+        
+        // 添加运行Action按钮
+        html += `
+            <button id="run-action" class="md-button">
+                <span class="material-symbols-rounded">play_arrow</span>
+                <span data-i18n="RUN_ACTION">运行Action</span>
+            </button>
+        `;
+        
+        // 根据当前状态添加不同的操作按钮
+        if (this.moduleStatus === 'RUNNING') {
+            html += `
+                <button id="stop-service" class="md-button" onclick="StatusPage.stopService()">
+                    <span class="material-symbols-rounded">stop</span>
+                    <span data-i18n="STOP_SERVICE">停止服务</span>
+                </button>
+                <button id="restart-service" class="md-button" onclick="StatusPage.restartService()">
+                    <span class="material-symbols-rounded">refresh</span>
+                    <span data-i18n="RESTART_SERVICE">重启服务</span>
+                </button>
+            `;
+        } else {
+            html += `
+                <button id="start-service" class="md-button" onclick="StatusPage.startService()">
+                    <span class="material-symbols-rounded">play_arrow</span>
+                    <span data-i18n="START_SERVICE">启动服务</span>
+                </button>
+            `;
+        }
+        
+        return html;
     },
     
     // 渲染模块信息

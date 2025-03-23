@@ -131,8 +131,16 @@ const SettingsPage = {
         // 添加刷新按钮事件
         const refreshButton = document.getElementById('refresh-settings');
         if (refreshButton) {
+            // 防止重复点击
             refreshButton.addEventListener('click', () => {
-                this.loadConfig(true);
+                if (refreshButton.disabled) return;
+                
+                refreshButton.disabled = true;
+                this.loadConfig(true).finally(() => {
+                    setTimeout(() => {
+                        refreshButton.disabled = false;
+                    }, 1000); // 1秒后恢复按钮
+                });
             });
         }
         
@@ -140,7 +148,14 @@ const SettingsPage = {
         const saveButton = document.getElementById('save-settings');
         if (saveButton) {
             saveButton.addEventListener('click', () => {
-                this.saveConfig();
+                if (saveButton.disabled) return;
+                
+                saveButton.disabled = true;
+                this.saveConfig().finally(() => {
+                    setTimeout(() => {
+                        saveButton.disabled = false;
+                    }, 1000); // 1秒后恢复按钮
+                });
             });
         }
         

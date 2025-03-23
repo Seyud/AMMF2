@@ -466,6 +466,14 @@ class App {
                 }
             });
         }
+        
+        // 添加底栏日志按钮事件监听
+        const logsButton = document.querySelector('.nav-item[data-page="logs"]');
+        if (logsButton) {
+            logsButton.addEventListener('click', () => {
+                this.navigateTo('logs');
+            });
+        }
     }
     
     // 关闭语言选择器
