@@ -49,7 +49,7 @@ lang_en() {
     ERROR_OUT_OF_RANGE="Out of range!"
     RESULT_TITLE="Selection result:"
 
-        # Service脚本相关
+    # Service脚本相关
     SERVICE_STARTED="Service started"
     SERVICE_PAUSED="Entered pause mode, monitoring file"
     SERVICE_NORMAL_EXIT="Service exited normally"
@@ -58,81 +58,55 @@ lang_en() {
     SERVICE_LOADING_SERVICE_SCRIPT="Loading service_script.sh"
     SERVICE_FILE_NOT_FOUND="File not found"
     SERVICE_LOG_ROTATED="Log rotated"
-    # WebUI相关
-    # WebUI相关
+    
+    # WebUI核心翻译
     WEBUI_TITLE="AMMF Settings"
-    WEBUI_SAVE="Save"
-    WEBUI_LOADING="Loading settings..."
-    WEBUI_SAVE_SUCCESS="Settings saved successfully!"
-    WEBUI_BOOLEAN_TRUE="Enabled"
-    WEBUI_BOOLEAN_FALSE="Disabled"
-    WEBUI_LOADING_DESCRIPTIONS="Loading descriptions..."
-    WEBUI_LOADING_EXCLUSIONS="Loading exclusions..."
-    WEBUI_LOADING_OPTIONS="Loading options..."
-    WEBUI_SELECT="Select"
-    WEBUI_LANGUAGE_SELECT="Select Language"
-    WEBUI_CONFIG_SH_TITLE="Module Configuration"
-    WEBUI_SETTINGS_SH_TITLE="Module Settings"
-    WEBUI_SYSTEM_PROP_TITLE="System Properties"
-    WEBUI_SETTINGS_TITLE="Module Settings"
-    WEBUI_SETTINGS_DESCRIPTION="Configure AMMF module parameters"
-    WEBUI_SYSTEM_PROP_DESCRIPTION="Edit system properties in system.prop file"
-    WEBUI_LOGS_TITLE="Logs"
-    WEBUI_LOGS_DESCRIPTION="View module logs"
-    WEBUI_ABOUT_TITLE="About"
-    WEBUI_ABOUT_DESCRIPTION="View module information and version"
-    WEBUI_BACK="Back"
-    WEBUI_CONFIG_FILE="Config file:"
-    WEBUI_ABOUT_INFO="AMMF Module - A Magisk/KernelSU Module Framework"
-    WEBUI_NO_PROPERTIES="No system properties"
-    WEBUI_ADD_PROPERTY_HINT="Click the \"Add Property\" button below to add new system properties"
-    WEBUI_PROPERTY_NAME="Property Name"
-    WEBUI_PROPERTY_VALUE="Property Value"
-    WEBUI_ADD_PROPERTY="Add Property"
-    WEBUI_STATUS_TITLE="Module Status"
-    WEBUI_STATUS_LABEL="Current status:"
-    WEBUI_UPTIME_LABEL="Uptime:"
-    WEBUI_REFRESH_STATUS="Refresh"
-    WEBUI_RESTART_MODULE="Restart Module"
-    WEBUI_REFRESH_LOGS="Refresh Logs"
-    WEBUI_CLEAR_LOGS="Clear Logs"
-    WEBUI_FILTER_LOGS="Filter Logs"
-    WEBUI_NO_LOGS="No logs available"
-    WEBUI_CONFIRM_CLEAR_LOGS="Are you sure you want to clear all logs?"
-    WEBUI_LOGS_CLEARED="Logs cleared successfully"
-    WEBUI_SYSTEM_PROP_NOT_FOUND="system.prop file not found"
-    WEBUI_CREATE_SYSTEM_PROP_HINT="You can create a new system.prop file to add system properties"
-    WEBUI_CREATE_SYSTEM_PROP="Create system.prop"
-    WEBUI_CREATING_SYSTEM_PROP="Creating system.prop file..."
-    WEBUI_SYSTEM_PROP_CREATED="system.prop file created"
-    WEBUI_CREATE_SYSTEM_PROP_FAILED="Failed to create system.prop file"
-    WEBUI_CONFIRM_RESTART="Settings saved successfully. Do you want to restart the module to apply changes?"
-    WEBUI_LANGUAGE_TITLE="Available Languages"
     WEBUI_LANGUAGE_NAME="English"
     
-    # 导航相关
+    # WebUI导航
     WEBUI_NAV_STATUS="Status"
     WEBUI_NAV_LOGS="Logs"
     WEBUI_NAV_SETTINGS="Settings"
     WEBUI_NAV_ABOUT="About"
     
-    # 通用UI元素
+    # WebUI状态页
+    WEBUI_STATUS_TITLE="Module Status"
+    WEBUI_STATUS_LABEL="Current status:"
+    WEBUI_UPTIME_LABEL="Uptime:"
+    WEBUI_RUNNING="Running"
+    WEBUI_STOPPED="Stopped"
+    WEBUI_UNKNOWN="Unknown"
+    
+    # WebUI日志页
+    WEBUI_LOGS_TITLE="Logs"
+    WEBUI_NO_LOGS="No logs available"
+    
+    # WebUI设置页
+    WEBUI_SETTINGS_TITLE="Module Settings"
+    WEBUI_CONFIG_FILE="Config file:"
+    WEBUI_SAVE="Save"
+    WEBUI_SAVE_SUCCESS="Settings saved successfully!"
+    
+    # WebUI关于页
+    WEBUI_ABOUT_TITLE="About"
+    WEBUI_ABOUT_INFO="AMMF Module - A Magisk/KernelSU Module Framework"
+    
+    # WebUI通用元素
+    WEBUI_LOADING="Loading..."
+    WEBUI_REFRESH="Refresh"
     WEBUI_CANCEL="Cancel"
     WEBUI_CONFIRM="Confirm"
-    WEBUI_APPLY="Apply"
-    WEBUI_CLOSE="Close"
-    WEBUI_DARK_MODE="Dark Mode"
-    WEBUI_LIGHT_MODE="Light Mode"
-    WEBUI_THEME="Theme"
-    WEBUI_LOADING_TEXT="Loading..."
-    WEBUI_REFRESH="Refresh"
     WEBUI_SUCCESS="Success"
     WEBUI_ERROR="Error"
     WEBUI_WARNING="Warning"
     WEBUI_SELECT_LANGUAGE="Select Language"
     WEBUI_LANGUAGE_CHANGED="Language changed to English"
-    WEBUI_LANGUAGE_CHANGE_RESTART="Language changed. Some changes may require page refresh."
-    WEBUI_REFRESH_PAGE="Refresh Page"
+    
+    # WebUI Action相关
+    WEBUI_RUN_ACTION="Run Action"
+    WEBUI_RUNNING_ACTION="Running Action..."
+    WEBUI_ACTION_COMPLETE="Action completed"
+    WEBUI_ACTION_ERROR="Action execution failed"
 }
 
 # 中文
@@ -174,7 +148,14 @@ lang_zh() {
     MENU_CURRENT_CANDIDATES="当前候选字符："
     MENU_CURRENT_GROUP="当前组："
     MENU_INSTRUCTIONS="音量+选择 | 音量-切换"
-        # Service脚本相关
+    
+    # 输入相关
+    PROMPT_ENTER_NUMBER="请输入一个数字"
+    ERROR_INVALID_INPUT="输入无效！"
+    ERROR_OUT_OF_RANGE="超出范围！"
+    RESULT_TITLE="选择结果："
+    
+    # Service脚本相关
     SERVICE_STARTED="服务启动"
     SERVICE_PAUSED="进入暂停模式，监控文件"
     SERVICE_NORMAL_EXIT="服务正常退出"
@@ -183,86 +164,55 @@ lang_zh() {
     SERVICE_LOADING_SERVICE_SCRIPT="加载 service_script.sh"
     SERVICE_FILE_NOT_FOUND="未找到文件"
     SERVICE_LOG_ROTATED="日志已轮换"
-    # 输入相关
-    PROMPT_ENTER_NUMBER="请输入一个数字"
-    ERROR_INVALID_INPUT="输入无效！"
-    ERROR_OUT_OF_RANGE="超出范围！"
-    RESULT_TITLE="选择结果："
     
-    # WebUI相关
+    # WebUI核心翻译
     WEBUI_TITLE="AMMF设置"
-    WEBUI_SAVE="保存"
-    WEBUI_LOADING="加载设置中..."
-    WEBUI_SAVE_SUCCESS="设置保存成功！"
-    WEBUI_BOOLEAN_TRUE="已启用"
-    WEBUI_BOOLEAN_FALSE="已禁用"
-    WEBUI_LOADING_DESCRIPTIONS="加载描述中..."
-    WEBUI_LOADING_EXCLUSIONS="加载排除项中..."
-    WEBUI_LOADING_OPTIONS="加载选项中..."
-    WEBUI_SELECT="选择"
-    WEBUI_LANGUAGE_SELECT="选择语言"
-    WEBUI_CONFIG_SH_TITLE="模块配置"
-    WEBUI_SETTINGS_SH_TITLE="模块设置"
-    WEBUI_SYSTEM_PROP_TITLE="系统属性"
-    WEBUI_SETTINGS_TITLE="模块设置"
-    WEBUI_SETTINGS_DESCRIPTION="配置AMMF模块的各项参数"
-    WEBUI_SYSTEM_PROP_DESCRIPTION="编辑system.prop文件中的系统属性"
-    WEBUI_LOGS_TITLE="运行日志"
-    WEBUI_LOGS_DESCRIPTION="查看模块运行日志"
-    WEBUI_ABOUT_TITLE="关于"
-    WEBUI_ABOUT_DESCRIPTION="查看模块信息和版本"
-    WEBUI_BACK="返回"
-    WEBUI_CONFIG_FILE="配置文件:"
-    WEBUI_ABOUT_INFO="AMMF模块 - 一个Magisk/KernelSU模块框架"
-    WEBUI_NO_PROPERTIES="暂无系统属性"
-    WEBUI_ADD_PROPERTY_HINT="点击下方的"添加属性"按钮添加新的系统属性"
-    WEBUI_PROPERTY_NAME="属性名"
-    WEBUI_PROPERTY_VALUE="属性值"
-    WEBUI_ADD_PROPERTY="添加属性"
-    WEBUI_STATUS_TITLE="模块状态"
-    WEBUI_STATUS_LABEL="当前状态:"
-    WEBUI_UPTIME_LABEL="运行时间:"
-    WEBUI_REFRESH_STATUS="刷新"
-    WEBUI_RESTART_MODULE="重启模块"
-    WEBUI_REFRESH_LOGS="刷新日志"
-    WEBUI_CLEAR_LOGS="清空日志"
-    WEBUI_FILTER_LOGS="筛选日志"
-    WEBUI_NO_LOGS="暂无日志"
-    WEBUI_CONFIRM_CLEAR_LOGS="确定要清空所有日志吗？"
-    WEBUI_LOGS_CLEARED="日志已清空"
-    WEBUI_SYSTEM_PROP_NOT_FOUND="system.prop文件不存在"
-    WEBUI_CREATE_SYSTEM_PROP_HINT="您可以创建一个新的system.prop文件来添加系统属性"
-    WEBUI_CREATE_SYSTEM_PROP="创建system.prop"
-    WEBUI_CREATING_SYSTEM_PROP="正在创建system.prop文件..."
-    WEBUI_SYSTEM_PROP_CREATED="system.prop文件已创建"
-    WEBUI_CREATE_SYSTEM_PROP_FAILED="创建system.prop文件失败"
-    WEBUI_CONFIRM_RESTART="保存成功，是否立即重启模块以应用更改？"
-    WEBUI_LANGUAGE_TITLE="可用语言"
     WEBUI_LANGUAGE_NAME="简体中文"
     
-    # 导航相关
+    # WebUI导航
     WEBUI_NAV_STATUS="状态"
     WEBUI_NAV_LOGS="日志"
     WEBUI_NAV_SETTINGS="设置"
     WEBUI_NAV_ABOUT="关于"
     
-    # 通用UI元素
+    # WebUI状态页
+    WEBUI_STATUS_TITLE="模块状态"
+    WEBUI_STATUS_LABEL="当前状态:"
+    WEBUI_UPTIME_LABEL="运行时间:"
+    WEBUI_RUNNING="运行中"
+    WEBUI_STOPPED="已停止"
+    WEBUI_UNKNOWN="未知"
+    
+    # WebUI日志页
+    WEBUI_LOGS_TITLE="运行日志"
+    WEBUI_NO_LOGS="暂无日志"
+    
+    # WebUI设置页
+    WEBUI_SETTINGS_TITLE="模块设置"
+    WEBUI_CONFIG_FILE="配置文件:"
+    WEBUI_SAVE="保存"
+    WEBUI_SAVE_SUCCESS="设置保存成功！"
+    
+    # WebUI关于页
+    WEBUI_ABOUT_TITLE="关于"
+    WEBUI_ABOUT_INFO="AMMF模块 - 一个Magisk/KernelSU模块框架"
+    
+    # WebUI通用元素
+    WEBUI_LOADING="加载中..."
+    WEBUI_REFRESH="刷新"
     WEBUI_CANCEL="取消"
     WEBUI_CONFIRM="确认"
-    WEBUI_APPLY="应用"
-    WEBUI_CLOSE="关闭"
-    WEBUI_DARK_MODE="深色模式"
-    WEBUI_LIGHT_MODE="浅色模式"
-    WEBUI_THEME="主题"
-    WEBUI_LOADING_TEXT="加载中..."
-    WEBUI_REFRESH="刷新"
     WEBUI_SUCCESS="成功"
     WEBUI_ERROR="错误"
     WEBUI_WARNING="警告"
     WEBUI_SELECT_LANGUAGE="选择语言"
     WEBUI_LANGUAGE_CHANGED="已切换到中文"
-    WEBUI_LANGUAGE_CHANGE_RESTART="语言已更改。部分更改可能需要刷新页面。"
-    WEBUI_REFRESH_PAGE="刷新页面"
+    
+    # WebUI Action相关
+    WEBUI_RUN_ACTION="执行Action"
+    WEBUI_RUNNING_ACTION="正在运行Action..."
+    WEBUI_ACTION_COMPLETE="Action执行完成"
+    WEBUI_ACTION_ERROR="运行Action失败"
 }
 
 # 俄语
@@ -304,6 +254,13 @@ lang_ru() {
     MENU_CURRENT_CANDIDATES="Текущие символы-кандидаты:"
     MENU_CURRENT_GROUP="Текущая группа:"
     MENU_INSTRUCTIONS="VOL+ выбрать | VOL- переключить"
+    
+    # 输入相关
+    PROMPT_ENTER_NUMBER="Пожалуйста, введите число"
+    ERROR_INVALID_INPUT="Неверный ввод!"
+    ERROR_OUT_OF_RANGE="Вне диапазона!"
+    RESULT_TITLE="Результат выбора:"
+    
     # Service脚本相关
     SERVICE_STARTED="Служба запущена"
     SERVICE_PAUSED="Вход в режим паузы, мониторинг файла"
@@ -313,95 +270,53 @@ lang_ru() {
     SERVICE_LOADING_SERVICE_SCRIPT="Загрузка service_script.sh"
     SERVICE_FILE_NOT_FOUND="Файл не найден"
     SERVICE_LOG_ROTATED="Журнал ротирован"
-    # 输入相关
-    PROMPT_ENTER_NUMBER="Пожалуйста, введите число"
-    ERROR_INVALID_INPUT="Неверный ввод!"
-    ERROR_OUT_OF_RANGE="Вне диапазона!"
-    RESULT_TITLE="Результат выбора:"
     
-    # WebUI相关
+    # WebUI核心翻译
     WEBUI_TITLE="Настройки AMMF"
-    WEBUI_SAVE="Сохранить"
-    WEBUI_LOADING="Загрузка настроек..."
-    WEBUI_SAVE_SUCCESS="Настройки успешно сохранены!"
-    WEBUI_SAVE_ERROR="Ошибка сохранения настроек"
-    WEBUI_BOOLEAN_TRUE="Включено"
-    WEBUI_BOOLEAN_FALSE="Отключено"
-    WEBUI_LOADING_DESCRIPTIONS="Загрузка описаний..."
-    WEBUI_LOADING_EXCLUSIONS="Загрузка исключений..."
-    WEBUI_LOADING_OPTIONS="Загрузка опций..."
-    WEBUI_SELECT="Выбрать"
-    WEBUI_LANGUAGE_SELECT="Выбрать язык"
-    WEBUI_LANGUAGE_TITLE="Доступные языки"
     WEBUI_LANGUAGE_NAME="Русский"
-    # ... 现有WebUI翻译 ...
-    WEBUI_CANCEL="Отмена"
-    WEBUI_CONFIRM="Подтвердить"
-    WEBUI_APPLY="Применить"
-    WEBUI_CLOSE="Закрыть"
-    WEBUI_DARK_MODE="Темная тема"
-    WEBUI_LIGHT_MODE="Светлая тема"
-    WEBUI_THEME="Тема"
-    WEBUI_SETTINGS_SAVED_RESTART="Настройки сохранены. Требуется перезапуск модуля для применения изменений."
-    WEBUI_RESTART_NOW="Перезапустить сейчас"
-    WEBUI_RESTART_LATER="Позже"
-    WEBUI_SEARCH="Поиск"
-    WEBUI_SEARCH_PLACEHOLDER="Поиск настроек..."
-    WEBUI_NO_RESULTS="Результаты не найдены"
-    WEBUI_LOADING_ERROR="Ошибка загрузки данных"
-    WEBUI_RETRY="Повторить"
-    WEBUI_CONFIG_SELECTOR="Файл конфигурации"
-    WEBUI_LANGUAGE_CHANGED="Язык изменен на русский"
-    WEBUI_LANGUAGE_CHANGE_RESTART="Язык изменен. Некоторые изменения могут потребовать обновления страницы."
-    WEBUI_REFRESH_PAGE="Обновить страницу"
     
-    # 补充缺失的WebUI翻译
-    WEBUI_CONFIG_SH_TITLE="Конфигурация модуля"
-    WEBUI_SETTINGS_SH_TITLE="Настройки модуля"
-    WEBUI_SETTINGS_DESCRIPTION="Настройка параметров модуля AMMF"
-    WEBUI_SYSTEM_PROP_DESCRIPTION="Редактирование системных свойств в файле system.prop"
-    WEBUI_LOGS_DESCRIPTION="Просмотр журналов модуля"
-    WEBUI_ABOUT_DESCRIPTION="Просмотр информации и версии модуля"
-    WEBUI_BACK="Назад"
-    WEBUI_CONFIG_FILE="Файл конфигурации:"
-    WEBUI_ABOUT_INFO="Модуль AMMF - Фреймворк модуля Magisk/KernelSU"
-    WEBUI_NO_PROPERTIES="Нет системных свойств"
-    WEBUI_ADD_PROPERTY_HINT="Нажмите кнопку \"Добавить свойство\" ниже, чтобы добавить новые системные свойства"
-    WEBUI_PROPERTY_NAME="Имя свойства"
-    WEBUI_PROPERTY_VALUE="Значение свойства"
-    WEBUI_ADD_PROPERTY="Добавить свойство"
-    WEBUI_STATUS_TITLE="Статус модуля"
-    WEBUI_STATUS_LABEL="Текущий статус:"
-    WEBUI_UPTIME_LABEL="Время работы:"
-    WEBUI_REFRESH_STATUS="Обновить"
-    WEBUI_RESTART_MODULE="Перезапустить модуль"
-    WEBUI_REFRESH_LOGS="Обновить журналы"
-    WEBUI_CLEAR_LOGS="Очистить журналы"
-    WEBUI_FILTER_LOGS="Фильтровать журналы"
-    WEBUI_NO_LOGS="Нет доступных журналов"
-    WEBUI_CONFIRM_CLEAR_LOGS="Вы уверены, что хотите очистить все журналы?"
-    WEBUI_LOGS_CLEARED="Журналы успешно очищены"
-    WEBUI_SYSTEM_PROP_NOT_FOUND="Файл system.prop не найден"
-    WEBUI_CREATE_SYSTEM_PROP_HINT="Вы можете создать новый файл system.prop для добавления системных свойств"
-    WEBUI_CREATE_SYSTEM_PROP="Создать system.prop"
-    WEBUI_CREATING_SYSTEM_PROP="Создание файла system.prop..."
-    WEBUI_SYSTEM_PROP_CREATED="Файл system.prop создан"
-    WEBUI_CREATE_SYSTEM_PROP_FAILED="Не удалось создать файл system.prop"
-        WEBUI_CONFIRM_RESTART="Настройки успешно сохранены. Вы хотите перезапустить модуль для применения изменений?"  # 新增确认重启提示
-    WEBUI_LANGUAGE_TITLE="Доступные языки"  # 补充语言标题
-    
-    # 在现有WEBUI_LANGUAGE_CHANGED下方补充
-    WEBUI_LANGUAGE_CHANGED="Язык изменен на русский"
-    WEBUI_LANGUAGE_CHANGE_RESTART="Язык изменен. Некоторые изменения могут потребовать обновления страницы."  # 新增语言切换提示
-    
-    # 补充缺失的导航条目
+    # WebUI导航
     WEBUI_NAV_STATUS="Статус"
     WEBUI_NAV_LOGS="Журналы"
     WEBUI_NAV_SETTINGS="Настройки"
     WEBUI_NAV_ABOUT="О модуле"
     
-    # 补充通用操作提示
-    WEBUI_REFRESH_PAGE="Обновить страницу"
-    WEBUI_RESTART_NOW="Перезапустить сейчас" 
-    WEBUI_RESTART_LATER="Позже"
+    # WebUI状态页
+    WEBUI_STATUS_TITLE="Статус модуля"
+    WEBUI_STATUS_LABEL="Текущий статус:"
+    WEBUI_UPTIME_LABEL="Время работы:"
+    WEBUI_RUNNING="Работает"
+    WEBUI_STOPPED="Остановлен"
+    WEBUI_UNKNOWN="Неизвестно"
+    
+    # WebUI日志页
+    WEBUI_LOGS_TITLE="Журналы"
+    WEBUI_NO_LOGS="Нет доступных журналов"
+    
+    # WebUI设置页
+    WEBUI_SETTINGS_TITLE="Настройки модуля"
+    WEBUI_CONFIG_FILE="Файл конфигурации:"
+    WEBUI_SAVE="Сохранить"
+    WEBUI_SAVE_SUCCESS="Настройки успешно сохранены!"
+    
+        # WebUI关于页
+    WEBUI_ABOUT_TITLE="О модуле"
+    WEBUI_ABOUT_INFO="Модуль AMMF - Фреймворк модуля Magisk/KernelSU"
+    
+    # WebUI通用元素
+    WEBUI_LOADING="Загрузка..."
+    WEBUI_REFRESH="Обновить"
+    WEBUI_CANCEL="Отмена"
+    WEBUI_CONFIRM="Подтвердить"
+    WEBUI_SUCCESS="Успех"
+    WEBUI_ERROR="Ошибка"
+    WEBUI_WARNING="Предупреждение"
+    WEBUI_SELECT_LANGUAGE="Выбрать язык"
+    WEBUI_LANGUAGE_CHANGED="Язык изменен на русский"
+    
+    # WebUI Action相关
+    WEBUI_RUN_ACTION="Выполнить Action"
+    WEBUI_RUNNING_ACTION="Выполнение Action..."
+    WEBUI_ACTION_COMPLETE="Action выполнен успешно"
+    WEBUI_ACTION_ERROR="Ошибка выполнения Action"
 }
