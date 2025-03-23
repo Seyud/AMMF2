@@ -7,13 +7,12 @@ const StatusPage = {
     // 模块状态
     moduleStatus: 'UNKNOWN',
     
-    // 模块信息
-    moduleInfo: {},
-    
     // 自动刷新定时器
     refreshTimer: null,
 
+    // 设备信息
     deviceInfo: {},
+    
     // 初始化
     async init() {
         try {
@@ -50,7 +49,10 @@ const StatusPage = {
                     </div>
                     
                     <div class="status-actions">
-                        ${this.renderStatusActions()}
+                        <button id="run-action" class="md-button">
+                            <span class="material-symbols-rounded">terminal</span>
+                            <span data-i18n="RUN_ACTION">运行Action</span>
+                        </button>
                     </div>
                 </div>
                 
@@ -82,15 +84,13 @@ const StatusPage = {
         try {
             Core.showToast(I18n.translate('RUNNING_ACTION', '正在运行Action...'));
             
-            // 使用busybox运行action.sh
-            await Core.execCommand(`cd "${Core.MODULE_PATH}" && busybox sh action.sh`);
+            // 打开终端并运行action.sh
+            await Core.openTerminal(`cd "${Core.MODULE_PATH}" && busybox sh action.sh`);
             
             // 刷新状态
             setTimeout(() => {
                 this.refreshStatus(true);
             }, 2000);
-            
-            Core.showToast(I18n.translate('ACTION_COMPLETE', 'Action执行完成'), 'success');
         } catch (error) {
             console.error('运行Action失败:', error);
             Core.showToast(I18n.translate('ACTION_ERROR', '运行Action失败'), 'error');
@@ -154,7 +154,9 @@ const StatusPage = {
                 android: await this.getAndroidVersion(),
                 kernel: await this.getKernelVersion(),
                 magisk: await this.getMagiskVersion(),
-                ksu: await this.getKsuVersion()
+                ksu: await this.getKsuVersion(),
+                android_api: await this.getAndroidAPI(),
+                device_abi: await this.getDeviceABI()
             };
             
             console.log('设备信息加载完成:', this.deviceInfo);
@@ -179,6 +181,26 @@ const StatusPage = {
             return result.trim() || 'Unknown';
         } catch (error) {
             console.error('获取Android版本失败:', error);
+            return 'Unknown';
+        }
+    },
+
+    async getAndroidAPI() {
+        try {
+            const result = await Core.execCommand('getprop ro.build.version.sdk');
+            return result.trim() || 'Unknown';
+        } catch (error) {
+            console.error('获取Android API失败:', error);
+            return 'Unknown';
+        }
+    },
+
+    async getDeviceABI() {
+        try {
+            const result = await Core.execCommand('getprop ro.product.cpu.abi');
+            return result.trim() || 'Unknown';
+        } catch (error) {
+            console.error('获取设备架构失败:', error);
             return 'Unknown';
         }
     },
@@ -230,12 +252,16 @@ const StatusPage = {
             return 'Unknown';
         }
     },
+    
     renderDeviceInfo() {
         const infoItems = [
-            { key: 'android_version', label: 'Android 版本' },
+            { key: 'android', label: 'Android 版本' },
             { key: 'android_api', label: 'Android API' },
             { key: 'device_abi', label: '设备架构' },
-            { key: 'device_model', label: '设备型号' }
+            { key: 'model', label: '设备型号' },
+            { key: 'kernel', label: '内核版本' },
+            { key: 'magisk', label: 'Magisk 版本' },
+            { key: 'ksu', label: 'KernelSU 版本' }
         ];
         
         let html = '';
@@ -253,10 +279,12 @@ const StatusPage = {
         
         return html || '<div class="no-info">无可用信息</div>';
     },
+    
     // 刷新状态
     async refreshStatus(showToast = false) {
         try {
             await this.loadModuleStatus();
+            await this.loadDeviceInfo();
             
             // 更新UI
             const statusPage = document.querySelector('.status-page');
@@ -292,63 +320,6 @@ const StatusPage = {
         }
     },
     
-    // 启动服务
-    async startService() {
-        try {
-            Core.showToast(I18n.translate('STARTING_SERVICE', '正在启动服务...'));
-            
-            // 改进启动命令
-            await Core.execCommand(`cd "${Core.MODULE_PATH}" && nohup sh service.sh > /dev/null 2>&1 &`);
-            
-            // 等待一段时间后刷新状态
-            setTimeout(() => {
-                this.refreshStatus(true);
-            }, 2000);
-        } catch (error) {
-            console.error('启动服务失败:', error);
-            Core.showToast(I18n.translate('START_ERROR', '启动服务失败'), 'error');
-        }
-    },
-    
-    // 停止服务
-    async stopService() {
-        try {
-            Core.showToast(I18n.translate('STOPPING_SERVICE', '正在停止服务...'));
-            
-            // 改进停止命令，使用pkill更可靠地终止进程
-            await Core.execCommand(`pkill -f "${Core.MODULE_PATH}service.sh"`);
-            
-            // 确保状态文件更新 - 使用execCommand替代writeFile
-            await Core.execCommand(`echo "STOPPED" > "${Core.MODULE_PATH}status.txt"`);
-            
-            // 等待一段时间后刷新状态
-            setTimeout(() => {
-                this.refreshStatus(true);
-            }, 2000);
-        } catch (error) {
-            console.error('停止服务失败:', error);
-            Core.showToast(I18n.translate('STOP_ERROR', '停止服务失败'), 'error');
-        }
-    },
-    
-    // 重启服务
-    async restartService() {
-        try {
-            Core.showToast(I18n.translate('RESTARTING_SERVICE', '正在重启服务...'));
-            
-            // 改进重启命令
-            await Core.execCommand(`pkill -f "${Core.MODULE_PATH}service.sh"; cd "${Core.MODULE_PATH}" && nohup sh service.sh > /dev/null 2>&1 &`);
-            
-            // 等待一段时间后刷新状态
-            setTimeout(() => {
-                this.refreshStatus(true);
-            }, 2000);
-        } catch (error) {
-            console.error('重启服务失败:', error);
-            Core.showToast(I18n.translate('RESTART_ERROR', '重启服务失败'), 'error');
-        }
-    },
-    
     // 获取状态类名
     getStatusClass() {
         switch (this.moduleStatus) {
@@ -377,71 +348,6 @@ const StatusPage = {
             case 'ERROR': return I18n.translate('ERROR', '错误');
             default: return I18n.translate('UNKNOWN', '未知');
         }
-    },
-    
-    // 渲染状态操作按钮
-    renderStatusActions() {
-        let html = '';
-        
-        // 添加运行Action按钮
-        html += `
-            <button id="run-action" class="md-button">
-                <span class="material-symbols-rounded">play_arrow</span>
-                <span data-i18n="RUN_ACTION">运行Action</span>
-            </button>
-        `;
-        
-        // 根据当前状态添加不同的操作按钮
-        if (this.moduleStatus === 'RUNNING') {
-            html += `
-                <button id="stop-service" class="md-button" onclick="StatusPage.stopService()">
-                    <span class="material-symbols-rounded">stop</span>
-                    <span data-i18n="STOP_SERVICE">停止服务</span>
-                </button>
-                <button id="restart-service" class="md-button" onclick="StatusPage.restartService()">
-                    <span class="material-symbols-rounded">refresh</span>
-                    <span data-i18n="RESTART_SERVICE">重启服务</span>
-                </button>
-            `;
-        } else {
-            html += `
-                <button id="start-service" class="md-button" onclick="StatusPage.startService()">
-                    <span class="material-symbols-rounded">play_arrow</span>
-                    <span data-i18n="START_SERVICE">启动服务</span>
-                </button>
-            `;
-        }
-        
-        return html;
-    },
-    
-    // 渲染模块信息
-    renderModuleInfo() {
-        const infoItems = [
-            { key: 'action_name', label: '模块名称' },
-            { key: 'action_id', label: '模块ID' },
-            { key: 'action_author', label: '作者' },
-            { key: 'action_description', label: '描述' },
-            { key: 'magisk_min_version', label: 'Magisk最低版本' },
-            { key: 'ksu_min_version', label: 'KernelSU最低版本' },
-            { key: 'apatch_min_version', label: 'APatch最低版本' },
-            { key: 'ANDROID_API', label: 'Android API' }
-        ];
-        
-        let html = '';
-        
-        infoItems.forEach(item => {
-            if (this.moduleInfo[item.key]) {
-                html += `
-                    <div class="info-item">
-                        <div class="info-label">${item.label}</div>
-                        <div class="info-value">${this.moduleInfo[item.key]}</div>
-                    </div>
-                `;
-            }
-        });
-        
-        return html || '<div class="no-info">无可用信息</div>';
     }
 };
 
