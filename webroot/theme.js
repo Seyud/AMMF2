@@ -71,6 +71,9 @@ const ThemeManager = {
         
         // 更新主题切换按钮图标
         this.updateThemeToggleIcon();
+        
+        // 触发主题变更事件
+        document.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
     },
     
     // 应用主题
@@ -82,12 +85,21 @@ const ThemeManager = {
             // 根据系统主题设置
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 document.documentElement.classList.add('dark-theme');
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#191c1e');
             } else {
                 document.documentElement.classList.add('light-theme');
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0288d1');
             }
         } else {
             // 直接设置指定主题
             document.documentElement.classList.add(`${theme}-theme`);
+            
+            // 更新浏览器主题色
+            if (theme === 'dark') {
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#191c1e');
+            } else {
+                document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0288d1');
+            }
         }
     },
     
@@ -122,6 +134,31 @@ const ThemeManager = {
         const currentIndex = themes.indexOf(this.currentTheme);
         const nextIndex = (currentIndex + 1) % themes.length;
         this.setTheme(themes[nextIndex]);
+        
+        // 添加切换动画效果
+        document.body.classList.add('theme-transition');
+        setTimeout(() => {
+            document.body.classList.remove('theme-transition');
+        }, 500);
+    },
+    
+    // 获取当前主题
+    getCurrentTheme() {
+        return this.currentTheme;
+    },
+    
+    // 获取实际应用的主题（考虑auto模式）
+    getAppliedTheme() {
+        if (this.currentTheme !== 'auto') {
+            return this.currentTheme;
+        }
+        
+        // 在auto模式下，返回实际应用的主题
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+        } else {
+            return 'light';
+        }
     }
 };
 

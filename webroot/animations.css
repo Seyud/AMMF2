@@ -1,0 +1,138 @@
+/**
+ * AMMF WebUI 动画样式
+ * 包含所有动画和过渡效果
+ */
+
+/* 页面切换动画 */
+.page-transition {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.page-transition.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 加载动画 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(var(--md-primary-rgb), 0.2);
+  border-radius: 50%;
+  border-top-color: var(--md-primary);
+  animation: spin 1s linear infinite;
+}
+
+/* 淡入淡出效果 */
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* 滑动效果 */
+.slide-in {
+  animation: slideIn 0.3s ease forwards;
+}
+
+.slide-out {
+  animation: slideOut 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(-30px); opacity: 0; }
+}
+
+/* Toast 动画 */
+.toast {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 语言选择器动画 */
+.language-selector {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.language-selector.show {
+  opacity: 1;
+}
+
+.language-selector-content {
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+}
+
+.language-selector.show .language-selector-content {
+  transform: translateY(0);
+}
+
+/* 开关动画 */
+.slider, .slider:before {
+  transition: 0.3s ease;
+}
+
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+/* 按钮涟漪效果 */
+.md-button, .icon-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.md-button::after, .icon-button::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(var(--md-onSurface-rgb), 0.1) 1%, transparent 1%);
+  background-position: 50%;
+  background-repeat: no-repeat;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.md-button:active::after, .icon-button:active::after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}

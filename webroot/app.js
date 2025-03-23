@@ -39,6 +39,7 @@ class App {
 
             // 初始化语言模块
             await I18n.init();
+            
             // 设置加载超时
             const loadingTimeout = setTimeout(() => {
                 // 如果5秒后仍在加载，强制隐藏加载指示器并显示内容
@@ -66,7 +67,6 @@ class App {
 
             // 初始化主题模块
             ThemeManager.init();
-
 
             // 初始化导航
             this.initNavigation();
@@ -119,90 +119,216 @@ class App {
                 if (result) {
                     const files = result.split('\n').filter(file => file.trim() !== '' && file !== 'config.sh');
                     
-                    // 复制每个配置文件到webroot
                     for (const file of files) {
-                        const sourcePath = `${Core.MODULE_PATH}module_settings/${file}`;
-                        await Core.execCommand(`cp "${sourcePath}" "${file}"`);
+                        await Core.execCommand(`cp "${Core.MODULE_PATH}module_settings/${file}" "${file}"`);
                         await Core.execCommand(`chmod 644 "${file}"`);
-                        console.log(`额外配置文件已复制: ${file}`);
+                        console.log(`已复制并设置权限: ${file}`);
                     }
                 }
             } catch (error) {
-                console.warn('复制额外配置文件时出错:', error);
-                // 继续执行，不影响主要功能
+                console.warn('复制其他配置文件失败:', error);
             }
-    
+            
             return true;
         } catch (error) {
-            console.error('确保配置文件访问时出错:', error);
+            console.error('确保配置文件可访问失败:', error);
             return false;
         }
     }
 
     // 初始化导航
     initNavigation() {
-        // 获取所有导航项
         const navItems = document.querySelectorAll('.nav-item');
-
-        // 添加点击事件
         navItems.forEach(item => {
-            const page = item.getAttribute('data-page');
-            if (page) {
-                item.addEventListener('click', () => {
+            item.addEventListener('click', () => {
+                const page = item.getAttribute('data-page');
+                if (page) {
                     this.navigateTo(page);
-                });
-            }
+                }
+            });
         });
     }
 
     // 导航到指定页面
-    async navigateTo(page) {
-        if (!this.pageModules[page]) {
-            console.error(`页面模块不存在: ${page}`);
+    async navigateTo(pageName) {
+        if (!this.pageModules[pageName]) {
+            console.error(`页面模块不存在: ${pageName}`);
             return;
         }
 
-        try {
-            // 更新当前页面
-            this.currentPage = page;
+        // 保存当前页面
+        this.currentPage = pageName;
 
-            // 更新导航项状态
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                if (item.getAttribute('data-page') === page) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
+        // 加载页面内容
+        await this.loadPage(pageName);
+    }
+
+    // 加载页面内容
+    async loadPage(pageName) {
+        const mainContent = document.getElementById('main-content');
+        
+        // 获取当前页面元素
+        const currentPage = mainContent.querySelector('.page-container');
+        
+        // 如果有当前页面，添加退出动画
+        if (currentPage) {
+            currentPage.classList.add('page-exit');
+            
+            // 等待动画完成
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        // 清空主内容区域
+        mainContent.innerHTML = '';
+        
+        // 显示加载指示器
+        const loadingContainer = document.createElement('div');
+        loadingContainer.className = 'loading-container';
+        loadingContainer.innerHTML = `
+            <div class="spinner"></div>
+            <p data-i18n="LOADING">${I18n.translate('LOADING', '加载中...')}</p>
+        `;
+        mainContent.appendChild(loadingContainer);
+        
+        try {
+            // 获取页面模块
+            const pageModule = this.pageModules[pageName];
+            
+            // 初始化页面模块
+            if (typeof pageModule.init === 'function') {
+                await pageModule.init();
+            }
+            
+            // 渲染页面内容
+            const pageContent = pageModule.render();
+            
+            // 移除加载指示器
+            mainContent.removeChild(loadingContainer);
+            
+            // 添加页面内容
+            mainContent.innerHTML = pageContent;
+            
+            // 获取新添加的页面容器
+            const newPage = mainContent.querySelector('.page-container');
+            if (newPage) {
+                // 添加进入动画类
+                newPage.classList.add('page-enter');
+                
+                // 强制重绘
+                void newPage.offsetWidth;
+                
+                // 添加活动类触发动画
+                newPage.classList.add('page-active');
+            }
+            
+            // 应用国际化
+            I18n.applyTranslations();
+            
+            // 执行页面的afterRender回调
+            if (typeof pageModule.afterRender === 'function') {
+                pageModule.afterRender();
+            }
+            
+            // 更新活动导航项
+            this.updateActiveNavItem(pageName);
+            
+        } catch (error) {
+            console.error(`加载页面失败: ${pageName}`, error);
+            
+            // 显示错误信息
+            mainContent.innerHTML = `
+                <div class="error-container page-enter">
+                    <span class="material-symbols-rounded">error</span>
+                    <h3>${I18n.translate('PAGE_LOAD_ERROR', '页面加载失败')}</h3>
+                    <p>${error.message}</p>
+                    <button class="md-button" onclick="app.navigateTo('status')">
+                        <span class="material-symbols-rounded">home</span>
+                        ${I18n.translate('BACK_TO_HOME', '返回首页')}
+                    </button>
+                </div>
+            `;
+            
+            // 添加动画
+            const errorContainer = mainContent.querySelector('.error-container');
+            if (errorContainer) {
+                // 强制重绘
+                void errorContainer.offsetWidth;
+                
+                // 添加活动类触发动画
+                errorContainer.classList.add('page-active');
+            }
+        }
+    }
+
+    // 更新活动导航项
+    updateActiveNavItem(pageName) {
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            if (item.getAttribute('data-page') === pageName) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    // 绑定事件
+    bindEvents() {
+        // 语言切换按钮
+        const languageButton = document.getElementById('language-button');
+        const languageSelector = document.getElementById('language-selector');
+        const cancelLanguage = document.getElementById('cancel-language');
+        
+        if (languageButton && languageSelector) {
+            languageButton.addEventListener('click', () => {
+                languageSelector.classList.add('show');
+                this.renderLanguageOptions();
+            });
+            
+            if (cancelLanguage) {
+                cancelLanguage.addEventListener('click', () => {
+                    languageSelector.classList.remove('show');
+                });
+            }
+            
+            // 点击外部关闭语言选择器
+            languageSelector.addEventListener('click', (e) => {
+                if (e.target === languageSelector) {
+                    languageSelector.classList.remove('show');
                 }
             });
-
-            // 显示加载指示器
-            this.showLoading();
-
-            // 初始化页面模块
-            await this.pageModules[page].init();
-
-            // 渲染页面内容
-            const mainContent = document.getElementById('main-content');
-            if (mainContent) {
-                mainContent.innerHTML = this.pageModules[page].render();
-
-                // 调用渲染后的回调
-                if (typeof this.pageModules[page].afterRender === 'function') {
-                    this.pageModules[page].afterRender();
-                }
-            }
-
-            // 应用翻译
-            I18n.applyTranslations();
-
-            // 隐藏加载指示器
-            this.hideLoading();
-        } catch (error) {
-            console.error(`导航到页面出错: ${page}`, error);
-            this.hideLoading();
-            this.showError(`加载页面 ${page} 失败`);
         }
+    }
+
+    // 渲染语言选项
+    renderLanguageOptions() {
+        const languageOptions = document.getElementById('language-options');
+        if (!languageOptions) return;
+        
+        // 清空现有选项
+        languageOptions.innerHTML = '';
+        
+        // 获取可用语言
+        const languages = I18n.getAvailableLanguages();
+        const currentLang = I18n.getCurrentLanguage();
+        
+        // 添加语言选项
+        languages.forEach(lang => {
+            const option = document.createElement('div');
+            option.className = `language-option ${lang.code === currentLang ? 'active' : ''}`;
+            option.setAttribute('data-lang', lang.code);
+            option.textContent = lang.name;
+            
+            option.addEventListener('click', () => {
+                I18n.setLanguage(lang.code);
+                document.getElementById('language-selector').classList.remove('show');
+                
+                // 重新加载当前页面以应用新语言
+                this.loadPage(this.currentPage);
+            });
+            
+            languageOptions.appendChild(option);
+        });
     }
 
     // 显示加载指示器
@@ -220,18 +346,10 @@ class App {
 
     // 隐藏加载指示器
     hideLoading() {
-        const loadingContainer = document.querySelector('.loading-container');
-        if (loadingContainer) {
-            loadingContainer.classList.add('fade-out');
-            setTimeout(() => {
-                if (loadingContainer.parentNode === document.getElementById('main-content')) {
-                    document.getElementById('main-content').removeChild(loadingContainer);
-                }
-            }, 300);
-        }
+        // 不需要特别处理，因为loadPage会清空内容
     }
 
-    // 显示错误
+    // 显示错误信息
     showError(message) {
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
@@ -244,31 +362,10 @@ class App {
             `;
         }
     }
-
-    // 绑定事件
-    bindEvents() {
-        // 监听语言变更事件
-        document.addEventListener('languageChanged', () => {
-            // 重新渲染当前页面
-            if (this.initialized && this.pageModules[this.currentPage]) {
-                const mainContent = document.getElementById('main-content');
-                if (mainContent) {
-                    mainContent.innerHTML = this.pageModules[this.currentPage].render();
-
-                    // 调用渲染后的回调
-                    if (typeof this.pageModules[this.currentPage].afterRender === 'function') {
-                        this.pageModules[this.currentPage].afterRender();
-                    }
-
-                    // 应用翻译
-                    I18n.applyTranslations();
-                }
-            }
-        });
-    }
 }
 
 // 创建应用实例
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new App();
-});
+const app = new App();
+
+// 导出应用实例
+window.app = app;
