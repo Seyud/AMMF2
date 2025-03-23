@@ -100,32 +100,134 @@ const StatusPage = {
     // 加载模块状态
     async loadModuleStatus() {
         try {
-            this.moduleStatus = await Core.getModuleStatus();
-            console.log(`模块状态: ${this.moduleStatus}`);
+            // 检查状态文件是否存在
+            const statusPath = `${Core.MODULE_PATH}status.txt`;
+            const fileExistsResult = await Core.execCommand(`[ -f "${statusPath}" ] && echo "true" || echo "false"`);
+            
+            if (fileExistsResult.trim() !== "true") {
+                console.error(`状态文件不存在: ${statusPath}`);
+                this.moduleStatus = 'UNKNOWN';
+                return;
+            }
+            
+            // 读取状态文件
+            const status = await Core.execCommand(`cat "${statusPath}"`);
+            if (!status) {
+                console.error(`无法读取状态文件: ${statusPath}`);
+                this.moduleStatus = 'UNKNOWN';
+                return;
+            }
+            
+            // 检查服务进程是否运行
+            const isRunning = await this.isServiceRunning();
+            
+            // 如果状态文件显示运行中，但进程检查显示没有运行，则返回STOPPED
+            if (status.trim() === 'RUNNING' && !isRunning) {
+                console.warn('状态文件显示运行中，但服务进程未检测到');
+                this.moduleStatus = 'STOPPED';
+                return;
+            }
+            
+            this.moduleStatus = status.trim() || 'UNKNOWN';
         } catch (error) {
-            console.error('加载模块状态失败:', error);
+            console.error('获取模块状态失败:', error);
             this.moduleStatus = 'ERROR';
         }
     },
+
+    async isServiceRunning() {
+        try {
+            // 使用ps命令检查service.sh进程
+            const result = await Core.execCommand(`ps -ef | grep "${Core.MODULE_PATH}service.sh" | grep -v grep | wc -l`);
+            return parseInt(result.trim()) > 0;
+        } catch (error) {
+            console.error('检查服务运行状态失败:', error);
+            return false;
+        }
+    },
+
     async loadDeviceInfo() {
         try {
             // 获取设备信息
-            const androidInfo = await Core.execCommand('getprop ro.build.version.sdk');
-            const abiInfo = await Core.execCommand('getprop ro.product.cpu.abi');
-            const deviceModel = await Core.execCommand('getprop ro.product.model');
-            const androidVersion = await Core.execCommand('getprop ro.build.version.release');
-            
             this.deviceInfo = {
-                android_api: androidInfo.trim(),
-                android_version: androidVersion.trim(),
-                device_abi: abiInfo.trim(),
-                device_model: deviceModel.trim()
+                model: await this.getDeviceModel(),
+                android: await this.getAndroidVersion(),
+                kernel: await this.getKernelVersion(),
+                magisk: await this.getMagiskVersion(),
+                ksu: await this.getKsuVersion()
             };
             
             console.log('设备信息加载完成:', this.deviceInfo);
         } catch (error) {
             console.error('加载设备信息失败:', error);
-            this.deviceInfo = {};
+        }
+    },
+
+    async getDeviceModel() {
+        try {
+            const result = await Core.execCommand('getprop ro.product.model');
+            return result.trim() || 'Unknown';
+        } catch (error) {
+            console.error('获取设备型号失败:', error);
+            return 'Unknown';
+        }
+    },
+
+    async getAndroidVersion() {
+        try {
+            const result = await Core.execCommand('getprop ro.build.version.release');
+            return result.trim() || 'Unknown';
+        } catch (error) {
+            console.error('获取Android版本失败:', error);
+            return 'Unknown';
+        }
+    },
+
+    async getKernelVersion() {
+        try {
+            const result = await Core.execCommand('uname -r');
+            return result.trim() || 'Unknown';
+        } catch (error) {
+            console.error('获取内核版本失败:', error);
+            return 'Unknown';
+        }
+    },
+
+    async getMagiskVersion() {
+        try {
+            // 检查Magisk是否安装
+            const magiskPath = '/data/adb/magisk';
+            const fileExistsResult = await Core.execCommand(`[ -f "${magiskPath}" ] && echo "true" || echo "false"`);
+            
+            if (fileExistsResult.trim() === "true") {
+                const version = await Core.execCommand(`cat "${magiskPath}"`);
+                return version.trim() || 'Unknown';
+            }
+            
+            // 尝试通过magisk命令获取版本
+            const cmdResult = await Core.execCommand('magisk -v');
+            if (cmdResult && !cmdResult.includes('not found')) {
+                return cmdResult.trim().split(':')[0] || 'Unknown';
+            }
+            
+            return 'Not Installed';
+        } catch (error) {
+            console.error('获取Magisk版本失败:', error);
+            return 'Unknown';
+        }
+    },
+
+    async getKsuVersion() {
+        try {
+            // 检查KernelSU是否安装
+            const result = await Core.execCommand('ksud');
+            if (result && !result.includes('not found')) {
+                return result.trim() || 'Unknown';
+            }
+            return 'Not Installed';
+        } catch (error) {
+            console.error('获取KernelSU版本失败:', error);
+            return 'Unknown';
         }
     },
     renderDeviceInfo() {
@@ -216,8 +318,8 @@ const StatusPage = {
             // 改进停止命令，使用pkill更可靠地终止进程
             await Core.execCommand(`pkill -f "${Core.MODULE_PATH}service.sh"`);
             
-            // 确保状态文件更新
-            await Core.writeFile(`${Core.MODULE_PATH}status.txt`, "STOPPED");
+            // 确保状态文件更新 - 使用execCommand替代writeFile
+            await Core.execCommand(`echo "STOPPED" > "${Core.MODULE_PATH}status.txt"`);
             
             // 等待一段时间后刷新状态
             setTimeout(() => {

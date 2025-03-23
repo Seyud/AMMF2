@@ -55,16 +55,34 @@ const I18n = {
     // 加载语言文件
     async loadLanguageFile() {
         try {
-            console.log('尝试加载语言文件...');
-            const languagesContent = await Core.readFile(`${Core.MODULE_PATH}files/languages.sh`);
-            if (languagesContent) {
-                this.parseLanguagesFile(languagesContent);
-                console.log('成功加载语言文件');
-            } else {
-                console.log('语言文件不存在，使用内置默认翻译');
+            // 读取语言文件
+            const langFilePath = `${Core.MODULE_PATH}webroot/i18n/languages.json`;
+            
+            // 检查文件是否存在
+            const fileExistsResult = await Core.execCommand(`[ -f "${langFilePath}" ] && echo "true" || echo "false"`);
+            if (fileExistsResult.trim() !== "true") {
+                console.warn('语言文件不存在');
+                return false;
             }
+            
+            // 读取语言文件内容
+            const langFileContent = await Core.execCommand(`cat "${langFilePath}"`);
+            if (!langFileContent) {
+                console.error('语言文件为空');
+                return false;
+            }
+            
+            // 解析JSON
+            const langData = JSON.parse(langFileContent);
+            
+            // 合并翻译
+            this.mergeTranslations(langData);
+            
+            console.log('语言文件加载成功');
+            return true;
         } catch (error) {
             console.error('加载语言文件失败:', error);
+            return false;
         }
     },
     
@@ -327,20 +345,33 @@ const I18n = {
     async updateConfigLanguage(lang) {
         try {
             console.log(`尝试更新配置文件语言为: ${lang}`);
-            const config = await Core.getConfig();
-            if (config) {
-                config.print_languages = lang;
-                
-                // 更新配置文件
-                const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
-                const originalContent = await Core.readFile(configPath);
-                const newContent = Core.generateConfigContent(config, originalContent);
-                
-                await Core.writeFile(configPath, newContent);
-                console.log(`配置文件语言已更新为: ${lang}`);
+            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+            
+            // 检查文件是否存在
+            const fileExistsResult = await Core.execCommand(`[ -f "${configPath}" ] && echo "true" || echo "false"`);
+            if (fileExistsResult.trim() !== "true") {
+                console.error('配置文件不存在');
+                return false;
             }
+            
+            // 读取配置文件内容
+            const configContent = await Core.execCommand(`cat "${configPath}"`);
+            if (!configContent) {
+                console.error('配置文件为空');
+                return false;
+            }
+            
+            // 更新语言设置
+            const updatedContent = configContent.replace(/print_languages=["'].*?["']/g, `print_languages="${lang}"`);
+            
+            // 写入更新后的配置
+            await Core.execCommand(`echo '${updatedContent.replace(/'/g, "'\\''").replace(/\n/g, "\\n")}' > "${configPath}"`);
+            
+            console.log(`配置文件语言已更新为: ${lang}`);
+            return true;
         } catch (error) {
             console.error('更新配置文件语言设置失败:', error);
+            return false;
         }
     },
     

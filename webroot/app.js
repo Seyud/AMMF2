@@ -48,18 +48,11 @@ class App {
             
             // 设置加载超时
             const loadingTimeout = setTimeout(() => {
-                // 如果5秒后仍在加载，强制隐藏加载指示器并显示内容
                 this.hideLoading();
                 console.warn('加载超时，强制显示内容');
-
-                // 显示可能的错误提示
                 Core.showToast(I18n.translate('LOADING_TIMEOUT', '加载时间过长，部分功能可能不可用'), 'warning');
-
-                // 标记初始化完成
                 this.initialized = true;
                 document.dispatchEvent(new CustomEvent('appInitialized'));
-
-                // 确保事件绑定
                 this.bindEvents();
             }, 5000);
 
@@ -103,85 +96,23 @@ class App {
 
     // 确保配置文件可访问
     async ensureConfigAccess() {
-        const sourceConfigPath = `${Core.MODULE_PATH}module_settings/config.sh`;
-        const webConfigPath = 'config.sh';  // 相对于webroot的路径
-    
         try {
+            const sourceConfigPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+            const webConfigPath = 'config.sh';
+            
             // 检查源配置文件是否存在
-            const sourceExists = await Core.fileExists(sourceConfigPath);
-            if (!sourceExists) {
-                console.error(`源配置文件不存在: ${sourceConfigPath}`);
+            const sourceExists = await Core.execCommand(`[ -f "${sourceConfigPath}" ] && echo "true" || echo "false"`);
+            if (sourceExists.trim() !== "true") {
+                console.warn('源配置文件不存在');
                 return false;
             }
-    
-            // 检查目标文件是否存在及其修改时间
-            const targetExists = await Core.fileExists(webConfigPath);
-            let needsCopy = true;
             
-            if (targetExists) {
-                // 比较源文件和目标文件的修改时间
-                try {
-                    const sourceTime = await Core.execCommand(`stat -c %Y "${sourceConfigPath}"`);
-                    const targetTime = await Core.execCommand(`stat -c %Y "${webConfigPath}"`);
-                    
-                    // 只有当源文件比目标文件新时才复制
-                    needsCopy = parseInt(sourceTime.trim()) > parseInt(targetTime.trim());
-                    
-                    if (!needsCopy) {
-                        console.log(`配置文件已是最新: ${webConfigPath}`);
-                    }
-                } catch (error) {
-                    console.warn('比较文件时间失败，将强制复制:', error);
-                    needsCopy = true;
-                }
-            }
-    
-            // 复制配置文件到webroot
-            if (needsCopy) {
-                await Core.execCommand(`cp "${sourceConfigPath}" "${webConfigPath}"`);
-                console.log(`配置文件已复制到: ${webConfigPath}`);
-    
-                // 设置权限
-                await Core.execCommand(`chmod 644 "${webConfigPath}"`);
-                console.log('已设置配置文件权限');
-            }
+            // 复制配置文件到WebUI目录
+            await Core.execCommand(`cp "${sourceConfigPath}" "${webConfigPath}"`);
             
-            // 复制其他配置文件
-            try {
-                const result = await Core.execCommand(`ls -1 "${Core.MODULE_PATH}module_settings/" | grep "\.sh$" | grep -v "^save-"`);
-                if (result) {
-                    const files = result.split('\n').filter(file => file.trim() !== '' && file !== 'config.sh');
-                    
-                    for (const file of files) {
-                        const targetFile = file;
-                        const sourceFile = `${Core.MODULE_PATH}module_settings/${file}`;
-                        
-                        // 检查目标文件是否需要更新
-                        let fileNeedsCopy = true;
-                        if (await Core.fileExists(targetFile)) {
-                            try {
-                                const sourceTime = await Core.execCommand(`stat -c %Y "${sourceFile}"`);
-                                const targetTime = await Core.execCommand(`stat -c %Y "${targetFile}"`);
-                                fileNeedsCopy = parseInt(sourceTime.trim()) > parseInt(targetTime.trim());
-                            } catch (error) {
-                                console.warn(`比较文件时间失败 ${file}，将强制复制:`, error);
-                            }
-                        }
-                        
-                        if (fileNeedsCopy) {
-                            await Core.execCommand(`cp "${sourceFile}" "${targetFile}"`);
-                            await Core.execCommand(`chmod 644 "${targetFile}"`);
-                            console.log(`已复制并设置权限: ${file}`);
-                        } else {
-                            console.log(`文件已是最新: ${file}`);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.warn('复制其他配置文件失败:', error);
-            }
-            
-            return true;
+            // 验证复制是否成功
+            const webConfigExists = await Core.execCommand(`[ -f "${webConfigPath}" ] && echo "true" || echo "false"`);
+            return webConfigExists.trim() === "true";
         } catch (error) {
             console.error('确保配置文件可访问失败:', error);
             return false;
@@ -190,24 +121,22 @@ class App {
 
     // 初始化导航
     initNavigation() {
-        // 移除可能存在的旧事件监听器
         const navItems = document.querySelectorAll('.nav-item');
         
         navItems.forEach(item => {
-            // 克隆并替换元素以移除所有事件监听器
-            const newItem = item.cloneNode(true);
-            item.parentNode.replaceChild(newItem, item);
+            const pageName = item.getAttribute('data-page');
             
-            // 添加新的事件监听器
-            newItem.addEventListener('click', () => {
-                const pageName = newItem.getAttribute('data-page');
-                if (pageName) {
-                    this.navigateTo(pageName);
-                }
+            item.addEventListener('click', () => {
+                if (this.currentPage === pageName) return;
+                
+                // 更新导航项的活动状态
+                navItems.forEach(navItem => navItem.classList.remove('active'));
+                item.classList.add('active');
+                
+                // 导航到选定的页面
+                this.navigateTo(pageName);
             });
         });
-        
-        console.log('导航初始化完成');
     }
 
     // 导航到指定页面
@@ -235,368 +164,211 @@ class App {
         }
     }
 
-    // 加载页面内容
+    // 加载页面
     async loadPage(pageName) {
-        console.log(`loadPage: 开始加载 ${pageName} 页面`);
-        const mainContent = document.getElementById('main-content');
-        
-        // 获取当前页面元素
-        const currentPage = mainContent.querySelector('.page-container');
-        
-        // 如果有当前页面，添加退出动画
-        if (currentPage) {
-            currentPage.classList.add('page-exit');
-            
-            // 等待动画完成
-            await new Promise(resolve => setTimeout(resolve, 300));
-        }
-        
-        // 清空主内容区域
-        mainContent.innerHTML = '';
-        
-        // 显示加载指示器
-        const loadingContainer = document.createElement('div');
-        loadingContainer.className = 'loading-container';
-        loadingContainer.innerHTML = `
-            <div class="spinner"></div>
-            <p data-i18n="LOADING">${I18n.translate('LOADING', '加载中...')}</p>
-        `;
-        mainContent.appendChild(loadingContainer);
-        
         try {
-            // 获取页面模块
-            const pageModule = this.pageModules[pageName];
+            this.showPageLoading();
             
-            if (!pageModule) {
-                throw new Error(`页面模块未找到: ${pageName}`);
+            // 检查页面模块是否存在
+            if (!this.pageModules[pageName]) {
+                throw new Error(`页面模块不存在: ${pageName}`);
             }
             
-            console.log(`loadPage: 获取到页面模块 ${pageName}`);
-            
-            // 检查缓存
-            let pageContent;
-            let needsInit = true;
-            
-            if (this.pageCache[pageName] && !this.shouldRefreshPage(pageName)) {
-                // 使用缓存的内容
-                console.log(`使用缓存的页面内容: ${pageName}`);
-                pageContent = this.pageCache[pageName];
-                needsInit = false;
-            } else {
-                // 初始化页面模块
-                if (typeof pageModule.init === 'function') {
-                    console.log(`初始化页面模块: ${pageName}`);
-                    try {
-                        await pageModule.init();
-                    } catch (initError) {
-                        console.error(`初始化页面模块失败: ${pageName}`, initError);
-                        throw new Error(`初始化页面失败: ${initError.message}`);
-                    }
+            // 检查页面是否已缓存
+            if (this.pageCache[pageName]) {
+                document.getElementById('main-content').innerHTML = this.pageCache[pageName];
+                this.hidePageLoading();
+                
+                // 调用afterRender方法
+                if (typeof this.pageModules[pageName].afterRender === 'function') {
+                    this.pageModules[pageName].afterRender();
                 }
                 
-                // 渲染页面内容
-                console.log(`渲染页面内容: ${pageName}`);
-                pageContent = pageModule.render();
+                // 应用翻译
+                I18n.applyTranslations();
+                
+                return;
+            }
+            
+            // 初始化页面模块（如果尚未初始化）
+            if (typeof this.pageModules[pageName].init === 'function' && !this.pageModules[pageName].initialized) {
+                await this.pageModules[pageName].init();
+                this.pageModules[pageName].initialized = true;
+            }
+            
+            // 渲染页面
+            if (typeof this.pageModules[pageName].render === 'function') {
+                const pageContent = this.pageModules[pageName].render();
+                document.getElementById('main-content').innerHTML = pageContent;
                 
                 // 缓存页面内容
                 this.pageCache[pageName] = pageContent;
                 
-                // 记录刷新时间
-                if (!this.pageLastRefresh) {
-                    this.pageLastRefresh = {};
+                // 调用afterRender方法
+                if (typeof this.pageModules[pageName].afterRender === 'function') {
+                    this.pageModules[pageName].afterRender();
                 }
-                this.pageLastRefresh[pageName] = Date.now();
-            }
-            
-            // 移除加载指示器
-            mainContent.removeChild(loadingContainer);
-            
-            // 添加页面内容
-            console.log(`添加页面内容到DOM: ${pageName}`);
-            mainContent.innerHTML = pageContent;
-            
-            // 获取新添加的页面容器
-            const newPage = mainContent.querySelector('.page-container');
-            if (newPage) {
-                // 添加进入动画类
-                newPage.classList.add('page-enter');
                 
-                // 强制重绘
-                void newPage.offsetWidth;
-                
-                // 添加活动类触发动画
-                newPage.classList.add('page-active');
+                // 应用翻译
+                I18n.applyTranslations();
+            } else {
+                throw new Error(`页面模块没有render方法: ${pageName}`);
             }
             
-            // 应用国际化
-            I18n.applyTranslations();
-            
-            // 执行页面的afterRender回调
-            if (typeof pageModule.afterRender === 'function') {
-                console.log(`执行页面的afterRender回调: ${pageName}`);
-                pageModule.afterRender();
-            }
-            
-            // 如果页面有addEventListeners方法，调用它
-            if (typeof pageModule.addEventListeners === 'function') {
-                console.log(`执行页面的addEventListeners方法: ${pageName}`);
-                pageModule.addEventListeners();
-            }
-            
-            // 更新活动导航项
-            this.updateActiveNavItem(pageName);
-            
+            this.hidePageLoading();
         } catch (error) {
             console.error(`加载页面失败: ${pageName}`, error);
-            
-            // 显示错误信息
-            mainContent.innerHTML = `
-                <div class="error-container page-enter">
-                    <span class="material-symbols-rounded">error</span>
-                    <h3>${I18n.translate('PAGE_LOAD_ERROR', '页面加载失败')}</h3>
+            document.getElementById('main-content').innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">
+                        <span class="material-symbols-rounded">error</span>
+                    </div>
+                    <h2 data-i18n="PAGE_LOAD_ERROR">页面加载失败</h2>
                     <p>${error.message}</p>
-                    <button class="md-button" onclick="app.navigateTo('status')">
-                        <span class="material-symbols-rounded">home</span>
-                        ${I18n.translate('BACK_TO_HOME', '返回首页')}
+                    <button id="retry-load" class="md-button primary">
+                        <span class="material-symbols-rounded">refresh</span>
+                        <span data-i18n="RETRY">重试</span>
                     </button>
                 </div>
             `;
             
-            // 添加动画
-            const errorContainer = mainContent.querySelector('.error-container');
-            if (errorContainer) {
-                // 强制重绘
-                void errorContainer.offsetWidth;
-                
-                // 添加活动类触发动画
-                errorContainer.classList.add('page-active');
-            }
-        }
-    }
-
-    // 判断是否需要刷新页面
-    shouldRefreshPage(pageName) {
-        // 日志页面总是刷新
-        if (pageName === 'logs') {
-            return true;
-        }
-        
-        // 状态页面每30秒刷新一次（改为更频繁的刷新）
-        if (pageName === 'status') {
-            if (!this.pageLastRefresh) {
-                this.pageLastRefresh = {};
-            }
-            const lastRefresh = this.pageLastRefresh[pageName] || 0;
-            return (Date.now() - lastRefresh) > 30000;
-        }
-        
-        // 设置页面每5分钟刷新一次
-        if (pageName === 'settings') {
-            if (!this.pageLastRefresh) {
-                this.pageLastRefresh = {};
-            }
-            const lastRefresh = this.pageLastRefresh[pageName] || 0;
-            return (Date.now() - lastRefresh) > 300000;
-        }
-        
-        return false;
-    }
-    
-    // 强制刷新当前页面
-    refreshCurrentPage() {
-        // 清除当前页面的缓存
-        if (this.currentPage) {
-            delete this.pageCache[this.currentPage];
-            if (this.pageLastRefresh) {
-                this.pageLastRefresh[this.currentPage] = 0;
-            }
-            this.navigateTo(this.currentPage);
-        }
-    }
-
-    // 更新活动导航项
-    updateActiveNavItem(pageName) {
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            if (item.getAttribute('data-page') === pageName) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
-            }
-        });
-    }
-
-    // 绑定事件
-    bindEvents() {
-        // 语言切换按钮
-        const languageButton = document.getElementById('language-button');
-        const languageSelector = document.getElementById('language-selector');
-        const cancelLanguage = document.getElementById('cancel-language');
-        
-        if (languageButton && languageSelector) {
-            languageButton.addEventListener('click', () => {
-                // 添加显示类
-                languageSelector.classList.add('show');
-                
-                // 渲染语言选项
-                this.renderLanguageOptions();
-                
-                // 阻止页面滚动
-                document.body.style.overflow = 'hidden';
+            // 添加重试按钮事件
+            document.getElementById('retry-load').addEventListener('click', () => {
+                this.loadPage(pageName);
             });
             
-            if (cancelLanguage) {
-                cancelLanguage.addEventListener('click', () => {
-                    // 关闭语言选择器
-                    this.closeLanguageSelector();
-                });
-            }
+            this.hidePageLoading();
+        }
+    }
+
+    // 预加载其他页面
+    async preloadPages() {
+        try {
+            // 获取所有页面名称
+            const pageNames = Object.keys(this.pageModules);
             
-            // 点击外部关闭语言选择器
-            languageSelector.addEventListener('click', (e) => {
-                if (e.target === languageSelector) {
-                    this.closeLanguageSelector();
+            // 过滤掉当前页面
+            const pagesToPreload = pageNames.filter(page => page !== this.currentPage);
+            
+            // 预加载其他页面
+            for (const pageName of pagesToPreload) {
+                // 初始化页面模块（如果尚未初始化）
+                if (typeof this.pageModules[pageName].init === 'function' && !this.pageModules[pageName].initialized) {
+                    await this.pageModules[pageName].init();
+                    this.pageModules[pageName].initialized = true;
                 }
-            });
-            
-            // 添加ESC键关闭
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && languageSelector.classList.contains('show')) {
-                    this.closeLanguageSelector();
+                
+                // 预渲染页面并缓存
+                if (typeof this.pageModules[pageName].render === 'function') {
+                    this.pageCache[pageName] = this.pageModules[pageName].render();
                 }
-            });
-        }
-        
-        // 添加底栏日志按钮事件监听
-        const logsButton = document.querySelector('.nav-item[data-page="logs"]');
-        if (logsButton) {
-            logsButton.addEventListener('click', () => {
-                this.navigateTo('logs');
-            });
-        }
-    }
-    
-    // 关闭语言选择器
-    closeLanguageSelector() {
-        const languageSelector = document.getElementById('language-selector');
-        if (languageSelector) {
-            languageSelector.classList.remove('show');
-            // 恢复页面滚动
-            document.body.style.overflow = '';
-        }
-    }
-
-    // 渲染语言选项
-    renderLanguageOptions() {
-        const languageOptions = document.getElementById('language-options');
-        if (!languageOptions) return;
-        
-        // 清空现有选项
-        languageOptions.innerHTML = '';
-        
-        // 获取可用语言
-        const languages = I18n.getAvailableLanguages();
-        const currentLang = I18n.getCurrentLanguage();
-        
-        // 添加语言选项
-        languages.forEach(lang => {
-            const option = document.createElement('div');
-            option.className = `language-option ${lang.code === currentLang ? 'active' : ''}`;
-            option.setAttribute('data-lang', lang.code);
-            option.textContent = lang.name;
+            }
             
-            option.addEventListener('click', () => {
-                I18n.setLanguage(lang.code);
-                document.getElementById('language-selector').classList.remove('show');
-                
-                // 清除所有页面缓存，以便应用新语言
-                this.pageCache = {};
-                
-                // 重新加载当前页面以应用新语言
-                this.loadPage(this.currentPage);
-            });
-            
-            languageOptions.appendChild(option);
-        });
+            console.log('预加载页面完成');
+        } catch (error) {
+            console.error('预加载页面失败:', error);
+        }
     }
 
     // 显示加载指示器
     showLoading() {
-        const mainContent = document.getElementById('main-content');
-        if (mainContent) {
-            mainContent.innerHTML = `
-                <div class="loading-container">
-                    <div class="spinner"></div>
-                    <p data-i18n="LOADING">加载中...</p>
-                </div>
-            `;
+        const loadingContainer = document.querySelector('.loading-container');
+        if (loadingContainer) {
+            loadingContainer.style.display = 'flex';
         }
     }
 
     // 隐藏加载指示器
     hideLoading() {
-        // 不需要特别处理，因为loadPage会清空内容
+        const loadingContainer = document.querySelector('.loading-container');
+        if (loadingContainer) {
+            loadingContainer.style.display = 'none';
+        }
+    }
+
+    // 显示页面加载指示器
+    showPageLoading() {
+        this.pageLoading = true;
+        const mainContent = document.getElementById('main-content');
+        
+        // 添加加载类
+        mainContent.classList.add('loading');
+        
+        // 如果没有加载指示器，添加一个
+        if (!document.querySelector('.page-loading-indicator')) {
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'page-loading-indicator';
+            loadingIndicator.innerHTML = '<div class="spinner"></div>';
+            mainContent.appendChild(loadingIndicator);
+        }
+    }
+
+    // 隐藏页面加载指示器
+    hidePageLoading() {
+        this.pageLoading = false;
+        const mainContent = document.getElementById('main-content');
+        
+        // 移除加载类
+        mainContent.classList.remove('loading');
+        
+        // 移除加载指示器
+        const loadingIndicator = document.querySelector('.page-loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
     }
 
     // 显示错误信息
     showError(message) {
-        Logger.error('应用错误', message);
         const mainContent = document.getElementById('main-content');
-        if (mainContent) {
-            mainContent.innerHTML = `
-                <div class="error-container">
+        mainContent.innerHTML = `
+            <div class="error-container">
+                <div class="error-icon">
                     <span class="material-symbols-rounded">error</span>
-                    <p>${message}</p>
-                    <button class="md-button" onclick="location.reload()">重试</button>
                 </div>
-            `;
-        }
+                <h2 data-i18n="ERROR_OCCURRED">发生错误</h2>
+                <p>${message}</p>
+                <button id="reload-app" class="md-button primary">
+                    <span class="material-symbols-rounded">refresh</span>
+                    <span data-i18n="RELOAD_APP">重新加载</span>
+                </button>
+            </div>
+        `;
+        
+        // 添加重新加载按钮事件
+        document.getElementById('reload-app').addEventListener('click', () => {
+            window.location.reload();
+        });
+        
+        // 应用翻译
+        I18n.applyTranslations();
     }
 
-    // 获取系统信息
-    async getSystemInfo() {
-        try {
-            const systemInfo = {};
-            
-            // 获取 ABI
-            const abiResult = await Core.execCommand('getprop ro.product.cpu.abi');
-            systemInfo.abi = abiResult.trim() || 'Unknown';
-            
-            // 获取安卓版本
-            const androidVersionResult = await Core.execCommand('getprop ro.build.version.release');
-            const androidApiResult = await Core.execCommand('getprop ro.build.version.sdk');
-            systemInfo.androidVersion = `${androidVersionResult.trim()} (API ${androidApiResult.trim()})` || 'Unknown';
-            
-            // 获取内核版本
-            const kernelVersionResult = await Core.execCommand('uname -r');
-            systemInfo.kernelVersion = kernelVersionResult.trim() || 'Unknown';
-            
-            // 获取模块路径
-            systemInfo.modulePath = Core.MODULE_PATH;
-            
-            // 检测 ROOT 实现方式
-            const rootImplementation = await this.detectRootImplementation();
-            systemInfo.rootImplementation = rootImplementation;
-            
-            return systemInfo;
-        } catch (error) {
-            console.error('获取系统信息失败:', error);
-            return {
-                abi: 'Unknown',
-                androidVersion: 'Unknown',
-                kernelVersion: 'Unknown',
-                modulePath: Core.MODULE_PATH,
-                rootImplementation: 'Unknown'
-            };
-        }
+    // 绑定全局事件
+    bindEvents() {
+        // 监听网络状态变化
+        window.addEventListener('online', () => {
+            console.log('网络连接已恢复');
+            Core.showToast(I18n.translate('NETWORK_RESTORED', '网络连接已恢复'), 'success');
+        });
+        
+        window.addEventListener('offline', () => {
+            console.warn('网络连接已断开');
+            Core.showToast(I18n.translate('NETWORK_LOST', '网络连接已断开'), 'warning');
+        });
+        
+        // 监听错误事件
+        window.addEventListener('error', (event) => {
+            console.error('全局错误:', event.error);
+        });
     }
 
-    // 检测 ROOT 实现方式
+    // 检测ROOT实现方式
     async detectRootImplementation() {
         try {
             // 检查 Magisk
-            const magiskExists = await Core.directoryExists('/data/adb/magisk');
-            if (magiskExists) {
+            const magiskExists = await Core.execCommand(`[ -d "/data/adb/magisk" ] && echo "true" || echo "false"`);
+            if (magiskExists.trim() === "true") {
                 // 尝试获取 Magisk 版本
                 try {
                     const magiskVersion = await Core.execCommand('magisk -v');
@@ -610,8 +382,8 @@ class App {
             }
             
             // 检查 KernelSU
-            const ksuExists = await Core.directoryExists('/data/adb/ksu');
-            if (ksuExists) {
+            const ksuExists = await Core.execCommand(`[ -d "/data/adb/ksu" ] && echo "true" || echo "false"`);
+            if (ksuExists.trim() === "true") {
                 // 尝试获取 KernelSU 版本
                 try {
                     const ksuVersion = await Core.execCommand('ksud -V');
@@ -625,8 +397,8 @@ class App {
             }
             
             // 检查 APatch
-            const apatchExists = await Core.directoryExists('/data/adb/apd');
-            if (apatchExists) {
+            const apatchExists = await Core.execCommand(`[ -d "/data/adb/apd" ] && echo "true" || echo "false"`);
+            if (apatchExists.trim() === "true") {
                 return 'APatch';
             }
             
@@ -636,96 +408,7 @@ class App {
             return 'Unknown';
         }
     }
-    
-    // 预加载页面
-    preloadPages() {
-        // 创建一个隐藏的容器用于预渲染
-        const preloadContainer = document.createElement('div');
-        preloadContainer.style.display = 'none';
-        document.body.appendChild(preloadContainer);
-        
-        // 预加载所有页面
-        Object.keys(this.pageModules).forEach(pageName => {
-            if (pageName !== this.currentPage) {
-                setTimeout(() => {
-                    try {
-                        const pageModule = this.pageModules[pageName];
-                        
-                        // 如果页面模块有预加载方法，则调用它
-                        if (typeof pageModule.preload === 'function') {
-                            pageModule.preload();
-                            return;
-                        }
-                        
-                        // 否则尝试渲染页面内容
-                        const pageContent = pageModule.render();
-                        this.pageCache[pageName] = pageContent;
-                        
-                        // 记录预加载时间
-                        this.pageLastRefresh = this.pageLastRefresh || {};
-                        this.pageLastRefresh[pageName] = Date.now();
-                        
-                        console.log(`预加载页面完成: ${pageName}`);
-                    } catch (error) {
-                        console.warn(`预加载页面失败: ${pageName}`, error);
-                    }
-                }, 1000 + Math.random() * 1000); // 随机延迟1-2秒，避免同时加载
-            }
-        });
-    }
-    
-    // 清除页面缓存
-    clearPageCache() {
-        this.pageCache = {};
-        console.log('已清除所有页面缓存');
-    }
 }
 
 // 创建应用实例
-const app = new App();
-
-// 导出应用实例
-window.app = app;
-
-// 添加页面预加载功能
-document.addEventListener('DOMContentLoaded', () => {
-    // 在初始页面加载完成后预加载其他页面
-    window.addEventListener('load', () => {
-        // 预加载由App类中的preloadPages方法处理
-    });
-});
-
-// 在文件末尾添加全局错误处理
-
-// 添加全局错误处理
-window.addEventListener('error', (event) => {
-    console.error('全局错误:', event.error);
-    Logger.error('未捕获的错误', {
-        message: event.error?.message || '未知错误',
-        stack: event.error?.stack,
-        source: event.filename,
-        line: event.lineno,
-        column: event.colno
-    });
-    
-    // 显示友好的错误消息
-    Core.showToast(I18n.translate('UNEXPECTED_ERROR', '发生意外错误，请刷新页面'), 'error');
-    
-    // 防止错误传播
-    event.preventDefault();
-});
-
-// 处理未捕获的Promise异常
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('未处理的Promise拒绝:', event.reason);
-    Logger.error('未处理的Promise拒绝', {
-        message: event.reason?.message || '未知原因',
-        stack: event.reason?.stack
-    });
-    
-    // 显示友好的错误消息
-    Core.showToast(I18n.translate('ASYNC_ERROR', '异步操作失败，请重试'), 'error');
-    
-    // 防止错误传播
-    event.preventDefault();
-});
+window.app = new App();

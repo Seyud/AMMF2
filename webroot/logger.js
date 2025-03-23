@@ -26,9 +26,10 @@ const Logger = {
         try {
             // 确保日志目录存在
             const logsDir = `${Core.MODULE_PATH}logs/`;
-            const dirExists = await this.checkDirectoryExists(logsDir);
             
-            if (!dirExists) {
+            // 检查目录是否存在，如果不存在则创建
+            const dirExistsResult = await Core.execCommand(`[ -d "${logsDir}" ] && echo "true" || echo "false"`);
+            if (dirExistsResult.trim() !== "true") {
                 console.warn('日志目录不存在，尝试创建');
                 await Core.execCommand(`mkdir -p "${logsDir}"`);
             }
@@ -123,17 +124,28 @@ const Logger = {
             await Core.execCommand(`chmod 644 "${this.logFile}"`);
             return true;
         } catch (error) {
-            // 尝试使用备用方法写入
-            try {
-                await Core.writeFile(this.logFile, content, true); // 添加第三个参数表示追加模式
-                return true;
-            } catch (backupError) {
-                if (this._originalConsole && this._originalConsole.error) {
-                    this._originalConsole.error(`追加日志失败: ${this.logFile}`, error);
-                    this._originalConsole.error(`备用写入也失败:`, backupError);
-                }
-                return false;
+            // 记录错误但不再尝试备用方法，因为备用方法也使用了已移除的API
+            if (this._originalConsole && this._originalConsole.error) {
+                this._originalConsole.error(`追加日志失败: ${this.logFile}`, error);
             }
+            return false;
+        }
+    },
+    
+    // 修改getLogContent方法
+    async getLogContent() {
+        try {
+            // 检查文件是否存在
+            const fileExistsResult = await Core.execCommand(`[ -f "${this.logFile}" ] && echo "true" || echo "false"`);
+            if (fileExistsResult.trim() !== "true") {
+                return '';
+            }
+            
+            // 读取日志文件内容
+            return await Core.execCommand(`cat "${this.logFile}"`);
+        } catch (error) {
+            this._originalConsole.error('读取日志内容失败:', error);
+            return '';
         }
     },
     
@@ -235,7 +247,8 @@ const Logger = {
     // 清空日志
     async clearLog() {
         try {
-            await Core.writeFile(this.logFile, '');
+            // 清空日志文件
+            await Core.execCommand(`echo "" > "${this.logFile}"`);
             this.info('日志已清空');
             return true;
         } catch (error) {
