@@ -42,8 +42,8 @@
   --header-height: 64px;
   --nav-height: 56px;
   --card-border-radius: 16px;
-  --button-border-radius: 20px;
-  --icon-size: 24px;
+  --button-border-radius: 24px;
+  --icon-size: 28px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
@@ -207,7 +207,13 @@ body {
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
   box-shadow: var(--elevation-1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* 移除过渡效果 */
+}
+
+/* 移除卡片悬浮效果 */
+.card:hover {
+  /* 移除悬浮效果 */
+  box-shadow: var(--elevation-1); /* 保持与非悬浮状态相同 */
 }
 
 .card:hover {
@@ -219,14 +225,39 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: 10px 24px; /* 增大内边距 */
   border-radius: var(--button-border-radius);
-  font-size: 0.875rem;
+  font-size: 1rem; /* 增大字体 */
   font-weight: 500;
   border: none;
   cursor: pointer;
   background-color: transparent;
   color: var(--md-primary);
+  min-height: 40px; /* 确保最小高度 */
+}
+
+/* 图标按钮调整 */
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px; /* 增大尺寸 */
+  height: 48px; /* 增大尺寸 */
+  border-radius: 50%;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--md-onSurface);
+}
+
+/* 导航项调整 */
+.nav-item .material-symbols-rounded {
+  font-size: var(--icon-size);
+}
+
+.nav-label {
+  font-size: 0.875rem; /* 增大导航标签字体 */
+  margin-top: var(--spacing-xs);
 }
 
 .md-button:hover {
@@ -538,12 +569,14 @@ input:focus + .slider {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--spacing-md);
+  text-align: left; /* 添加左对齐 */
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 0; /* 增加垂直间距 */
 }
 
 .info-label {

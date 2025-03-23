@@ -163,10 +163,19 @@ const SettingsPage = {
                 return true;
             }
             
+            // 确保目录存在
             const dirPath = this.configPath.substring(0, this.configPath.lastIndexOf('/'));
             await Core.execCommand(`mkdir -p "${dirPath}"`);
             
-            await Core.execCommand(`echo '${newConfigContent.replace(/'/g, "'\\''").replace(/\n/g, "\\n")}' > "${this.configPath}"`);
+            // 使用临时文件方式写入，避免权限问题
+            const tempFile = `${dirPath}/temp_config_${Date.now()}.sh`;
+            await Core.execCommand(`echo '${newConfigContent.replace(/'/g, "'\\''").replace(/\n/g, "\\n")}' > "${tempFile}"`);
+            await Core.execCommand(`mv "${tempFile}" "${this.configPath}"`);
+            
+            // 如果webConfigPath是相对路径，确保它在正确的位置
+            if (!this.webConfigPath.startsWith('/')) {
+                this.webConfigPath = `${Core.MODULE_PATH}${this.webConfigPath}`;
+            }
             await Core.execCommand(`echo '${newConfigContent.replace(/'/g, "'\\''").replace(/\n/g, "\\n")}' > "${this.webConfigPath}"`);
             
             this.originalConfigContent = newConfigContent;
@@ -235,10 +244,13 @@ const SettingsPage = {
         for (const line of lines) {
             if (line.trim().startsWith('#') || line.trim() === '') continue;
             
-            const match = line.match(/^([A-Za-z0-9_]+)=["']?([^"']*)["']?$/);
+            // 修改正则表达式，更好地处理引号内的值
+            const match = line.match(/^([A-Za-z0-9_]+)=["']?(.*?)["']?$/);
             if (match) {
                 const [, key, value] = match;
-                config[key] = value;
+                // 去除可能的注释
+                const valueWithoutComment = value.split('#')[0].trim();
+                config[key] = valueWithoutComment;
             }
         }
         
@@ -395,13 +407,20 @@ const SettingsPage = {
         // 按字母顺序排序键
         const sortedKeys = Object.keys(this.configData).sort();
         
+        // 获取排除列表
+        const excludedKeys = this.settingsJson && this.settingsJson.excluded ? this.settingsJson.excluded : [];
+        
         sortedKeys.forEach(key => {
+            // 跳过排除列表中的键
+            if (excludedKeys.includes(key)) return;
+            
             const value = this.configData[key];
             
             html += `
                 <div class="setting-item">
                     <div class="setting-info">
                         <div class="setting-key">${key}</div>
+                        ${this.getSettingDescription(key)}
                     </div>
                     <div class="setting-control">
                         ${this.generateControlHTML(key, value)}
@@ -411,6 +430,19 @@ const SettingsPage = {
         });
         
         return html;
+    },
+    
+    // 获取设置描述
+    getSettingDescription(key) {
+        if (this.settingsJson && this.settingsJson.descriptions && this.settingsJson.descriptions[key]) {
+            const description = this.settingsJson.descriptions[key];
+            const lang = I18n.currentLang || 'zh';
+            const text = description[lang] || description.en || '';
+            if (text) {
+                return `<div class="setting-description">${text}</div>`;
+            }
+        }
+        return '';
     },
     
     // 生成设置项HTML
@@ -433,6 +465,9 @@ const SettingsPage = {
     
     // 生成控件HTML
     generateControlHTML(key, value, type = 'auto') {
+        // 获取当前语言
+        const currentLang = I18n ? I18n.currentLang || 'zh' : 'zh';
+        
         // 如果类型是auto，根据值自动判断类型
         if (type === 'auto') {
             if (value === 'true' || value === 'false') {
@@ -442,6 +477,12 @@ const SettingsPage = {
             } else {
                 type = 'text';
             }
+        }
+        
+        // 检查settings.json中是否有该键的选项配置
+        let options = null;
+        if (this.settingsJson && this.settingsJson.options && this.settingsJson.options[key]) {
+            options = this.settingsJson.options[key].options;
         }
         
         switch (type) {
@@ -455,12 +496,15 @@ const SettingsPage = {
             case 'number':
                 return `<input type="number" class="setting-input" data-key="${key}" value="${value}">`;
             case 'select':
-                if (setting && setting.options) {
-                    let options = '';
-                    setting.options.forEach(option => {
-                        options += `<option value="${option.value}" ${value === option.value ? 'selected' : ''}>${option.label}</option>`;
+                if (options) {
+                    let optionsHtml = '';
+                    options.forEach(option => {
+                        const label = option.label && option.label[currentLang] ? 
+                                     option.label[currentLang] : 
+                                     (option.label && option.label.en ? option.label.en : option.value);
+                        optionsHtml += `<option value="${option.value}" ${value === option.value ? 'selected' : ''}>${label}</option>`;
                     });
-                    return `<select class="setting-input" data-key="${key}">${options}</select>`;
+                    return `<select class="setting-input" data-key="${key}">${optionsHtml}</select>`;
                 }
                 // 如果没有选项，回退到文本输入
                 return `<input type="text" class="setting-input" data-key="${key}" value="${value}">`;
@@ -479,20 +523,21 @@ const SettingsPage = {
             settingsContent.innerHTML = this.generateSettingsHTML();
         }
         
-        // 添加设置事件监听器
-        this.addSettingEventListeners();
-        
-        // 添加刷新和保存按钮事件
+        // 移除旧的事件监听器（通过替换元素）
         const refreshButton = document.getElementById('refresh-settings');
         if (refreshButton) {
-            refreshButton.addEventListener('click', () => {
+            const newRefreshButton = refreshButton.cloneNode(true);
+            refreshButton.parentNode.replaceChild(newRefreshButton, refreshButton);
+            newRefreshButton.addEventListener('click', () => {
                 this.loadConfig(true);
             });
         }
         
         const saveButton = document.getElementById('save-settings');
         if (saveButton) {
-            saveButton.addEventListener('click', () => {
+            const newSaveButton = saveButton.cloneNode(true);
+            saveButton.parentNode.replaceChild(newSaveButton, saveButton);
+            newSaveButton.addEventListener('click', () => {
                 this.saveConfig();
             });
         }
@@ -500,10 +545,15 @@ const SettingsPage = {
         // 添加配置选择器事件
         const configSelector = document.getElementById('config-file-select');
         if (configSelector) {
-            configSelector.addEventListener('change', (e) => {
+            const newConfigSelector = configSelector.cloneNode(true);
+            configSelector.parentNode.replaceChild(newConfigSelector, configSelector);
+            newConfigSelector.addEventListener('change', (e) => {
                 this.switchConfig(e.target.value);
             });
         }
+        
+        // 添加设置事件监听器
+        this.addSettingEventListeners();
     },
     
     // 收集表单数据

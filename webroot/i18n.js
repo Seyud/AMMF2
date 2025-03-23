@@ -55,8 +55,8 @@ const I18n = {
     // 加载语言文件
     async loadLanguageFile() {
         try {
-            // 读取语言文件
-            const langFilePath = `${Core.MODULE_PATH}webroot/i18n/languages.json`;
+            // 读取语言文件 - 修改为正确的路径
+            const langFilePath = `${Core.MODULE_PATH}files/languages.sh`;
             
             // 检查文件是否存在
             const fileExistsResult = await Core.execCommand(`[ -f "${langFilePath}" ] && echo "true" || echo "false"`);
@@ -72,11 +72,8 @@ const I18n = {
                 return false;
             }
             
-            // 解析JSON
-            const langData = JSON.parse(langFileContent);
-            
-            // 合并翻译
-            this.mergeTranslations(langData);
+            // 解析shell格式的语言文件
+            this.parseLanguagesFile(langFileContent);
             
             console.log('语言文件加载成功');
             return true;
@@ -93,23 +90,21 @@ const I18n = {
         console.log('开始解析语言文件...');
         
         // 提取语言块
-        const langBlocks = content.match(/lang_([a-z]{2})\(\)\s*\{([\s\S]*?)\}/g);
+        const langRegex = /lang_([a-z]{2})\(\)\s*\{([\s\S]*?)}/g;
+        let match;
         
-        if (!langBlocks || langBlocks.length === 0) {
-            console.warn('未找到有效的语言块');
-            return;
-        }
-        
-        // 清空现有支持的语言列表
-        this.supportedLangs = [];
+        // 清空现有支持的语言列表，但保留默认的zh和en
+        this.supportedLangs = ['zh', 'en'];
         
         // 解析每个语言块
-        langBlocks.forEach(block => {
-            const langMatch = block.match(/lang_([a-z]{2})\(\)/);
-            if (!langMatch) return;
+        while ((match = langRegex.exec(content)) !== null) {
+            const lang = match[1];
+            const blockContent = match[2];
             
-            const lang = langMatch[1];
-            this.supportedLangs.push(lang);
+            // 确保语言代码在支持列表中
+            if (!this.supportedLangs.includes(lang)) {
+                this.supportedLangs.push(lang);
+            }
             
             // 初始化语言对象
             if (!this.translations[lang]) {
@@ -117,7 +112,7 @@ const I18n = {
             }
             
             // 提取键值对
-            const lines = block.split('\n');
+            const lines = blockContent.split('\n');
             for (let line of lines) {
                 line = line.trim();
                 
@@ -126,30 +121,18 @@ const I18n = {
                     continue;
                 }
                 
-                // 解析键值对
-                const match = line.match(/([A-Za-z0-9_]+)="(.+)"/);
-                if (match) {
-                    const key = match[1];
-                    const value = match[2];
+                // 解析键值对 - 适应shell格式 KEY="Value"
+                const keyValueMatch = line.match(/([A-Za-z0-9_]+)="(.+)"/);
+                if (keyValueMatch) {
+                    const key = keyValueMatch[1];
+                    const value = keyValueMatch[2];
                     this.translations[lang][key] = value;
-                    
-                    // 特殊处理 WebUI 前缀的键
-                    if (key.startsWith('WEBUI_')) {
-                        const webUIKey = key.replace('WEBUI_', '');
-                        this.translations[lang][webUIKey] = value;
-                    }
                 }
             }
-        });
-        
-        // 确保至少有中英文
-        if (!this.supportedLangs.includes('zh')) this.supportedLangs.push('zh');
-        if (!this.supportedLangs.includes('en')) this.supportedLangs.push('en');
-        
-        // 去重
-        this.supportedLangs = [...new Set(this.supportedLangs)];
+        }
         
         console.log(`解析完成，支持的语言: ${this.supportedLangs.join(', ')}`);
+        console.log(`语言数据: ${Object.keys(this.translations).map(lang => `${lang}(${Object.keys(this.translations[lang]).length})`).join(', ')}`);
     },
     
     // 加载默认翻译
@@ -301,14 +284,25 @@ const I18n = {
             }
             
             // 其次使用配置文件中的语言设置
-            const config = await Core.getConfig();
-            if (config && config.print_languages && this.supportedLangs.includes(config.print_languages)) {
-                this.currentLang = config.print_languages;
-                console.log(`从配置中读取语言设置: ${this.currentLang}`);
+            try {
+                const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+                const fileExists = await Core.execCommand(`[ -f "${configPath}" ] && echo "true" || echo "false"`);
                 
-                // 保存到本地存储
-                localStorage.setItem('currentLanguage', this.currentLang);
-                return;
+                if (fileExists.trim() === "true") {
+                    const configContent = await Core.execCommand(`cat "${configPath}"`);
+                    const printLangMatch = configContent.match(/print_languages=["']?([a-z]{2})["']?/);
+                    
+                    if (printLangMatch && this.supportedLangs.includes(printLangMatch[1])) {
+                        this.currentLang = printLangMatch[1];
+                        console.log(`从配置中读取语言设置: ${this.currentLang}`);
+                        
+                        // 保存到本地存储
+                        localStorage.setItem('currentLanguage', this.currentLang);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('读取配置文件语言设置失败:', error);
             }
             
             // 再次使用浏览器语言
@@ -325,19 +319,10 @@ const I18n = {
                 return;
             }
             
-            // 默认使用中文
-            this.currentLang = 'zh';
+            // 最后使用默认语言
             console.log(`使用默认语言: ${this.currentLang}`);
-            
-            // 保存到本地存储
-            localStorage.setItem('currentLanguage', this.currentLang);
-            
-            // 更新配置文件
-            await this.updateConfigLanguage('zh');
         } catch (error) {
             console.error('确定初始语言失败:', error);
-            this.currentLang = 'zh'; // 默认中文
-            localStorage.setItem('currentLanguage', 'zh');
         }
     },
     
@@ -361,8 +346,21 @@ const I18n = {
                 return false;
             }
             
-            // 更新语言设置
-            const updatedContent = configContent.replace(/print_languages=["'].*?["']/g, `print_languages="${lang}"`);
+            // 更新语言设置 - 处理带引号和不带引号的情况
+            let updatedContent;
+            if (configContent.match(/print_languages=["']/)) {
+                // 带引号的情况
+                updatedContent = configContent.replace(/print_languages=["'].*?["']/g, `print_languages="${lang}"`);
+            } else {
+                // 不带引号的情况
+                updatedContent = configContent.replace(/print_languages=\S+/g, `print_languages="${lang}"`);
+            }
+            
+            // 如果没有找到print_languages，则添加它
+            if (updatedContent === configContent) {
+                // 在文件末尾添加
+                updatedContent = configContent.trim() + `\n\nprint_languages="${lang}"                   # Default language for printing\n`;
+            }
             
             // 写入更新后的配置
             await Core.execCommand(`echo '${updatedContent.replace(/'/g, "'\\''").replace(/\n/g, "\\n")}' > "${configPath}"`);
