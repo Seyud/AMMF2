@@ -898,3 +898,89 @@ input:focus + .slider {
   font-size: 0.875rem;
   text-align: center;
 }
+
+/* 改进的响应式设计 */
+@media (max-width: 480px) {
+  .header-title h1 {
+    font-size: 1rem;
+  }
+  
+  .settings-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  
+  .settings-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .setting-control {
+    width: 100%;
+    margin-top: var(--spacing-sm);
+  }
+}
+
+/* 平板设备优化 */
+@media (min-width: 481px) and (max-width: 768px) {
+  #main-content {
+    padding: var(--spacing-md);
+  }
+  
+  .settings-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+  }
+}
+
+/* 桌面设备优化 */
+@media (min-width: 769px) {
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+  }
+  
+  .about-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-lg);
+  }
+}
+
+/* 深色模式下的滚动条样式 */
+.dark-theme::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-theme::-webkit-scrollbar-track {
+  background: var(--md-surfaceVariant);
+}
+
+.dark-theme::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline);
+  border-radius: 4px;
+}
+
+/* 浅色模式下的滚动条样式 */
+.light-theme::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.light-theme::-webkit-scrollbar-track {
+  background: var(--md-surfaceVariant);
+}
+
+.light-theme::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline);
+  border-radius: 4px;
+}
