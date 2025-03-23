@@ -390,25 +390,40 @@ const I18n = {
     
     // 应用翻译到页面
     applyTranslations() {
-        console.log('应用翻译到页面...');
-        const elements = document.querySelectorAll('[data-i18n]');
-        elements.forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            const translation = this.translate(key);
-            if (translation) {
-                if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search')) {
-                    el.placeholder = translation;
-                } else {
-                    el.textContent = translation;
+        // 使用性能更好的选择器
+        const container = document.querySelector('.page-container.active') || document;
+        const elements = container.querySelectorAll('[data-i18n]');
+        
+        // 使用requestAnimationFrame优化DOM操作
+        requestAnimationFrame(() => {
+            // 批量处理DOM更新
+            for (let i = 0; i < elements.length; i++) {
+                const el = elements[i];
+                const key = el.getAttribute('data-i18n');
+                const translation = this.translate(key);
+                
+                if (translation) {
+                    if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search')) {
+                        if (el.placeholder !== translation) {
+                            el.placeholder = translation;
+                        }
+                    } else {
+                        if (el.textContent !== translation) {
+                            el.textContent = translation;
+                        }
+                    }
+                }
+            }
+            
+            // 更新语言按钮标题
+            const langButton = document.getElementById('language-button');
+            if (langButton) {
+                const displayName = this.getLanguageDisplayName(this.currentLang);
+                if (langButton.getAttribute('title') !== displayName) {
+                    langButton.setAttribute('title', displayName);
                 }
             }
         });
-        
-        // 更新语言按钮标题
-        const langButton = document.getElementById('language-button');
-        if (langButton) {
-            langButton.setAttribute('title', this.getLanguageDisplayName(this.currentLang));
-        }
     },
     
     // 获取语言显示名称

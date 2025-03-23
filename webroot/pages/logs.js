@@ -21,16 +21,28 @@ const LogsPage = {
     // 初始化
     async init() {
         try {
+            // 检查日志目录是否存在
+            const logsDir = `${Core.MODULE_PATH}logs/`;
+            const dirExists = await this.checkLogsDirectoryExists(logsDir);
+            
+            if (!dirExists) {
+                console.warn('日志目录不存在');
+                // 不再自动创建目录
+            }
+            
             // 扫描可用的日志文件
             await this.scanLogFiles();
             
             // 设置默认日志文件
             if (Object.keys(this.logFiles).length > 0) {
                 this.currentLogFile = Object.keys(this.logFiles)[0];
+                // 加载日志内容
+                await this.loadLogContent();
+            } else {
+                // 没有日志文件，设置空内容
+                this.logContent = I18n.translate('NO_LOGS_FILES', '没有找到日志文件');
             }
             
-            // 加载日志内容
-            await this.loadLogContent();
             return true;
         } catch (error) {
             console.error('初始化日志页面失败:', error);
@@ -38,36 +50,84 @@ const LogsPage = {
         }
     },
     
+    // 检查日志目录是否存在
+    async checkLogsDirectoryExists(path) {
+        try {
+            const result = await Core.execCommand(`[ -d "${path}" ] && echo "true" || echo "false"`);
+            return result.trim() === "true";
+        } catch (error) {
+            console.error(`检查目录存在性失败: ${path}`, error);
+            return false;
+        }
+    },
+    
     // 扫描可用的日志文件
     async scanLogFiles() {
         try {
-            // 获取logs目录下的所有日志文件
-            const result = await Core.execCommand(`find "${Core.MODULE_PATH}logs/" -name "*.log" -o -name "*.log.old" | sort`);
+            const logsDir = `${Core.MODULE_PATH}logs/`;
             
-            if (result) {
-                const files = result.split('\n').filter(file => file.trim() !== '');
-                
-                // 清空现有日志文件列表
+            // 检查目录是否存在
+            const dirExists = await this.checkLogsDirectoryExists(logsDir);
+            if (!dirExists) {
+                console.warn('日志目录不存在');
                 this.logFiles = {};
+                return;
+            }
+            
+            // 获取logs目录下的所有日志文件
+            const result = await Core.execCommand(`find "${logsDir}" -type f -name "*.log" -o -name "*.log.old" 2>/dev/null | sort`);
+            
+            // 清空现有日志文件列表
+            this.logFiles = {};
+            
+            if (result && result.trim() !== '') {
+                const files = result.split('\n').filter(file => file.trim() !== '');
                 
                 // 添加找到的日志文件
                 files.forEach(file => {
                     const fileName = file.split('/').pop();
-                    const displayName = this.getDisplayName(fileName);
                     this.logFiles[fileName] = file;
                 });
                 
                 console.log('可用日志文件:', this.logFiles);
+            } else {
+                console.log('未找到日志文件');
             }
             
-            // 如果没有找到日志文件，添加默认的service.log
+            // 如果没有找到日志文件，尝试创建默认日志文件
             if (Object.keys(this.logFiles).length === 0) {
-                this.logFiles['service.log'] = `${Core.MODULE_PATH}logs/service.log`;
+                // 创建service.log
+                const defaultLogPath = `${logsDir}service.log`;
+                try {
+                    // 检查文件是否存在，不存在则创建
+                    const fileExists = await Core.fileExists(defaultLogPath);
+                    if (!fileExists) {
+                        await Core.writeFile(defaultLogPath, '');
+                        console.log('创建了默认日志文件:', defaultLogPath);
+                    }
+                    this.logFiles['service.log'] = defaultLogPath;
+                } catch (err) {
+                    console.error('创建默认日志文件失败:', err);
+                }
+                
+                // 创建webui.log
+                const webuiLogPath = `${logsDir}webui.log`;
+                try {
+                    // 检查文件是否存在，不存在则创建
+                    const fileExists = await Core.fileExists(webuiLogPath);
+                    if (!fileExists) {
+                        await Core.writeFile(webuiLogPath, '');
+                        console.log('创建了WebUI日志文件:', webuiLogPath);
+                    }
+                    this.logFiles['webui.log'] = webuiLogPath;
+                } catch (err) {
+                    console.error('创建WebUI日志文件失败:', err);
+                }
             }
         } catch (error) {
             console.error('扫描日志文件失败:', error);
-            // 添加默认日志
-            this.logFiles['service.log'] = `${Core.MODULE_PATH}logs/service.log`;
+            // 清空日志文件列表
+            this.logFiles = {};
         }
     },
     
@@ -79,6 +139,11 @@ const LogsPage = {
         // 首字母大写
         name = name.charAt(0).toUpperCase() + name.slice(1);
         
+        // 特殊处理webui日志
+        if (name.toLowerCase() === 'webui') {
+            name = 'WebUI';
+        }
+        
         // 添加后缀说明
         if (fileName.endsWith('.old')) {
             name += ' (旧)';
@@ -89,17 +154,20 @@ const LogsPage = {
     
     // 渲染页面
     render() {
+        // 检查是否有日志文件
+        const hasLogFiles = Object.keys(this.logFiles).length > 0;
+        
         return `
             <div class="page-container logs-page">
                 <div class="logs-header card">
                     <div class="logs-selector">
                         <label for="log-file-select" data-i18n="SELECT_LOG_FILE">选择日志文件</label>
-                        <select id="log-file-select">
+                        <select id="log-file-select" ${!hasLogFiles ? 'disabled' : ''}>
                             ${this.renderLogFileOptions()}
                         </select>
                     </div>
                     <div class="logs-actions">
-                        <button id="refresh-logs" class="md-button">
+                        <button id="refresh-logs" class="md-button" ${!hasLogFiles ? 'disabled' : ''}>
                             <span class="material-symbols-rounded">refresh</span>
                             <span data-i18n="REFRESH_LOGS">刷新日志</span>
                         </button>
@@ -108,23 +176,27 @@ const LogsPage = {
                                 自动刷新
                             </label>
                             <label class="switch">
-                                <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''}>
+                                <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
                                 <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
                 </div>
                 
+                <div class="logs-note card">
+                    <p><small data-i18n="LOGS_READ_ONLY_NOTE">注意：日志查看功能默认为只读模式，不会自动修改日志文件。</small></p>
+                </div>
+                
                 <div class="logs-content card">
-                    <pre id="logs-display">${this.escapeHtml(this.logContent) || I18n.translate('NO_LOGS', '没有可用的日志')}</pre>
+                    <pre id="logs-display">${hasLogFiles ? this.escapeHtml(this.logContent) || I18n.translate('NO_LOGS', '没有可用的日志') : I18n.translate('NO_LOGS_FILES', '没有找到日志文件')}</pre>
                 </div>
                 
                 <div class="logs-actions-bottom">
-                    <button id="clear-logs" class="md-button warning">
+                    <button id="clear-logs" class="md-button warning" ${!hasLogFiles ? 'disabled' : ''}>
                         <span class="material-symbols-rounded">delete</span>
                         <span data-i18n="CLEAR_LOGS">清除日志</span>
                     </button>
-                    <button id="export-logs" class="md-button secondary">
+                    <button id="export-logs" class="md-button secondary" ${!hasLogFiles || !this.logContent ? 'disabled' : ''}>
                         <span class="material-symbols-rounded">download</span>
                         <span data-i18n="EXPORT_LOGS">导出日志</span>
                     </button>
@@ -149,6 +221,22 @@ const LogsPage = {
     async loadLogContent(showToast = false) {
         try {
             const logPath = this.logFiles[this.currentLogFile];
+            
+            // 检查文件是否存在
+            const fileExists = await Core.fileExists(logPath);
+            if (!fileExists) {
+                this.logContent = '';
+                const logsDisplay = document.getElementById('logs-display');
+                if (logsDisplay) {
+                    logsDisplay.innerHTML = I18n.translate('LOG_FILE_NOT_FOUND', '日志文件不存在');
+                }
+                
+                if (showToast) {
+                    Core.showToast(I18n.translate('LOG_FILE_NOT_FOUND', '日志文件不存在'), 'warning');
+                }
+                return;
+            }
+            
             const content = await Core.readFile(logPath);
             
             this.logContent = content || '';
@@ -184,12 +272,19 @@ const LogsPage = {
     // 清除日志
     async clearLogs() {
         try {
-            // 确认对话框
-            if (!confirm(I18n.translate('CONFIRM_CLEAR_LOGS', '确定要清除此日志文件吗？'))) {
+            // 增强确认对话框
+            if (!confirm(I18n.translate('CONFIRM_CLEAR_LOGS', '警告：此操作将永久清空所选日志文件的内容，且无法恢复。确定要继续吗？'))) {
                 return;
             }
             
             const logPath = this.logFiles[this.currentLogFile];
+            
+            // 再次检查文件是否存在
+            const fileExists = await Core.fileExists(logPath);
+            if (!fileExists) {
+                Core.showToast(I18n.translate('LOG_FILE_NOT_FOUND', '日志文件不存在'), 'warning');
+                return;
+            }
             
             // 清空日志文件
             await Core.writeFile(logPath, '');

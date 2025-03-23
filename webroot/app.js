@@ -17,6 +17,12 @@ class App {
             about: window.AboutPage
         };
 
+        // 页面缓存
+        this.pageCache = {};
+        
+        // 页面加载状态
+        this.pageLoading = false;
+
         // 初始化应用
         this.init();
     }
@@ -85,6 +91,9 @@ class App {
             document.body.classList.add('app-loaded');
             
             console.log('应用初始化完成');
+            
+            // 预加载其他页面
+            this.preloadPages();
         } catch (error) {
             console.error('初始化应用出错:', error);
             this.hideLoading();
@@ -151,16 +160,27 @@ class App {
 
     // 导航到指定页面
     async navigateTo(pageName) {
+        // 如果正在加载页面或者已经在当前页面，则不执行
+        if (this.pageLoading || (this.currentPage === pageName && document.querySelector('.page-container'))) {
+            return;
+        }
+
         if (!this.pageModules[pageName]) {
             console.error(`页面模块不存在: ${pageName}`);
             return;
         }
+
+        // 标记正在加载
+        this.pageLoading = true;
 
         // 保存当前页面
         this.currentPage = pageName;
 
         // 加载页面内容
         await this.loadPage(pageName);
+        
+        // 标记加载完成
+        this.pageLoading = false;
     }
 
     // 加载页面内容
@@ -194,13 +214,27 @@ class App {
             // 获取页面模块
             const pageModule = this.pageModules[pageName];
             
-            // 初始化页面模块
-            if (typeof pageModule.init === 'function') {
-                await pageModule.init();
-            }
+            // 检查缓存
+            let pageContent;
+            let needsInit = true;
             
-            // 渲染页面内容
-            const pageContent = pageModule.render();
+            if (this.pageCache[pageName] && !this.shouldRefreshPage(pageName)) {
+                // 使用缓存的内容
+                console.log(`使用缓存的页面内容: ${pageName}`);
+                pageContent = this.pageCache[pageName];
+                needsInit = false;
+            } else {
+                // 初始化页面模块
+                if (typeof pageModule.init === 'function') {
+                    await pageModule.init();
+                }
+                
+                // 渲染页面内容
+                pageContent = pageModule.render();
+                
+                // 缓存页面内容
+                this.pageCache[pageName] = pageContent;
+            }
             
             // 移除加载指示器
             mainContent.removeChild(loadingContainer);
@@ -260,6 +294,31 @@ class App {
         }
     }
 
+    // 判断是否需要刷新页面
+    shouldRefreshPage(pageName) {
+        // 日志页面总是刷新
+        if (pageName === 'logs') {
+            return true;
+        }
+        
+        // 状态页面每60秒刷新一次
+        if (pageName === 'status') {
+            const lastRefresh = this.pageLastRefresh?.[pageName] || 0;
+            return (Date.now() - lastRefresh) > 60000;
+        }
+        
+        return false;
+    }
+    
+    // 强制刷新当前页面
+    refreshCurrentPage() {
+        // 清除当前页面的缓存
+        if (this.currentPage) {
+            delete this.pageCache[this.currentPage];
+            this.navigateTo(this.currentPage);
+        }
+    }
+
     // 更新活动导航项
     updateActiveNavItem(pageName) {
         const navItems = document.querySelectorAll('.nav-item');
@@ -281,22 +340,46 @@ class App {
         
         if (languageButton && languageSelector) {
             languageButton.addEventListener('click', () => {
+                // 添加显示类
                 languageSelector.classList.add('show');
+                
+                // 渲染语言选项
                 this.renderLanguageOptions();
+                
+                // 阻止页面滚动
+                document.body.style.overflow = 'hidden';
             });
             
             if (cancelLanguage) {
                 cancelLanguage.addEventListener('click', () => {
-                    languageSelector.classList.remove('show');
+                    // 关闭语言选择器
+                    this.closeLanguageSelector();
                 });
             }
             
             // 点击外部关闭语言选择器
             languageSelector.addEventListener('click', (e) => {
                 if (e.target === languageSelector) {
-                    languageSelector.classList.remove('show');
+                    this.closeLanguageSelector();
                 }
             });
+            
+            // 添加ESC键关闭
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && languageSelector.classList.contains('show')) {
+                    this.closeLanguageSelector();
+                }
+            });
+        }
+    }
+    
+    // 关闭语言选择器
+    closeLanguageSelector() {
+        const languageSelector = document.getElementById('language-selector');
+        if (languageSelector) {
+            languageSelector.classList.remove('show');
+            // 恢复页面滚动
+            document.body.style.overflow = '';
         }
     }
 
@@ -322,6 +405,9 @@ class App {
             option.addEventListener('click', () => {
                 I18n.setLanguage(lang.code);
                 document.getElementById('language-selector').classList.remove('show');
+                
+                // 清除所有页面缓存，以便应用新语言
+                this.pageCache = {};
                 
                 // 重新加载当前页面以应用新语言
                 this.loadPage(this.currentPage);
@@ -351,6 +437,7 @@ class App {
 
     // 显示错误信息
     showError(message) {
+        Logger.error('应用错误', message);
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
             mainContent.innerHTML = `
@@ -362,6 +449,133 @@ class App {
             `;
         }
     }
+
+    // 获取系统信息
+    async getSystemInfo() {
+        try {
+            const systemInfo = {};
+            
+            // 获取 ABI
+            const abiResult = await Core.execCommand('getprop ro.product.cpu.abi');
+            systemInfo.abi = abiResult.trim() || 'Unknown';
+            
+            // 获取安卓版本
+            const androidVersionResult = await Core.execCommand('getprop ro.build.version.release');
+            const androidApiResult = await Core.execCommand('getprop ro.build.version.sdk');
+            systemInfo.androidVersion = `${androidVersionResult.trim()} (API ${androidApiResult.trim()})` || 'Unknown';
+            
+            // 获取内核版本
+            const kernelVersionResult = await Core.execCommand('uname -r');
+            systemInfo.kernelVersion = kernelVersionResult.trim() || 'Unknown';
+            
+            // 获取模块路径
+            systemInfo.modulePath = Core.MODULE_PATH;
+            
+            // 检测 ROOT 实现方式
+            const rootImplementation = await this.detectRootImplementation();
+            systemInfo.rootImplementation = rootImplementation;
+            
+            return systemInfo;
+        } catch (error) {
+            console.error('获取系统信息失败:', error);
+            return {
+                abi: 'Unknown',
+                androidVersion: 'Unknown',
+                kernelVersion: 'Unknown',
+                modulePath: Core.MODULE_PATH,
+                rootImplementation: 'Unknown'
+            };
+        }
+    }
+
+    // 检测 ROOT 实现方式
+    async detectRootImplementation() {
+        try {
+            // 检查 Magisk
+            const magiskExists = await Core.directoryExists('/data/adb/magisk');
+            if (magiskExists) {
+                // 尝试获取 Magisk 版本
+                try {
+                    const magiskVersion = await Core.execCommand('magisk -v');
+                    if (magiskVersion && !magiskVersion.includes('not found')) {
+                        return `Magisk (${magiskVersion.trim().split(':')[0]})`;
+                    }
+                    return 'Magisk';
+                } catch (e) {
+                    return 'Magisk';
+                }
+            }
+            
+            // 检查 KernelSU
+            const ksuExists = await Core.directoryExists('/data/adb/ksu');
+            if (ksuExists) {
+                // 尝试获取 KernelSU 版本
+                try {
+                    const ksuVersion = await Core.execCommand('ksud -V');
+                    if (ksuVersion && !ksuVersion.includes('not found')) {
+                        return `KernelSU (${ksuVersion.trim()})`;
+                    }
+                    return 'KernelSU';
+                } catch (e) {
+                    return 'KernelSU';
+                }
+            }
+            
+            // 检查 APatch
+            const apatchExists = await Core.directoryExists('/data/adb/apd');
+            if (apatchExists) {
+                return 'APatch';
+            }
+            
+            return 'Unknown';
+        } catch (error) {
+            console.error('检测 ROOT 实现方式失败:', error);
+            return 'Unknown';
+        }
+    }
+    
+    // 预加载页面
+    preloadPages() {
+        // 创建一个隐藏的容器用于预渲染
+        const preloadContainer = document.createElement('div');
+        preloadContainer.style.display = 'none';
+        document.body.appendChild(preloadContainer);
+        
+        // 预加载所有页面
+        Object.keys(this.pageModules).forEach(pageName => {
+            if (pageName !== this.currentPage) {
+                setTimeout(() => {
+                    try {
+                        const pageModule = this.pageModules[pageName];
+                        
+                        // 如果页面模块有预加载方法，则调用它
+                        if (typeof pageModule.preload === 'function') {
+                            pageModule.preload();
+                            return;
+                        }
+                        
+                        // 否则尝试渲染页面内容
+                        const pageContent = pageModule.render();
+                        this.pageCache[pageName] = pageContent;
+                        
+                        // 记录预加载时间
+                        this.pageLastRefresh = this.pageLastRefresh || {};
+                        this.pageLastRefresh[pageName] = Date.now();
+                        
+                        console.log(`预加载页面完成: ${pageName}`);
+                    } catch (error) {
+                        console.warn(`预加载页面失败: ${pageName}`, error);
+                    }
+                }, 1000 + Math.random() * 1000); // 随机延迟1-2秒，避免同时加载
+            }
+        });
+    }
+    
+    // 清除页面缓存
+    clearPageCache() {
+        this.pageCache = {};
+        console.log('已清除所有页面缓存');
+    }
 }
 
 // 创建应用实例
@@ -369,3 +583,11 @@ const app = new App();
 
 // 导出应用实例
 window.app = app;
+
+// 添加页面预加载功能
+document.addEventListener('DOMContentLoaded', () => {
+    // 在初始页面加载完成后预加载其他页面
+    window.addEventListener('load', () => {
+        // 预加载由App类中的preloadPages方法处理
+    });
+});

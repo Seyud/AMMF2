@@ -4,15 +4,28 @@
  */
 
 /* 页面切换动画 */
-.page-transition {
+.page-enter {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+  will-change: opacity, transform;
 }
 
-.page-transition.active {
+.page-enter.page-active {
   opacity: 1;
   transform: translateY(0);
+}
+
+.page-exit {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+  will-change: opacity, transform;
+}
+
+.page-exit.page-active {
+  opacity: 0;
+  transform: translateY(-20px);
 }
 
 /* 加载动画 */
@@ -80,32 +93,77 @@
   transform: translateY(0);
 }
 
-/* 语言选择器动画 */
+/* 语言选择器动画 - 增强版 */
 .language-selector {
   opacity: 0;
-  transition: opacity 0.3s ease;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s 0.3s;
+  pointer-events: none;
 }
 
 .language-selector.show {
   opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0s;
+  pointer-events: auto;
 }
 
 .language-selector-content {
-  transform: translateY(20px);
-  transition: transform 0.3s ease;
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .language-selector.show .language-selector-content {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
-/* 开关动画 */
-.slider, .slider:before {
-  transition: 0.3s ease;
+/* 页面切换增强动画 */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-input:checked + .slider:before {
-  transform: translateX(16px);
+@keyframes pageExit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}
+
+/* 卡片动画效果 */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--elevation-2);
+}
+
+/* 模态框关闭动画 */
+@keyframes modalClose {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.modal-closing {
+  animation: modalClose 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* 按钮涟漪效果 */

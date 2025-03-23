@@ -202,10 +202,27 @@ body {
 /* 卡片 */
 .card {
   background-color: var(--md-surface);
+  color: var(--md-onSurface);
   border-radius: var(--card-border-radius);
-  box-shadow: var(--elevation-1);
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
+  box-shadow: var(--elevation-1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--elevation-2);
+}
+
+/* 系统信息卡片 */
+.system-info-card {
+  margin-top: var(--spacing-md);
+}
+
+.system-info-card h3 {
+  margin-bottom: var(--spacing-md);
+  font-size: 1.125rem;
+  color: var(--md-onSurfaceVariant);
 }
 
 .card:hover {
@@ -589,6 +606,19 @@ input:focus + .slider {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+}
+
+.logs-note {
+  margin: var(--spacing-sm) 0;
+  padding: var(--spacing-sm);
+  background-color: var(--md-surfaceVariant);
+  border-left: 3px solid var(--md-primary);
+  font-size: 0.875rem;
+  color: var(--md-onSurfaceVariant);
+}
+
+.logs-note p {
+  margin: 0;
 }
 
 .logs-content {
