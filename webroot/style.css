@@ -206,18 +206,14 @@ body {
   border-radius: var(--card-border-radius);
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  box-shadow: var(--elevation-1);
-  /* 移除过渡效果 */
+  border: 1px solid var(--md-outlineVariant); /* 添加边框替代阴影 */
+  transition: none; /* 移除过渡效果 */
 }
 
 /* 移除卡片悬浮效果 */
 .card:hover {
-  /* 移除悬浮效果 */
-  box-shadow: var(--elevation-1); /* 保持与非悬浮状态相同 */
-}
-
-.card:hover {
-  box-shadow: var(--elevation-2);
+  transform: none; /* 移除变换效果 */
+  box-shadow: none; /* 移除阴影效果 */
 }
 
 /* 按钮 */
@@ -789,13 +785,13 @@ input:focus + .slider {
   background-color: var(--md-surface);
   border-radius: var(--card-border-radius);
   padding: var(--spacing-lg);
-  box-shadow: var(--elevation-1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid var(--md-outlineVariant); /* 添加边框替代阴影 */
+  transition: none; /* 移除过渡效果 */
 }
 
 .about-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--elevation-2);
+  transform: none; /* 移除变换效果 */
+  box-shadow: none; /* 移除阴影效果 */
 }
 
 .about-card h3 {
@@ -809,49 +805,69 @@ input:focus + .slider {
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: var(--spacing-md);
+  text-align: left;
 }
 
+/* 设备信息项样式优化 */
 .info-item {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-sm);
   border-radius: 8px;
   transition: background-color 0.2s ease;
+  border: 1px solid transparent;
 }
 
 .info-item:hover {
-  background-color: rgba(var(--md-primary-rgb), 0.05);
+  background-color: rgba(var(--md-primary-rgb), 0.03);
+  border-color: var(--md-outlineVariant);
 }
 
+/* 信息图标容器 */
 .info-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  background-color: rgba(var(--md-primary-rgb), 0.1);
-  border-radius: 12px;
+  min-width: 40px;
+  height: 40px;
+  background-color: rgba(var(--md-primary-rgb), 0.08);
+  border-radius: 8px;
   color: var(--md-primary);
 }
 
+/* 信息内容容器 */
 .info-content {
   flex: 1;
 }
 
 .info-label {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--md-onSurfaceVariant);
   margin-bottom: 2px;
 }
 
 .info-value {
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--md-onSurface);
+  word-break: break-word;
 }
 
+.device-info {
+  margin-top: var(--spacing-md);
+}
+
+.device-info h3 {
+  margin-bottom: var(--spacing-md);
+  font-size: 1.125rem;
+  color: var(--md-onSurfaceVariant);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--md-outlineVariant);
+}
 .webui-content {
   display: flex;
   flex-direction: column;
@@ -908,10 +924,10 @@ input:focus + .slider {
 }
 
 .social-link:hover {
-  background-color: var(--md-primary);
-  color: var(--md-onPrimary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(var(--md-primary-rgb), 0.3);
+  background-color: rgba(var(--md-primary-rgb), 0.15); /* 降低悬浮时的背景色强度 */
+  color: var(--md-primary);
+  transform: none; /* 移除变换效果 */
+  box-shadow: none; /* 移除阴影效果 */
 }
 
 .about-footer {

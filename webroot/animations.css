@@ -185,14 +185,14 @@
   }
 }
 
-/* 卡片动画效果 */
+/* 卡片动画效果 - 移除 */
 .card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: none;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--elevation-2);
+  transform: none;
+  box-shadow: none;
 }
 
 /* 模态框关闭动画 */

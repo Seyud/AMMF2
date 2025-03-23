@@ -162,8 +162,27 @@ const LogsPage = {
                 return;
             }
             
-            // 清空日志文件
-            await Core.execCommand(`echo "" > "${logPath}"`);
+            // 清空日志文件 - 使用更可靠的方式
+            try {
+                // 先尝试直接清空
+                await Core.execCommand(`echo "" > "${logPath}"`);
+                
+                // 检查是否成功清空
+                const fileSize = await Core.execCommand(`stat -c %s "${logPath}"`);
+                
+                // 如果文件大小不为0或接近0，尝试使用cat /dev/null方式
+                if (parseInt(fileSize.trim()) > 10) {
+                    await Core.execCommand(`cat /dev/null > "${logPath}"`);
+                    console.log('使用cat /dev/null方式清空日志');
+                }
+                
+                // 确保文件权限正确
+                await Core.execCommand(`chmod 666 "${logPath}"`);
+            } catch (clearError) {
+                console.error('清空日志文件失败，尝试备用方法:', clearError);
+                // 备用方法：删除并重新创建
+                await Core.execCommand(`rm "${logPath}" && touch "${logPath}" && chmod 666 "${logPath}"`);
+            }
             
             // 重新加载日志内容
             await this.loadLogContent();
@@ -183,26 +202,27 @@ const LogsPage = {
                 return;
             }
             
-            // 创建Blob对象
-            const blob = new Blob([this.logContent], { type: 'text/plain' });
+            // 获取日志文件路径
+            const logPath = this.logFiles[this.currentLogFile];
             
-            // 创建下载链接
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = this.currentLogFile;
+            // 使用cp命令复制到下载文件夹
+            const downloadDir = '/sdcard/Download/';
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const exportFileName = `${this.currentLogFile}_${timestamp}`;
             
-            // 触发下载
-            document.body.appendChild(a);
-            a.click();
-            
-            // 清理
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 100);
-            
-            Core.showToast(I18n.translate('LOG_EXPORTED', '日志已导出'));
+            // 确保下载目录存在
+            Core.execCommand(`mkdir -p "${downloadDir}"`).then(() => {
+                // 复制文件到下载目录
+                Core.execCommand(`cp "${logPath}" "${downloadDir}${exportFileName}"`).then(() => {
+                    Core.showToast(I18n.translate('LOG_EXPORTED', `日志已导出到: ${downloadDir}${exportFileName}`));
+                }).catch(err => {
+                    console.error('复制日志文件失败:', err);
+                    Core.showToast(I18n.translate('LOG_EXPORT_ERROR', '导出日志失败'), 'error');
+                });
+            }).catch(err => {
+                console.error('创建下载目录失败:', err);
+                Core.showToast(I18n.translate('LOG_EXPORT_ERROR', '创建下载目录失败'), 'error');
+            });
         } catch (error) {
             console.error('导出日志失败:', error);
             Core.showToast(I18n.translate('LOG_EXPORT_ERROR', '导出日志失败'), 'error');

@@ -33,8 +33,8 @@ const Logger = {
                 console.warn('日志目录不存在，尝试创建');
                 // 使用-p参数确保创建完整路径
                 await Core.execCommand(`mkdir -p "${logsDir}"`);
-                // 设置目录权限
-                await Core.execCommand(`chmod 755 "${logsDir}"`);
+                // 设置目录权限 - 在安卓环境下可能需要更高权限
+                await Core.execCommand(`chmod 777 "${logsDir}"`);
             }
             
             // 设置完整的日志文件路径
@@ -44,7 +44,8 @@ const Logger = {
             const fileExistsResult = await Core.execCommand(`[ -f "${this.logFile}" ] && echo "true" || echo "false"`);
             if (fileExistsResult.trim() !== "true") {
                 await Core.execCommand(`touch "${this.logFile}"`);
-                await Core.execCommand(`chmod 644 "${this.logFile}"`);
+                // 修改文件权限为可读写
+                await Core.execCommand(`chmod 666 "${this.logFile}"`);
             }
             
             // 写入启动日志
@@ -60,6 +61,34 @@ const Logger = {
             return true;
         } catch (error) {
             console.error('初始化日志系统失败:', error);
+            return false;
+        }
+    },
+
+    // 追加内容到日志文件
+    async appendToLogFile(content) {
+        try {
+            // 确保日志目录存在
+            const logsDir = `${Core.MODULE_PATH}logs/`;
+            await Core.execCommand(`mkdir -p "${logsDir}"`);
+            
+            // 使用追加模式写入文件
+            // 修改命令以确保在安卓环境下正确执行
+            await Core.execCommand(`echo '${content.replace(/'/g, "'\\''")}' >> "${this.logFile}"`);
+            
+            // 添加同步命令，确保内容立即写入磁盘
+            await Core.execCommand(`sync`);
+            
+            // 确保文件权限正确 - 使用更宽松的权限
+            await Core.execCommand(`chmod 666 "${this.logFile}"`);
+            return true;
+        } catch (error) {
+            // 记录错误但不再尝试备用方法
+            if (this._originalConsole && this._originalConsole.error) {
+                this._originalConsole.error(`追加日志失败: ${this.logFile}`, error);
+                // 尝试记录更详细的错误信息
+                this._originalConsole.error(`错误详情:`, String(error));
+            }
             return false;
         }
     },

@@ -47,7 +47,7 @@ const AboutPage = {
                             </div>
                             <p>AMMF WebUI 是一个用于管理和配置 AMMF 模块的网页界面。</p>
                             <div class="version-info">
-                                <span data-i18n="VERSION">版本</span>: <span class="version-number">2.0.0</span>
+                                <span data-i18n="VERSION">版本</span>: <span class="version-number">4.1.2</span>
                             </div>
                         </div>
                     </div>
@@ -67,7 +67,7 @@ const AboutPage = {
                 </div>
                 
                 <div class="about-footer">
-                    <p>© 2023-2024 AMMF Team. All rights reserved.</p>
+                    <p>© 2025 Aurora星空. All rights reserved.</p>
                 </div>
             </div>
         `;
@@ -153,7 +153,7 @@ const AboutPage = {
     async openGitHubLink() {
         try {
             // 获取GitHub链接
-            let githubUrl = "https://github.com/AuroraProject/AMMF";
+            let githubUrl = "https://github.com/AuroraNasa/AMMF2";
             
             // 如果模块信息中有GitHub链接，则使用模块信息中的链接
             if (this.moduleInfo.github) {

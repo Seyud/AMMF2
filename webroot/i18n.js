@@ -495,6 +495,9 @@ const I18n = {
         languageButton.addEventListener('click', (e) => {
             e.stopPropagation();
             
+            // 在显示前更新语言选择器
+            this.updateLanguageSelector();
+            
             // 添加显示类，触发动画
             languageSelector.classList.add('show');
             

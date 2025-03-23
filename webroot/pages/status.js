@@ -255,13 +255,13 @@ const StatusPage = {
     
     renderDeviceInfo() {
         const infoItems = [
-            { key: 'android', label: 'Android 版本' },
-            { key: 'android_api', label: 'Android API' },
-            { key: 'device_abi', label: '设备架构' },
-            { key: 'model', label: '设备型号' },
-            { key: 'kernel', label: '内核版本' },
-            { key: 'magisk', label: 'Magisk 版本' },
-            { key: 'ksu', label: 'KernelSU 版本' }
+            { key: 'android', label: 'Android 版本', icon: 'android' },
+            { key: 'android_api', label: 'Android API', icon: 'api' },
+            { key: 'device_abi', label: '设备架构', icon: 'memory' },
+            { key: 'model', label: '设备型号', icon: 'smartphone' },
+            { key: 'kernel', label: '内核版本', icon: 'terminal' },
+            { key: 'magisk', label: 'Magisk 版本', icon: 'security' },
+            { key: 'ksu', label: 'KernelSU 版本', icon: 'admin_panel_settings' }
         ];
         
         let html = '';
@@ -270,8 +270,13 @@ const StatusPage = {
             if (this.deviceInfo[item.key]) {
                 html += `
                     <div class="info-item">
-                        <div class="info-label">${item.label}</div>
-                        <div class="info-value">${this.deviceInfo[item.key]}</div>
+                        <div class="info-icon">
+                            <span class="material-symbols-rounded">${item.icon}</span>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-label">${item.label}</div>
+                            <div class="info-value">${this.deviceInfo[item.key]}</div>
+                        </div>
                     </div>
                 `;
             }
