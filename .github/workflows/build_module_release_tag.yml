@@ -50,12 +50,12 @@ jobs:
       - name: Build for aarch64
         run: |
           $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
-          -O2 -Wall -Wextra -o bin/filewatch-aarch64 bin/filewatch.cpp
+          -O2 -Wall -Wextra -static-libstdc++ -o bin/filewatch-aarch64 bin/filewatch.cpp
       
       - name: Build for x86_64
         run: |
           $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android21-clang++ \
-          -O2 -Wall -Wextra -o bin/filewatch-x86_64 bin/filewatch.cpp
+          -O2 -Wall -Wextra -static-libstdc++ -o bin/filewatch-x86_64 bin/filewatch.cpp
       
       - name: Strip binaries
         run: |
