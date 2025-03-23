@@ -174,46 +174,76 @@ class App {
                 throw new Error(`页面模块不存在: ${pageName}`);
             }
             
+            const mainContent = document.getElementById('main-content');
+            const currentContent = mainContent.innerHTML;
+            
+            // 创建退出动画容器
+            if (currentContent && !this.pageLoading) {
+                const exitContainer = document.createElement('div');
+                exitContainer.className = 'page-exit';
+                exitContainer.innerHTML = currentContent;
+                
+                // 清空主内容区域并添加退出容器
+                mainContent.innerHTML = '';
+                mainContent.appendChild(exitContainer);
+                
+                // 触发退出动画
+                setTimeout(() => {
+                    exitContainer.classList.add('page-active');
+                }, 10);
+                
+                // 等待退出动画完成
+                await new Promise(resolve => setTimeout(resolve, 250));
+            }
+            
             // 检查页面是否已缓存
+            let pageContent = '';
             if (this.pageCache[pageName]) {
-                document.getElementById('main-content').innerHTML = this.pageCache[pageName];
-                this.hidePageLoading();
-                
-                // 调用afterRender方法
-                if (typeof this.pageModules[pageName].afterRender === 'function') {
-                    this.pageModules[pageName].afterRender();
-                }
-                
-                // 应用翻译
-                I18n.applyTranslations();
-                
-                return;
-            }
-            
-            // 初始化页面模块（如果尚未初始化）
-            if (typeof this.pageModules[pageName].init === 'function' && !this.pageModules[pageName].initialized) {
-                await this.pageModules[pageName].init();
-                this.pageModules[pageName].initialized = true;
-            }
-            
-            // 渲染页面
-            if (typeof this.pageModules[pageName].render === 'function') {
-                const pageContent = this.pageModules[pageName].render();
-                document.getElementById('main-content').innerHTML = pageContent;
-                
-                // 缓存页面内容
-                this.pageCache[pageName] = pageContent;
-                
-                // 调用afterRender方法
-                if (typeof this.pageModules[pageName].afterRender === 'function') {
-                    this.pageModules[pageName].afterRender();
-                }
-                
-                // 应用翻译
-                I18n.applyTranslations();
+                pageContent = this.pageCache[pageName];
             } else {
-                throw new Error(`页面模块没有render方法: ${pageName}`);
+                // 初始化页面模块（如果尚未初始化）
+                if (typeof this.pageModules[pageName].init === 'function' && !this.pageModules[pageName].initialized) {
+                    await this.pageModules[pageName].init();
+                    this.pageModules[pageName].initialized = true;
+                }
+                
+                // 渲染页面
+                if (typeof this.pageModules[pageName].render === 'function') {
+                    pageContent = this.pageModules[pageName].render();
+                    // 缓存页面内容
+                    this.pageCache[pageName] = pageContent;
+                } else {
+                    throw new Error(`页面模块没有render方法: ${pageName}`);
+                }
             }
+            
+            // 创建进入动画容器
+            const enterContainer = document.createElement('div');
+            enterContainer.className = 'page-enter';
+            enterContainer.innerHTML = pageContent;
+            
+            // 添加进入容器到主内容区域
+            mainContent.innerHTML = '';
+            mainContent.appendChild(enterContainer);
+            
+            // 触发进入动画
+            setTimeout(() => {
+                enterContainer.classList.add('page-active');
+            }, 10);
+            
+            // 等待进入动画完成
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // 移除动画容器，保留内容
+            mainContent.innerHTML = pageContent;
+            
+            // 调用afterRender方法
+            if (typeof this.pageModules[pageName].afterRender === 'function') {
+                this.pageModules[pageName].afterRender();
+            }
+            
+            // 应用翻译
+            I18n.applyTranslations();
             
             this.hidePageLoading();
         } catch (error) {
