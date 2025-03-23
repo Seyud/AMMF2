@@ -28,7 +28,7 @@ const AboutPage = {
                         <span class="material-symbols-rounded">extension</span>
                     </div>
                     <h2>${this.moduleInfo.action_name || 'AMMF 模块'}</h2>
-                    <p class="module-description">${this.moduleInfo.action_description || '模块描述未提供'}</p>
+                    <p class="module-description">${this.moduleInfo.description || this.moduleInfo.action_description || '模块描述未提供'}</p>
                 </div>
                 
                 <div class="about-content">
@@ -57,13 +57,9 @@ const AboutPage = {
                         <div class="developer-content">
                             <p><span data-i18n="DEVELOPER">开发者</span>: ${this.moduleInfo.action_author || 'Unknown'}</p>
                             <div class="social-links">
-                                <a href="#" class="social-link">
-                                    <span class="material-symbols-rounded">link</span>
+                                <a href="#" class="social-link" id="github-link">
+                                    <span class="material-symbols-rounded">code</span>
                                     <span>GitHub</span>
-                                </a>
-                                <a href="#" class="social-link">
-                                    <span class="material-symbols-rounded">forum</span>
-                                    <span>社区</span>
                                 </a>
                             </div>
                         </div>
@@ -80,8 +76,29 @@ const AboutPage = {
     // 加载模块信息
     async loadModuleInfo() {
         try {
-            const config = await Core.getConfig();
-            this.moduleInfo = config || {};
+            // 尝试从配置文件获取模块信息
+            const configOutput = await Core.execCommand(`cat "${Core.MODULE_PATH}module.prop"`);
+            
+            if (configOutput) {
+                // 解析配置文件
+                const lines = configOutput.split('\n');
+                const config = {};
+                
+                lines.forEach(line => {
+                    const parts = line.split('=');
+                    if (parts.length >= 2) {
+                        const key = parts[0].trim();
+                        const value = parts.slice(1).join('=').trim();
+                        config[key] = value;
+                    }
+                });
+                
+                this.moduleInfo = config;
+                console.log('模块信息加载成功:', this.moduleInfo);
+            } else {
+                console.warn('无法读取模块配置文件');
+                this.moduleInfo = {};
+            }
         } catch (error) {
             console.error('加载模块信息失败:', error);
             this.moduleInfo = {};
@@ -122,14 +139,34 @@ const AboutPage = {
     
     // 渲染后的回调
     afterRender() {
-        // 可以在这里添加事件监听器或其他DOM操作
-        const socialLinks = document.querySelectorAll('.social-link');
-        socialLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
+        // 添加GitHub链接点击事件
+        const githubLink = document.getElementById('github-link');
+        if (githubLink) {
+            githubLink.addEventListener('click', (e) => {
                 e.preventDefault();
-                // 这里可以添加社交链接的点击处理
+                this.openGitHubLink();
             });
-        });
+        }
+    },
+    
+    // 打开GitHub链接
+    async openGitHubLink() {
+        try {
+            // 获取GitHub链接
+            let githubUrl = "https://github.com/AuroraProject/AMMF";
+            
+            // 如果模块信息中有GitHub链接，则使用模块信息中的链接
+            if (this.moduleInfo.github) {
+                githubUrl = this.moduleInfo.github;
+            }
+            
+            // 使用安卓浏览器打开链接
+            await Core.execCommand(`am start -a android.intent.action.VIEW -d "${githubUrl}"`);
+            console.log('已打开GitHub链接:', githubUrl);
+        } catch (error) {
+            console.error('打开GitHub链接失败:', error);
+            Core.showToast('打开GitHub链接失败', 'error');
+        }
     }
 };
 

@@ -719,7 +719,7 @@ input:focus + .slider {
   font-size: 0.875rem;
 }
 
-/* 关于页面简化样式 */
+/* 关于页面美化 */
 .about-page {
   padding: var(--spacing-md);
 }
@@ -727,22 +727,30 @@ input:focus + .slider {
 .about-header {
   text-align: center;
   margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background-color: var(--md-surfaceVariant);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--elevation-1);
 }
 
 .about-header .module-logo {
   margin-bottom: var(--spacing-md);
+  display: inline-flex;
+  padding: 24px;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  border-radius: 50%;
 }
 
 .about-header .module-logo .material-symbols-rounded {
   font-size: 72px;
   color: var(--md-primary);
-  padding: 16px;
 }
 
 .about-header h2 {
   font-size: 1.75rem;
   font-weight: 500;
   margin-bottom: var(--spacing-md);
+  color: var(--md-onSurfaceVariant);
 }
 
 .about-header .module-description {
@@ -750,6 +758,7 @@ input:focus + .slider {
   color: var(--md-onSurfaceVariant);
   max-width: 600px;
   margin: 0 auto;
+  line-height: 1.6;
 }
 
 .about-content {
@@ -758,11 +767,35 @@ input:focus + .slider {
   gap: var(--spacing-lg);
 }
 
+@media (min-width: 768px) {
+  .about-content {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .about-card.webui-info-card {
+    grid-column: 1;
+  }
+  
+  .about-card.developer-card {
+    grid-column: 2;
+  }
+  
+  .about-card.module-info-card {
+    grid-column: span 2;
+  }
+}
+
 .about-card {
   background-color: var(--md-surface);
   border-radius: var(--card-border-radius);
   padding: var(--spacing-lg);
   box-shadow: var(--elevation-1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.about-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--elevation-2);
 }
 
 .about-card h3 {
@@ -770,6 +803,14 @@ input:focus + .slider {
   font-weight: 500;
   margin-bottom: var(--spacing-md);
   color: var(--md-onSurfaceVariant);
+  border-bottom: 2px solid rgba(var(--md-primary-rgb), 0.2);
+  padding-bottom: var(--spacing-sm);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
 }
 
 .info-item {
@@ -777,21 +818,38 @@ input:focus + .slider {
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-sm);
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.info-item:hover {
+  background-color: rgba(var(--md-primary-rgb), 0.05);
 }
 
 .info-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   background-color: rgba(var(--md-primary-rgb), 0.1);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--md-primary);
 }
 
 .info-content {
   flex: 1;
+}
+
+.info-label {
+  font-size: 0.875rem;
+  color: var(--md-onSurfaceVariant);
+  margin-bottom: 2px;
+}
+
+.info-value {
+  font-weight: 500;
+  color: var(--md-onSurface);
 }
 
 .webui-content {
@@ -803,6 +861,10 @@ input:focus + .slider {
 
 .webui-logo {
   margin-bottom: var(--spacing-md);
+  display: inline-flex;
+  padding: 16px;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  border-radius: 50%;
 }
 
 .webui-logo .material-symbols-rounded {
@@ -817,6 +879,7 @@ input:focus + .slider {
   color: var(--md-primary);
   border-radius: 16px;
   font-weight: 500;
+  margin-top: var(--spacing-md);
 }
 
 .developer-content {
@@ -841,13 +904,29 @@ input:focus + .slider {
   color: var(--md-primary);
   border-radius: 20px;
   text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.social-link:hover {
+  background-color: var(--md-primary);
+  color: var(--md-onPrimary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(var(--md-primary-rgb), 0.3);
 }
 
 .about-footer {
   text-align: center;
+  margin-top: var(--spacing-xl);
   padding: var(--spacing-md);
   color: var(--md-onSurfaceVariant);
   font-size: 0.875rem;
+}
+
+.no-info {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--md-onSurfaceVariant);
+  font-style: italic;
 }
 
 /* 数字输入容器 */

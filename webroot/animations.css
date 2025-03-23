@@ -3,20 +3,24 @@
  * 包含所有动画和过渡效果
  */
 
-/* 页面切换动画 */
+/* 页面切换动画 - 修复底栏位移和界面抖动问题 */
 .page-enter {
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   will-change: opacity, transform;
-  position: absolute; /* 添加绝对定位以防止布局跳动 */
+  position: absolute; 
   width: 100%;
+  left: 0;
+  top: 0;
+  pointer-events: none; /* 防止在过渡期间与元素交互 */
 }
 
 .page-enter.page-active {
   opacity: 1;
   transform: translateY(0);
   position: relative; /* 恢复正常文档流 */
+  pointer-events: auto; /* 恢复交互能力 */
 }
 
 .page-exit {
@@ -24,13 +28,31 @@
   transform: translateY(0);
   transition: opacity 0.25s ease-in, transform 0.25s ease-in;
   will-change: opacity, transform;
+  position: absolute; /* 确保退出的页面不影响布局 */
+  width: 100%;
+  left: 0;
+  top: 0;
 }
 
 .page-exit.page-active {
   opacity: 0;
   transform: translateY(-20px);
+  pointer-events: none; /* 防止在过渡期间与元素交互 */
 }
 
+/* 确保主内容区域有足够的最小高度，防止页面切换时高度塌陷导致底栏跳动 */
+#main-content {
+  min-height: calc(100vh - var(--header-height) - var(--nav-height));
+  position: relative; /* 为绝对定位的子元素提供参考 */
+}
+
+/* 页面容器样式，确保一致的布局 */
+.page-container {
+  width: 100%;
+  min-height: calc(100vh - var(--header-height) - var(--nav-height));
+}
+
+/* 其余动画代码保持不变 */
 /* 加载动画 */
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -102,6 +124,17 @@
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0s 0.3s;
   pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
 }
 
 .language-selector.show {
@@ -114,6 +147,8 @@
 .language-selector-content {
   transform: translateY(20px) scale(0.95);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 90%;
+  width: 320px;
 }
 
 .language-selector.show .language-selector-content {
@@ -196,4 +231,38 @@
   transform: scale(0, 0);
   opacity: 0.3;
   transition: 0s;
+}
+
+/* 主题切换动画 */
+.theme-transition {
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* 主题切换涟漪效果 */
+@keyframes themeRipple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.theme-ripple {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: var(--md-primary);
+  transform: scale(0);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.theme-ripple.active {
+  animation: themeRipple 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

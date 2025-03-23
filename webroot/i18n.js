@@ -375,27 +375,36 @@ const I18n = {
     
     // 设置语言
     async setLanguage(lang) {
-        if (!this.supportedLangs.includes(lang)) {
-            console.error(`不支持的语言: ${lang}`);
+        try {
+            if (!this.supportedLangs.includes(lang)) {
+                console.warn(`不支持的语言: ${lang}`);
+                return false;
+            }
+            
+            if (this.currentLang === lang) {
+                console.log(`已经是当前语言: ${lang}`);
+                return true;
+            }
+            
+            // 设置新语言
+            this.currentLang = lang;
+            localStorage.setItem('currentLanguage', lang);
+            
+            // 应用翻译
+            this.applyTranslations();
+            
+            // 更新配置文件中的语言设置
+            await this.updateConfigLanguage(lang);
+            
+            // 触发语言变更事件
+            document.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
+            
+            console.log(`语言已切换为: ${lang}`);
+            return true;
+        } catch (error) {
+            console.error('设置语言失败:', error);
             return false;
         }
-        
-        console.log(`设置语言为: ${lang}`);
-        this.currentLang = lang;
-        
-        // 保存到本地存储
-        localStorage.setItem('currentLanguage', lang);
-        
-        // 更新配置文件
-        await this.updateConfigLanguage(lang);
-        
-        // 应用翻译
-        this.applyTranslations();
-        
-        // 更新语言选择器
-        this.updateLanguageSelector();
-        
-        return true;
     },
     
     // 获取翻译
@@ -485,23 +494,45 @@ const I18n = {
         // 添加语言按钮点击事件
         languageButton.addEventListener('click', (e) => {
             e.stopPropagation();
+            
+            // 添加显示类，触发动画
             languageSelector.classList.add('show');
+            
+            // 防止滚动
+            document.body.style.overflow = 'hidden';
         });
         
         // 添加取消按钮点击事件
         if (cancelButton) {
             cancelButton.addEventListener('click', () => {
+                // 移除显示类，触发关闭动画
                 languageSelector.classList.remove('show');
+                
+                // 恢复滚动
+                document.body.style.overflow = '';
             });
         }
         
         // 点击外部关闭选择器
-        document.addEventListener('click', (e) => {
-            if (languageSelector.classList.contains('show') && 
-                !languageSelector.contains(e.target) && 
-                e.target !== languageButton) {
+        languageSelector.addEventListener('click', (e) => {
+            if (e.target === languageSelector) {
                 languageSelector.classList.remove('show');
+                document.body.style.overflow = '';
             }
+        });
+        
+        // 选择语言后关闭选择器
+        const options = languageOptions.querySelectorAll('.language-option');
+        options.forEach(option => {
+            option.addEventListener('click', async () => {
+                const lang = option.getAttribute('data-lang');
+                if (lang !== this.currentLang) {
+                    await this.setLanguage(lang);
+                }
+                document.getElementById('language-selector')?.classList.remove('show');
+            });
+            
+            languageOptions.appendChild(option);
         });
     },
     
