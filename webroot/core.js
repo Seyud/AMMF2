@@ -85,11 +85,46 @@ const Core = {
     // 获取模块状态
     async getModuleStatus() {
         try {
-            const status = await this.readFile(`${this.MODULE_PATH}status.txt`);
-            return status ? status.trim() : 'UNKNOWN';
+            // 先检查status.txt文件是否存在
+            const statusPath = `${this.MODULE_PATH}status.txt`;
+            const exists = await this.fileExists(statusPath);
+            if (!exists) {
+                console.error(`状态文件不存在: ${statusPath}`);
+                return 'UNKNOWN';
+            }
+            
+            // 读取状态文件
+            const status = await this.readFile(statusPath);
+            if (!status) {
+                console.error(`无法读取状态文件: ${statusPath}`);
+                return 'UNKNOWN';
+            }
+            
+            // 检查服务进程是否运行
+            const isRunning = await this.isServiceRunning();
+            
+            // 如果状态文件显示运行中，但进程检查显示没有运行，则返回STOPPED
+            if (status.trim() === 'RUNNING' && !isRunning) {
+                console.warn('状态文件显示运行中，但服务进程未检测到');
+                return 'STOPPED';
+            }
+            
+            return status.trim() || 'UNKNOWN';
         } catch (error) {
             console.error('获取模块状态失败:', error);
             return 'ERROR';
+        }
+    },
+    
+    // 检查服务是否正在运行
+    async isServiceRunning() {
+        try {
+            // 使用ps命令检查service.sh进程
+            const result = await this.execCommand(`ps -ef | grep "${this.MODULE_PATH}service.sh" | grep -v grep | wc -l`);
+            return parseInt(result.trim()) > 0;
+        } catch (error) {
+            console.error('检查服务运行状态失败:', error);
+            return false;
         }
     },
     
@@ -250,7 +285,35 @@ const Core = {
             return this.getDefaultConfig();
         }
     },
+    async getDirectoryFiles(path, pattern = '') {
+        try {
+            let command = `ls -1 "${path}"`;
+            if (pattern) {
+                command += ` | grep "${pattern}"`;
+            }
+            const result = await this.execCommand(command);
+            if (result) {
+                return result.split('\n').filter(file => file.trim() !== '');
+            }
+            return [];
+        } catch (error) {
+            console.error(`获取目录文件列表失败: ${path}`, error);
+            return [];
+        }
+    },
     
+    // 执行脚本
+    async executeScript(scriptPath, args = '') {
+        try {
+            console.log(`执行脚本: ${scriptPath} ${args}`);
+            const result = await this.execCommand(`sh "${scriptPath}" ${args}`);
+            return result;
+        } catch (error) {
+            console.error(`执行脚本失败: ${scriptPath}`, error);
+            throw error;
+        }
+    },
+
     // 获取默认配置
     getDefaultConfig() {
         console.log('使用默认配置');

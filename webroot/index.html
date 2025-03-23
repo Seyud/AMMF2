@@ -9,11 +9,25 @@
     <!-- 图标 -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     
+    <!-- 预加载样式，防止主题闪烁 -->
+    <style>
+        .app-header, .app-nav, #main-content {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .app-loaded .app-header, .app-loaded .app-nav, .app-loaded #main-content {
+            opacity: 1;
+        }
+    </style>
+    
     <!-- 字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200">
+    
+    <!-- 主题脚本 - 在样式表之前加载，防止闪烁 -->
+    <script src="theme.js"></script>
     
     <!-- 样式表 -->
     <link rel="stylesheet" href="style.css">

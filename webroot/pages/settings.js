@@ -14,15 +14,58 @@ const SettingsPage = {
     originalConfigContent: '',
     settingsJson: null,
     
+    // 可用的配置文件列表
+    availableConfigs: [],
+    currentConfigName: 'config',
+    
     // 初始化
     async init() {
         try {
+            // 扫描可用的配置文件
+            await this.scanAvailableConfigs();
+            
             // 加载配置
             await this.loadConfig();
             return true;
         } catch (error) {
             console.error('初始化设置页面失败:', error);
             return false;
+        }
+    },
+    
+    // 扫描可用的配置文件
+    async scanAvailableConfigs() {
+        try {
+            // 获取module_settings目录下的所有.sh文件
+            const result = await Core.execCommand(`ls -1 "${Core.MODULE_PATH}module_settings/" | grep "\.sh$"`);
+            if (result) {
+                const files = result.split('\n').filter(file => file.trim() !== '');
+                
+                // 过滤出配置文件（排除save-开头的脚本）
+                this.availableConfigs = files
+                    .filter(file => !file.startsWith('save-') && file.endsWith('.sh'))
+                    .map(file => ({
+                        name: file.replace('.sh', ''),
+                        path: `${Core.MODULE_PATH}module_settings/${file}`
+                    }));
+                
+                console.log('可用配置文件:', this.availableConfigs);
+            }
+            
+            // 如果没有找到配置文件，添加默认的config.sh
+            if (this.availableConfigs.length === 0) {
+                this.availableConfigs.push({
+                    name: 'config',
+                    path: this.configPath
+                });
+            }
+        } catch (error) {
+            console.error('扫描配置文件失败:', error);
+            // 添加默认配置
+            this.availableConfigs = [{
+                name: 'config',
+                path: this.configPath
+            }];
         }
     },
     
@@ -33,6 +76,7 @@ const SettingsPage = {
                 <div class="settings-header card">
                     <h2 data-i18n="MODULE_SETTINGS">模块设置</h2>
                     <div class="settings-actions">
+                        ${this.renderConfigSelector()}
                         <button id="refresh-settings" class="md-button">
                             <span class="material-symbols-rounded">refresh</span>
                             <span data-i18n="REFRESH_SETTINGS">刷新设置</span>
@@ -51,8 +95,37 @@ const SettingsPage = {
         `;
     },
     
+    // 渲染配置文件选择器
+    renderConfigSelector() {
+        if (this.availableConfigs.length <= 1) {
+            return '';
+        }
+        
+        let options = '';
+        this.availableConfigs.forEach(config => {
+            options += `<option value="${config.name}" ${this.currentConfigName === config.name ? 'selected' : ''}>${config.name}</option>`;
+        });
+        
+        return `
+            <div class="config-selector">
+                <label for="config-file-select" class="config-selector-label" data-i18n="CONFIG_SELECTOR">配置文件</label>
+                <select id="config-file-select">
+                    ${options}
+                </select>
+            </div>
+        `;
+    },
+    
     // 渲染后的回调
     afterRender() {
+        // 添加配置文件选择器事件
+        const configSelector = document.getElementById('config-file-select');
+        if (configSelector) {
+            configSelector.addEventListener('change', (e) => {
+                this.switchConfig(e.target.value);
+            });
+        }
+        
         // 添加刷新按钮事件
         document.getElementById('refresh-settings')?.addEventListener('click', () => {
             this.loadConfig(true);
@@ -65,6 +138,29 @@ const SettingsPage = {
         
         // 添加设置项事件
         this.addSettingEventListeners();
+    },
+    
+    // 切换配置文件
+    async switchConfig(configName) {
+        if (configName === this.currentConfigName) {
+            return;
+        }
+        
+        // 查找配置文件
+        const configFile = this.availableConfigs.find(config => config.name === configName);
+        if (!configFile) {
+            console.error(`找不到配置文件: ${configName}`);
+            Core.showToast(I18n.translate('CONFIG_NOT_FOUND', '找不到配置文件'), 'error');
+            return;
+        }
+        
+        // 更新当前配置
+        this.currentConfigName = configName;
+        this.configPath = configFile.path;
+        this.webConfigPath = `${configName}.sh`;  // 相对于webroot的路径
+        
+        // 重新加载配置
+        await this.loadConfig(true);
     },
     
     // 加载配置
@@ -167,6 +263,9 @@ const SettingsPage = {
             // 更新原始内容
             this.originalConfigContent = newConfigContent;
             
+            // 检查是否存在对应的save脚本并执行
+            await this.runSaveScript();
+            
             Core.showToast(I18n.translate('SETTINGS_SAVED', '设置已保存'));
             return true;
         } catch (error) {
@@ -176,8 +275,33 @@ const SettingsPage = {
         }
     },
     
+    // 执行保存脚本
+    async runSaveScript() {
+        try {
+            const saveScriptPath = `${Core.MODULE_PATH}module_settings/save-${this.currentConfigName}.sh`;
+            
+            // 检查保存脚本是否存在
+            const exists = await Core.fileExists(saveScriptPath);
+            if (!exists) {
+                console.log(`没有找到保存脚本: ${saveScriptPath}`);
+                return;
+            }
+            
+            // 执行保存脚本
+            console.log(`执行保存脚本: ${saveScriptPath}`);
+            await Core.execCommand(`sh "${saveScriptPath}"`);
+            console.log('保存脚本执行完成');
+            
+            Core.showToast(I18n.translate('SAVE_SCRIPT_EXECUTED', '已执行保存脚本'));
+        } catch (error) {
+            console.error('执行保存脚本出错:', error);
+            Core.showToast(I18n.translate('SAVE_SCRIPT_ERROR', '执行保存脚本失败'), 'warning');
+        }
+    },
+    
     // 收集表单数据
     collectFormData() {
+        // 保留原有代码
         const settingInputs = document.querySelectorAll('.setting-input');
         
         settingInputs.forEach(input => {

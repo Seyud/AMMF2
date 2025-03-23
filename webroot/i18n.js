@@ -19,17 +19,28 @@ const I18n = {
     // 初始化
     async init() {
         try {
+            console.log('开始初始化语言模块...');
+            
+            // 先加载默认翻译，确保基本功能可用
+            this.loadDefaultTranslations();
+            
+            // 应用默认语言翻译
+            this.applyTranslations();
+            
             // 读取语言文件
             await this.loadLanguageFile();
             
             // 确定初始语言
             await this.determineInitialLanguage();
             
-            // 应用语言
+            // 再次应用语言（使用确定的语言）
             this.applyTranslations();
             
             // 初始化语言选择器
             this.initLanguageSelector();
+            
+            // 添加DOM变化监听，确保动态加载的元素也能被翻译
+            this.observeDOMChanges();
             
             console.log(`语言模块初始化完成: ${this.currentLang}`);
             return true;
@@ -44,17 +55,16 @@ const I18n = {
     // 加载语言文件
     async loadLanguageFile() {
         try {
+            console.log('尝试加载语言文件...');
             const languagesContent = await Core.readFile(`${Core.MODULE_PATH}files/languages.sh`);
             if (languagesContent) {
                 this.parseLanguagesFile(languagesContent);
+                console.log('成功加载语言文件');
             } else {
-                // 使用内置默认翻译
-                this.loadDefaultTranslations();
+                console.log('语言文件不存在，使用内置默认翻译');
             }
         } catch (error) {
             console.error('加载语言文件失败:', error);
-            // 使用内置默认翻译
-            this.loadDefaultTranslations();
         }
     },
     
@@ -62,38 +72,57 @@ const I18n = {
     parseLanguagesFile(content) {
         if (!content) return;
         
-        const lines = content.split('\n');
-        let currentLang = null;
+        console.log('开始解析语言文件...');
         
-        for (let line of lines) {
-            line = line.trim();
+        // 提取语言块
+        const langBlocks = content.match(/lang_([a-z]{2})\(\)\s*\{([\s\S]*?)\}/g);
+        
+        if (!langBlocks || langBlocks.length === 0) {
+            console.warn('未找到有效的语言块');
+            return;
+        }
+        
+        // 清空现有支持的语言列表
+        this.supportedLangs = [];
+        
+        // 解析每个语言块
+        langBlocks.forEach(block => {
+            const langMatch = block.match(/lang_([a-z]{2})\(\)/);
+            if (!langMatch) return;
             
-            // 跳过空行和注释
-            if (!line || line.startsWith('#')) continue;
+            const lang = langMatch[1];
+            this.supportedLangs.push(lang);
             
-            // 检查语言定义行
-            if (line.startsWith('LANG_')) {
-                const langMatch = line.match(/^LANG_([A-Za-z]+)=/);
-                if (langMatch) {
-                    currentLang = langMatch[1].toLowerCase();
-                    if (!this.translations[currentLang]) {
-                        this.translations[currentLang] = {};
-                        this.supportedLangs.push(currentLang);
-                    }
-                }
-                continue;
+            // 初始化语言对象
+            if (!this.translations[lang]) {
+                this.translations[lang] = {};
             }
             
-            // 解析翻译键值对
-            if (currentLang) {
-                const match = line.match(/^([A-Za-z0-9_]+)="(.+)"$/);
+            // 提取键值对
+            const lines = block.split('\n');
+            for (let line of lines) {
+                line = line.trim();
+                
+                // 跳过空行、注释和函数定义行
+                if (!line || line.startsWith('#') || line.includes('lang_') || line === '{' || line === '}') {
+                    continue;
+                }
+                
+                // 解析键值对
+                const match = line.match(/([A-Za-z0-9_]+)="(.+)"/);
                 if (match) {
                     const key = match[1];
                     const value = match[2];
-                    this.translations[currentLang][key] = value;
+                    this.translations[lang][key] = value;
+                    
+                    // 特殊处理 WebUI 前缀的键
+                    if (key.startsWith('WEBUI_')) {
+                        const webUIKey = key.replace('WEBUI_', '');
+                        this.translations[lang][webUIKey] = value;
+                    }
                 }
             }
-        }
+        });
         
         // 确保至少有中英文
         if (!this.supportedLangs.includes('zh')) this.supportedLangs.push('zh');
@@ -101,6 +130,8 @@ const I18n = {
         
         // 去重
         this.supportedLangs = [...new Set(this.supportedLangs)];
+        
+        console.log(`解析完成，支持的语言: ${this.supportedLangs.join(', ')}`);
     },
     
     // 加载默认翻译
@@ -131,6 +162,7 @@ const I18n = {
             START_SERVICE: '启动服务',
             STOP_SERVICE: '停止服务',
             RESTART_SERVICE: '重启服务',
+            STATUS_REFRESHED: '状态已刷新',
             
             // 日志页
             SELECT_LOG_FILE: '选择日志文件',
@@ -150,11 +182,23 @@ const I18n = {
             GENERAL_SETTINGS: '常规设置',
             NO_SETTINGS: '没有可用的设置',
             SETTINGS_SAVED: '设置已保存',
+            SETTINGS_REFRESHED: '设置已刷新',
+            SETTINGS_REFRESH_ERROR: '刷新设置时出错',
+            NO_CONFIG_DATA: '没有可保存的配置数据',
+            CONFIG_FILE_NOT_FOUND: '找不到配置文件',
+            CONFIG_READ_ERROR: '读取配置文件失败',
             
             // 语言
             SELECT_LANGUAGE: '选择语言',
             LANGUAGE_CHINESE: '中文',
-            LANGUAGE_ENGLISH: 'English'
+            LANGUAGE_ENGLISH: 'English',
+            
+            // 关于页
+            ABOUT_MODULE: '关于模块',
+            ABOUT_WEBUI: '关于 WebUI',
+            
+            // 加载超时
+            LOADING_TIMEOUT: '加载时间过长，部分功能可能不可用'
         };
         
         // 英文翻译
@@ -183,6 +227,7 @@ const I18n = {
             START_SERVICE: 'Start Service',
             STOP_SERVICE: 'Stop Service',
             RESTART_SERVICE: 'Restart Service',
+            STATUS_REFRESHED: 'Status refreshed',
             
             // Logs page
             SELECT_LOG_FILE: 'Select Log File',
@@ -202,30 +247,60 @@ const I18n = {
             GENERAL_SETTINGS: 'General Settings',
             NO_SETTINGS: 'No settings available',
             SETTINGS_SAVED: 'Settings saved',
+            SETTINGS_REFRESHED: 'Settings refreshed',
+            SETTINGS_REFRESH_ERROR: 'Error refreshing settings',
+            NO_CONFIG_DATA: 'No configuration data to save',
+            CONFIG_FILE_NOT_FOUND: 'Configuration file not found',
+            CONFIG_READ_ERROR: 'Failed to read configuration file',
             
             // Language
             SELECT_LANGUAGE: 'Select Language',
             LANGUAGE_CHINESE: '中文',
-            LANGUAGE_ENGLISH: 'English'
+            LANGUAGE_ENGLISH: 'English',
+            
+            // About page
+            ABOUT_MODULE: 'About Module',
+            ABOUT_WEBUI: 'About WebUI',
+            
+            // Loading timeout
+            LOADING_TIMEOUT: 'Loading is taking longer than expected, some features may not be available'
         };
+        
+        console.log('默认翻译已加载');
     },
     
     // 确定初始语言
     async determineInitialLanguage() {
         try {
-            // 优先使用配置文件中的语言设置
+            console.log('确定初始语言...');
+            
+            // 优先使用本地存储中的语言设置
+            const savedLang = localStorage.getItem('currentLanguage');
+            if (savedLang && this.supportedLangs.includes(savedLang)) {
+                this.currentLang = savedLang;
+                console.log(`使用本地存储的语言设置: ${this.currentLang}`);
+                return;
+            }
+            
+            // 其次使用配置文件中的语言设置
             const config = await Core.getConfig();
             if (config && config.print_languages && this.supportedLangs.includes(config.print_languages)) {
                 this.currentLang = config.print_languages;
                 console.log(`从配置中读取语言设置: ${this.currentLang}`);
+                
+                // 保存到本地存储
+                localStorage.setItem('currentLanguage', this.currentLang);
                 return;
             }
             
-            // 其次使用浏览器语言
+            // 再次使用浏览器语言
             const browserLang = navigator.language.split('-')[0];
             if (this.supportedLangs.includes(browserLang)) {
                 this.currentLang = browserLang;
                 console.log(`使用浏览器语言: ${this.currentLang}`);
+                
+                // 保存到本地存储
+                localStorage.setItem('currentLanguage', this.currentLang);
                 
                 // 更新配置文件
                 await this.updateConfigLanguage(browserLang);
@@ -236,17 +311,22 @@ const I18n = {
             this.currentLang = 'zh';
             console.log(`使用默认语言: ${this.currentLang}`);
             
+            // 保存到本地存储
+            localStorage.setItem('currentLanguage', this.currentLang);
+            
             // 更新配置文件
             await this.updateConfigLanguage('zh');
         } catch (error) {
             console.error('确定初始语言失败:', error);
             this.currentLang = 'zh'; // 默认中文
+            localStorage.setItem('currentLanguage', 'zh');
         }
     },
     
     // 更新配置文件中的语言设置
     async updateConfigLanguage(lang) {
         try {
+            console.log(`尝试更新配置文件语言为: ${lang}`);
             const config = await Core.getConfig();
             if (config) {
                 config.print_languages = lang;
@@ -264,14 +344,59 @@ const I18n = {
         }
     },
     
+    // 设置语言
+    async setLanguage(lang) {
+        if (!this.supportedLangs.includes(lang)) {
+            console.error(`不支持的语言: ${lang}`);
+            return false;
+        }
+        
+        console.log(`设置语言为: ${lang}`);
+        this.currentLang = lang;
+        
+        // 保存到本地存储
+        localStorage.setItem('currentLanguage', lang);
+        
+        // 更新配置文件
+        await this.updateConfigLanguage(lang);
+        
+        // 应用翻译
+        this.applyTranslations();
+        
+        // 更新语言选择器
+        this.updateLanguageSelector();
+        
+        return true;
+    },
+    
+    // 获取翻译
+    translate(key, defaultText = '') {
+        // 如果没有提供键，返回默认文本或空字符串
+        if (!key) return defaultText || '';
+        
+        // 尝试从当前语言获取翻译
+        if (this.translations[this.currentLang] && this.translations[this.currentLang][key]) {
+            return this.translations[this.currentLang][key];
+        }
+        
+        // 如果当前语言没有该翻译，尝试从英文获取
+        if (this.translations.en && this.translations.en[key]) {
+            return this.translations.en[key];
+        }
+        
+        // 如果英文也没有，返回键名或默认文本
+        return defaultText || key;
+    },
+    
     // 应用翻译到页面
     applyTranslations() {
+        console.log('应用翻译到页面...');
         const elements = document.querySelectorAll('[data-i18n]');
         elements.forEach(el => {
             const key = el.getAttribute('data-i18n');
             const translation = this.translate(key);
             if (translation) {
-                if (el.tagName === 'INPUT' && el.type === 'placeholder') {
+                if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search')) {
                     el.placeholder = translation;
                 } else {
                     el.textContent = translation;
@@ -286,109 +411,125 @@ const I18n = {
         }
     },
     
+    // 获取语言显示名称
+    getLanguageDisplayName(lang) {
+        switch (lang) {
+            case 'zh': return this.translate('LANGUAGE_CHINESE', '中文');
+            case 'en': return this.translate('LANGUAGE_ENGLISH', 'English');
+            default: return lang.toUpperCase();
+        }
+    },
+    
     // 初始化语言选择器
     initLanguageSelector() {
+        console.log('初始化语言选择器...');
+        
+        // 获取DOM元素
         const languageButton = document.getElementById('language-button');
         const languageSelector = document.getElementById('language-selector');
         const languageOptions = document.getElementById('language-options');
         const cancelButton = document.getElementById('cancel-language');
         
-        if (languageButton && languageSelector && languageOptions) {
-            // 生成语言选项
-            languageOptions.innerHTML = '';
-            this.supportedLangs.forEach(lang => {
-                const option = document.createElement('div');
-                option.className = `language-option ${lang === this.currentLang ? 'active' : ''}`;
-                option.setAttribute('data-lang', lang);
-                option.textContent = this.getLanguageDisplayName(lang);
-                
-                option.addEventListener('click', () => {
-                    this.setLanguage(lang);
-                    languageSelector.classList.remove('show');
-                });
-                
-                languageOptions.appendChild(option);
+        if (!languageButton || !languageSelector || !languageOptions) {
+            console.error('找不到语言选择器必要的DOM元素');
+            return;
+        }
+        
+        // 清空并重新生成语言选项
+        this.updateLanguageSelector();
+        
+        // 添加语言按钮点击事件
+        languageButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            languageSelector.classList.add('show');
+        });
+        
+        // 添加取消按钮点击事件
+        if (cancelButton) {
+            cancelButton.addEventListener('click', () => {
+                languageSelector.classList.remove('show');
             });
-            
-            // 语言按钮点击事件
-            languageButton.addEventListener('click', () => {
-                languageSelector.classList.add('show');
-            });
-            
-            // 取消按钮点击事件
-            if (cancelButton) {
-                cancelButton.addEventListener('click', () => {
-                    languageSelector.classList.remove('show');
-                });
+        }
+        
+        // 点击外部关闭选择器
+        document.addEventListener('click', (e) => {
+            if (languageSelector.classList.contains('show') && 
+                !languageSelector.contains(e.target) && 
+                e.target !== languageButton) {
+                languageSelector.classList.remove('show');
             }
+        });
+    },
+    
+    // 更新语言选择器
+    updateLanguageSelector() {
+        console.log('更新语言选择器...');
+        
+        const languageOptions = document.getElementById('language-options');
+        if (!languageOptions) return;
+        
+        // 清空现有选项
+        languageOptions.innerHTML = '';
+        
+        // 添加语言选项
+        this.supportedLangs.forEach(lang => {
+            const option = document.createElement('div');
+            option.className = `language-option ${lang === this.currentLang ? 'active' : ''}`;
+            option.setAttribute('data-lang', lang);
+            option.textContent = this.getLanguageDisplayName(lang);
             
-            // 点击外部关闭
-            document.addEventListener('click', (e) => {
-                if (languageSelector.classList.contains('show') && 
-                    !languageSelector.contains(e.target) && 
-                    e.target !== languageButton) {
-                    languageSelector.classList.remove('show');
+            option.addEventListener('click', async () => {
+                if (lang !== this.currentLang) {
+                    await this.setLanguage(lang);
+                }
+                document.getElementById('language-selector')?.classList.remove('show');
+            });
+            
+            languageOptions.appendChild(option);
+        });
+    },
+    
+    // 观察DOM变化，自动翻译新添加的元素
+    observeDOMChanges() {
+        console.log('设置DOM变化监听...');
+        
+        // 创建MutationObserver实例
+        const observer = new MutationObserver((mutations) => {
+            let needsTranslation = false;
+            
+            // 检查是否有新增的需要翻译的元素
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1) { // 元素节点
+                            // 检查元素本身是否需要翻译
+                            if (node.hasAttribute && node.hasAttribute('data-i18n')) {
+                                needsTranslation = true;
+                            }
+                            
+                            // 检查子元素是否需要翻译
+                            const i18nElements = node.querySelectorAll('[data-i18n]');
+                            if (i18nElements.length > 0) {
+                                needsTranslation = true;
+                            }
+                        }
+                    });
                 }
             });
-        }
-    },
-    
-    // 设置语言
-    async setLanguage(lang) {
-        if (!this.supportedLangs.includes(lang)) {
-            console.error(`不支持的语言: ${lang}`);
-            return false;
-        }
-        
-        try {
-            this.currentLang = lang;
             
-            // 更新配置文件
-            await this.updateConfigLanguage(lang);
-            
-            // 应用翻译
-            this.applyTranslations();
-            
-            // 触发语言变更事件
-            document.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang } }));
-            
-            return true;
-        } catch (error) {
-            console.error('设置语言失败:', error);
-            return false;
-        }
-    },
-    
-    // 获取翻译
-    translate(key, fallback = '') {
-        // 优先使用当前语言
-        if (this.translations[this.currentLang] && this.translations[this.currentLang][key]) {
-            return this.translations[this.currentLang][key];
-        }
+            // 如果有需要翻译的元素，应用翻译
+            if (needsTranslation) {
+                this.applyTranslations();
+            }
+        });
         
-        // 回退到英文
-        if (this.translations.en && this.translations.en[key]) {
-            return this.translations.en[key];
-        }
+        // 配置观察选项
+        const config = { 
+            childList: true,    // 观察子节点的添加或删除
+            subtree: true       // 观察所有后代节点
+        };
         
-        // 回退到中文
-        if (this.translations.zh && this.translations.zh[key]) {
-            return this.translations.zh[key];
-        }
-        
-        // 使用提供的回退值或键名
-        return fallback || key;
-    },
-    
-    // 获取语言显示名称
-    getLanguageDisplayName(lang) {
-        switch (lang) {
-            case 'zh': return '中文';
-            case 'en': return 'English';
-            default: return lang;
-        }
+        // 开始观察
+        observer.observe(document.body, config);
     }
 };
-
-// 导出国际化模块
-window.I18n = I18n;

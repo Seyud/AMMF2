@@ -166,8 +166,8 @@ const StatusPage = {
         try {
             Core.showToast(I18n.translate('STARTING_SERVICE', '正在启动服务...'));
             
-            // 执行启动命令
-            await Core.execCommand(`sh -c "busybox sh ${Core.MODULE_PATH}service.sh &"`);
+            // 改进启动命令
+            await Core.execCommand(`cd "${Core.MODULE_PATH}" && nohup sh service.sh > /dev/null 2>&1 &`);
             
             // 等待一段时间后刷新状态
             setTimeout(() => {
@@ -184,8 +184,11 @@ const StatusPage = {
         try {
             Core.showToast(I18n.translate('STOPPING_SERVICE', '正在停止服务...'));
             
-            // 执行停止命令
-            await Core.execCommand(`sh -c "killall -TERM sh ${Core.MODULE_PATH}service.sh"`);
+            // 改进停止命令，使用pkill更可靠地终止进程
+            await Core.execCommand(`pkill -f "${Core.MODULE_PATH}service.sh"`);
+            
+            // 确保状态文件更新
+            await Core.writeFile(`${Core.MODULE_PATH}status.txt`, "STOPPED");
             
             // 等待一段时间后刷新状态
             setTimeout(() => {
@@ -202,8 +205,8 @@ const StatusPage = {
         try {
             Core.showToast(I18n.translate('RESTARTING_SERVICE', '正在重启服务...'));
             
-            // 执行重启命令
-            await Core.execCommand(`sh -c "killall -TERM sh ${Core.MODULE_PATH}service.sh; busybox sh ${Core.MODULE_PATH}service.sh &"`);
+            // 改进重启命令
+            await Core.execCommand(`pkill -f "${Core.MODULE_PATH}service.sh"; cd "${Core.MODULE_PATH}" && nohup sh service.sh > /dev/null 2>&1 &`);
             
             // 等待一段时间后刷新状态
             setTimeout(() => {
