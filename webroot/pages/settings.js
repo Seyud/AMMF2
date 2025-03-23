@@ -35,6 +35,39 @@ const SettingsPage = {
     async scanAvailableConfigs() {
         try {
             const configsDir = `${Core.MODULE_PATH}module_settings/`;
+            
+            // 首先检查是否有开发者指定的配置文件
+            const mainConfigPath = `${configsDir}config.sh`;
+            const mainConfigExists = await Core.execCommand(`[ -f "${mainConfigPath}" ] && echo "true" || echo "false"`);
+            
+            if (mainConfigExists.trim() === "true") {
+                // 读取主配置文件以获取 Module_Config_DEVELOPER 值
+                const configContent = await Core.execCommand(`cat "${mainConfigPath}"`);
+                const match = configContent.match(/Module_Config_DEVELOPER=["']?(.*?)["']?/);
+                
+                if (match && match[1] && match[1] !== "None") {
+                    const devConfigPath = match[1].startsWith('/') ? match[1] : `${configsDir}${match[1]}`;
+                    const devConfigExists = await Core.execCommand(`[ -f "${devConfigPath}" ] && echo "true" || echo "false"`);
+                    
+                    if (devConfigExists.trim() === "true") {
+                        console.log(`找到开发者指定的配置文件: ${devConfigPath}`);
+                        // 将开发者配置设为首选
+                        const devConfigName = devConfigPath.split('/').pop().replace('.sh', '');
+                        this.availableConfigs = [{
+                            name: devConfigName,
+                            path: devConfigPath
+                        }];
+                        this.currentConfigName = devConfigName;
+                        this.configPath = devConfigPath;
+                        this.webConfigPath = `${devConfigName}.sh`;
+                        return; // 找到开发者配置后直接返回
+                    } else {
+                        console.warn(`开发者指定的配置文件不存在: ${devConfigPath}`);
+                    }
+                }
+            }
+            
+            // 如果没有开发者配置或无法加载，则扫描所有配置文件
             const result = await Core.execCommand(`ls -1 "${configsDir}" | grep "\\.sh$" | grep -v "^save-"`);
             
             this.availableConfigs = [];
@@ -138,10 +171,23 @@ const SettingsPage = {
             }
             
             this.settingsJson = JSON.parse(jsonContent);
+            
+            // 预处理翻译描述，提前准备好当前语言的描述
+            if (this.settingsJson.descriptions) {
+                const currentLang = I18n.currentLang || 'zh';
+                this.processedDescriptions = {};
+                
+                for (const key in this.settingsJson.descriptions) {
+                    const description = this.settingsJson.descriptions[key];
+                    this.processedDescriptions[key] = description[currentLang] || description.en || '';
+                }
+            }
+            
             console.log('成功加载设置JSON:', this.settingsJson);
         } catch (error) {
             console.error('加载设置JSON失败:', error);
             this.settingsJson = null;
+            this.processedDescriptions = {};
         }
     },
     
@@ -434,6 +480,12 @@ const SettingsPage = {
     
     // 获取设置描述
     getSettingDescription(key) {
+        // 使用预处理的描述
+        if (this.processedDescriptions && this.processedDescriptions[key]) {
+            return `<div class="setting-description">${this.processedDescriptions[key]}</div>`;
+        }
+        
+        // 回退到原始方法
         if (this.settingsJson && this.settingsJson.descriptions && this.settingsJson.descriptions[key]) {
             const description = this.settingsJson.descriptions[key];
             const lang = I18n.currentLang || 'zh';
@@ -627,6 +679,23 @@ const SettingsPage = {
                 this.switchConfig(e.target.value);
             });
         }
+        
+        // 监听语言变更事件
+        document.addEventListener('languageChanged', () => {
+            // 重新处理描述
+            if (this.settingsJson && this.settingsJson.descriptions) {
+                const currentLang = I18n.currentLang || 'zh';
+                this.processedDescriptions = {};
+                
+                for (const key in this.settingsJson.descriptions) {
+                    const description = this.settingsJson.descriptions[key];
+                    this.processedDescriptions[key] = description[currentLang] || description.en || '';
+                }
+                
+                // 更新UI
+                this.updateSettingsUI();
+            }
+        });
     },
     
     // 导入配置
