@@ -394,6 +394,21 @@ const LogsPage = {
             });
         }
         
+        // 添加日志记录开关按钮事件
+        const toggleLoggingButton = document.getElementById('toggle-logging');
+        if (toggleLoggingButton) {
+            toggleLoggingButton.addEventListener('click', () => {
+                if (Logger.loggingEnabled) {
+                    Logger.stopLogging();
+                } else {
+                    Logger.startLogging();
+                }
+                
+                // 更新按钮状态
+                Logger.updateLoggingUI();
+            });
+        }
+        
         // 如果设置了自动刷新，启动自动刷新
         if (this.autoRefresh) {
             this.startAutoRefresh();
@@ -406,6 +421,9 @@ const LogsPage = {
         if (this.autoRefresh) {
             this.startAutoRefresh();
         }
+        
+        // 更新日志记录UI状态
+        Logger.updateLoggingUI();
     },
     
     // 页面停用时的回调
