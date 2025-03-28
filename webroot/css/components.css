@@ -784,21 +784,60 @@
   display: block;
   margin-bottom: var(--spacing-xs);
   font-weight: var(--md-sys-typescale-weight-medium);
+  color: var(--md-onSurface);
+}
+
+/* 设置项样式 */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--md-outlineVariant);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-info {
+  flex: 1;
+  margin-right: var(--spacing-md);
+}
+
+.setting-key {
+  font-weight: var(--md-sys-typescale-weight-medium);
+  margin-bottom: var(--spacing-xs);
+  color: var(--md-onSurface);
 }
 
 .setting-description {
   color: var(--md-onSurfaceVariant);
   font-size: var(--md-sys-typescale-body-small-size);
-  margin-bottom: var(--spacing-sm);
 }
 
+.setting-control {
+  min-width: 120px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* 设置输入控件样式 */
 .setting-input {
   width: 100%;
-  padding: var(--spacing-sm);
+  padding: 8px 12px;
   border: 1px solid var(--md-outline);
   border-radius: var(--md-sys-shape-corner-small);
-  background-color: var(--md-surfaceVariant);
-  color: var(--md-onSurfaceVariant);
+  background-color: var(--md-surface);
+  color: var(--md-onSurface);
+  font-size: var(--md-sys-typescale-body-medium-size);
 }
 
 .setting-input:focus {
@@ -806,18 +845,34 @@
   outline: none;
 }
 
-.settings-footer {
-  margin-top: var(--spacing-lg);
-  display: flex;
-  justify-content: flex-end;
+/* 设置选择控件样式 */
+.setting-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-sys-shape-corner-small);
+  background-color: var(--md-surface);
+  color: var(--md-onSurface);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2371787e'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 24px;
+  padding-right: 32px;
+}
+
+.setting-select:focus {
+  border-color: var(--md-primary);
+  outline: none;
 }
 
 /* 开关样式 */
 .switch {
   position: relative;
   display: inline-block;
-  width: 52px;
-  height: 32px;
+  width: 44px;
+  height: 22px;
 }
 
 .switch input {
@@ -834,27 +889,98 @@
   right: 0;
   bottom: 0;
   background-color: var(--md-surfaceVariant);
-  transition: .4s;
-  border-radius: 34px;
+  transition: .3s;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 24px;
-  width: 24px;
-  left: 4px;
-  bottom: 4px;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 2px;
   background-color: var(--md-onSurfaceVariant);
-  transition: .4s;
-  border-radius: 50%;
+  transition: .3s;
 }
 
 input:checked + .slider {
-  background-color: var(--md-primary);
+  background-color: var(--md-primaryContainer);
 }
 
 input:checked + .slider:before {
+  background-color: var(--md-primary);
   transform: translateX(20px);
-  background-color: var(--md-onPrimary);
+}
+
+.slider.round {
+  border-radius: 22px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* 设置页脚样式 */
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--md-outlineVariant);
+}
+
+/* 加载覆盖层样式 */
+.settings-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--md-background-rgb), 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--md-surfaceVariant);
+  border-radius: 50%;
+  border-top: 4px solid var(--md-primary);
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+.no-settings {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--md-onSurfaceVariant);
+  font-style: italic;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 响应式调整 */
+@media (max-width: 600px) {
+  .setting-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .setting-info {
+    margin-right: 0;
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .setting-control {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
