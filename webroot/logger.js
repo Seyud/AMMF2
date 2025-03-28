@@ -33,6 +33,14 @@ const Logger = {
                 debug: console.debug
             };
             
+            // 确保日志目录存在
+            const logsDir = `${Core.MODULE_PATH}logs/`;
+            const dirExistsResult = await Core.execCommand(`[ -d "${logsDir}" ] && echo "true" || echo "false"`);
+            if (dirExistsResult.trim() !== "true") {
+                console.warn('日志目录不存在，正在创建...');
+                await Core.execCommand(`mkdir -p "${logsDir}" && chmod 755 "${logsDir}"`);
+            }
+            
             // 写入启动日志
             await this.info('WebUI 日志系统初始化完成');
             await this.info(`WebUI 启动于 ${new Date().toISOString()}`);
@@ -56,6 +64,22 @@ const Logger = {
         if (level > this.currentLevel) return;
         
         try {
+            // 确保日志目录和文件存在
+            const logsDir = `${Core.MODULE_PATH}logs/`;
+            const logPath = `${logsDir}${this.logName}.log`;
+            
+            // 检查目录是否存在，不存在则创建
+            const dirExistsResult = await Core.execCommand(`[ -d "${logsDir}" ] && echo "true" || echo "false"`);
+            if (dirExistsResult.trim() !== "true") {
+                await Core.execCommand(`mkdir -p "${logsDir}" && chmod 755 "${logsDir}"`);
+            }
+            
+            // 检查文件是否存在，不存在则创建
+            const fileExistsResult = await Core.execCommand(`[ -f "${logPath}" ] && echo "true" || echo "false"`);
+            if (fileExistsResult.trim() !== "true") {
+                await Core.execCommand(`touch "${logPath}" && chmod 666 "${logPath}"`);
+            }
+            
             // 格式化日志消息
             let logMessage = message;
             
