@@ -14,6 +14,13 @@ mkdir -p "$LOG_DIR" || {
     exit 1
 }
 
+# 启动日志监控器
+if [ -f "$MODPATH/bin/logmonitor" ]; then
+    "$MODPATH/bin/logmonitor" -c start -d "$LOG_DIR" >/dev/null 2>&1 &
+    # 记录启动信息
+    "$MODPATH/bin/logmonitor" -c write -n "service" -m "日志监控器已启动" -l 3 >/dev/null 2>&1
+fi
+
 # 加载主脚本
 if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
     log_error "文件未找到: $MODPATH/files/scripts/default_scripts/main.sh"
@@ -84,3 +91,8 @@ fi
 log_info "${SERVICE_NORMAL_EXIT:-服务正常退出}"
 # 脚本结束前更新状态为正常退出
 update_status "NORMAL_EXIT"
+
+# 确保日志被刷新
+if [ -f "$MODPATH/bin/logmonitor" ]; then
+    "$MODPATH/bin/logmonitor" -c flush >/dev/null 2>&1
+fi

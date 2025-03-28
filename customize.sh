@@ -9,16 +9,36 @@
 # 初始化日志目录
 LOG_DIR="$MODPATH/logs"
 mkdir -p "$LOG_DIR"
+if [ "$ARCH" = "arm64" ]; then
+    rm -f "$MODPATH/bin/logmonitor-x86_64" 2>/dev/null
+    mv "$MODPATH/bin/logmonitor-aarch64" "$MODPATH/bin/logmonitor"
+    chmod 755 "$MODPATH/bin/logmonitor"
+
+fi
+if [ "$ARCH" = "x64" ]; then
+    rm -f "$MODPATH/bin/logmonitor-aarch64" 2>/dev/null
+    mv "$MODPATH/bin/logmonitor-x86_64" "$MODPATH/bin/logmonitor"
+    chmod 755 "$MODPATH/bin/logmonitor"
+fi
+# 启动日志监控器（如果存在）
+if [ -f "$MODPATH/bin/logmonitor" ]; then
+    # 检查是否已经启动
+    if ! pgrep -f "$MODPATH/bin/logmonitor.*-c daemon" >/dev/null; then
+        "$MODPATH/bin/logmonitor" -c start -d "$LOG_DIR" >/dev/null 2>&1 &
+    fi
+    # 设置日志文件名为install
+    "$MODPATH/bin/logmonitor" -c write -n "install" -m "开始安装过程" -l 3 >/dev/null 2>&1
+fi
 
 main() {
-    
+
     if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
         log_error "Notfound File!!!($MODPATH/files/scripts/default_scripts/main.sh)"
         abort "Notfound File!!!($MODPATH/files/scripts/default_scripts/main.sh)"
     else
         . "$MODPATH/files/scripts/default_scripts/main.sh"
     fi
-    
+
     start_script
     version_check
     if [ "$ARCH" = "arm64" ]; then
@@ -31,7 +51,7 @@ main() {
         mv "$MODPATH/bin/filewatch-x86_64" "$MODPATH/bin/filewatch"
         log_info "Architecture: x64, using x86_64 binary"
     fi
-        
+
     if [ ! -f "$MODPATH/files/scripts/install_custom_script.sh" ]; then
         log_error "Notfound File!!!($MODPATH/files/scripts/install_custom_script.sh)"
         abort "Notfound File!!!($MODPATH/files/scripts/install_custom_script.sh)"
@@ -65,3 +85,8 @@ if [ -n "$MODID" ]; then
     main
 fi
 Aurora_ui_print "$END"
+
+# 确保日志被刷新
+if [ -f "$MODPATH/bin/logmonitor" ]; then
+    "$MODPATH/bin/logmonitor" -c flush >/dev/null 2>&1
+fi

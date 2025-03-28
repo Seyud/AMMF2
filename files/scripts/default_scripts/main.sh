@@ -14,19 +14,14 @@ start_script() {
         SH_ON_MAGISK=true
     fi
     
-    # 初始化日志系统
-    LOG_DIR="$NOW_PATH/logs"
-    mkdir -p "$LOG_DIR"
-    
     # 加载日志系统
     if [ -f "$NOW_PATH/files/scripts/default_scripts/logger.sh" ]; then
         . "$NOW_PATH/files/scripts/default_scripts/logger.sh"
         # 设置main脚本的日志文件
-        set_log_file "main" || {
-            echo "无法设置日志文件，继续执行但不记录日志" >&2
-        }
+        set_log_file "main"
+        log_info "开始执行脚本 - 初始化完成"
     else
-        echo "警告: 日志系统未找到，将不记录日志" >&2
+        echo "警告: 日志系统未加载" >&2
     fi
     
     if [ -z "$NOW_PATH" ]; then
@@ -78,51 +73,34 @@ key_select() {
 # 修改 Aurora_ui_print 函数
 Aurora_ui_print() {
     sleep 0.02
-    # 使用新的日志系统
-    if type log_info >/dev/null 2>&1; then
-        log_info "$1"
-    fi
+    # 使用日志系统
+    log_info "$1"
     echo "[${OUTPUT}] $1"
 }
 
 # 修改 Aurora_abort 函数
 Aurora_abort() {
-    # 使用新的日志系统
-    if type log_error >/dev/null 2>&1; then
-        log_error "$1"
-    fi
+    # 使用日志系统
+    log_error "$1"
+    # 确保日志被写入
+    flush_log
     echo "[${ERROR_TEXT}] $1"
     abort "$ERROR_CODE_TEXT: $2"
 }
 
-# 移除旧的日志函数，使用logger.sh中的实现
-# log_to_file() { ... } - 删除此函数
-# check_log_size() { ... } - 删除此函数
-
 # 修改 ui_print 函数
 ui_print() {
-    if [ "$1" = "- Setting permissions" ]; then
+    if [ "$1" = "- Setting permissions" ] || 
+       [ "$1" = "- Extracting module files" ] || 
+       [ "$1" = "- Current boot slot: $SLOT" ] || 
+       [ "$1" = "- Device is system-as-root" ] || 
+       [ "$1" = "- Done" ] || 
+       [ "$(echo "$1" | grep -c '^ - Mounting ')" -gt 0 ]; then
         return
     fi
-    if [ "$1" = "- Extracting module files" ]; then
-        return
-    fi
-    if [ "$1" = "- Current boot slot: $SLOT" ]; then
-        return
-    fi
-    if [ "$1" = "- Device is system-as-root" ]; then
-        return
-    fi
-    if [ "$(echo "$1" | grep -c '^ - Mounting ')" -gt 0 ]; then
-        return
-    fi
-    if [ "$1" = "- Done" ]; then
-        return
-    fi
-    # 使用新的日志系统
-    if type log_info >/dev/null 2>&1; then
-        log_info "$1"
-    fi
+    
+    # 使用日志系统
+    log_info "$1"
     echo "$1"
 }
 Aurora_test_input() {
@@ -137,29 +115,6 @@ print_title() {
     fi
 }
 
-ui_print() {
-    if [ "$1" = "- Setting permissions" ]; then
-        return
-    fi
-    if [ "$1" = "- Extracting module files" ]; then
-        return
-    fi
-    if [ "$1" = "- Current boot slot: $SLOT" ]; then
-        return
-    fi
-    if [ "$1" = "- Device is system-as-root" ]; then
-        return
-    fi
-    if [ "$(echo "$1" | grep -c '^ - Mounting ')" -gt 0 ]; then
-        return
-    fi
-    if [ "$1" = "- Done" ]; then
-        return
-    fi
-    # 添加日志记录
-    log_to_file "INFO" "$1"
-    echo "$1"
-}
 #About_the_custom_script
 ###############
 check_network() {
