@@ -264,6 +264,10 @@ const StatusPage = {
                 return 'STOPPED';
             case 'ERROR':
                 return 'ERROR';
+            case 'PAUSED':
+                return 'PAUSED';
+            case 'NORMAL_EXIT':
+                return 'NORMAL_EXIT';
             default:
                 return 'UNKNOWN';
         }
@@ -351,6 +355,8 @@ const StatusPage = {
             case 'RUNNING': return 'status-running';
             case 'STOPPED': return 'status-stopped';
             case 'ERROR': return 'status-error';
+            case 'PAUSED': return 'status-paused';
+            case 'NORMAL_EXIT': return 'status-normal-exit';
             default: return 'status-unknown';
         }
     },
@@ -361,6 +367,8 @@ const StatusPage = {
             case 'RUNNING': return 'check_circle';
             case 'STOPPED': return 'cancel';
             case 'ERROR': return 'error';
+            case 'PAUSED': return 'pause_circle';
+            case 'NORMAL_EXIT': return 'task_alt';
             default: return 'help';
         }
     },
@@ -371,6 +379,8 @@ const StatusPage = {
             case 'RUNNING': return I18n.translate('RUNNING', '运行中');
             case 'STOPPED': return I18n.translate('STOPPED', '已停止');
             case 'ERROR': return I18n.translate('ERROR', '错误');
+            case 'PAUSED': return I18n.translate('PAUSED', '已暂停');
+            case 'NORMAL_EXIT': return I18n.translate('NORMAL_EXIT', '正常退出');
             default: return I18n.translate('UNKNOWN', '未知');
         }
     }

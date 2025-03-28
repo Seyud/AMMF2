@@ -531,6 +531,8 @@ input:focus + .slider {
   font-size: var(--icon-size);
 }
 
+/* ... 现有代码 ... */
+
 .status-running {
   background-color: rgba(76, 175, 80, 0.1);
   color: #2e7d32;
@@ -544,6 +546,16 @@ input:focus + .slider {
 .status-error {
   background-color: rgba(var(--md-error-rgb), 0.1);
   color: var(--md-error);
+}
+
+.status-paused {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #0277bd;
+}
+
+.status-normal-exit {
+  background-color: rgba(121, 85, 72, 0.1);
+  color: #5d4037;
 }
 
 .status-unknown {

@@ -75,6 +75,8 @@ const I18n = {
             RUNNING: '运行中',
             STOPPED: '已停止',
             UNKNOWN: '未知',
+            PAUSED: '已暂停',
+            NORMAL_EXIT: '正常退出',
             START_SERVICE: '启动服务',
             STOP_SERVICE: '停止服务',
             RESTART_SERVICE: '重启服务',
@@ -189,6 +191,8 @@ const I18n = {
             RUNNING: 'Running',
             STOPPED: 'Stopped',
             UNKNOWN: 'Unknown',
+            PAUSED: 'Paused',
+            NORMAL_EXIT: 'Normal Exit',
             START_SERVICE: 'Start Service',
             STOP_SERVICE: 'Stop Service',
             RESTART_SERVICE: 'Restart Service',
@@ -303,6 +307,8 @@ const I18n = {
             RUNNING: 'Работает',
             STOPPED: 'Остановлен',
             UNKNOWN: 'Неизвестно',
+            PAUSED: 'Приостановлен',
+            NORMAL_EXIT: 'Нормальное завершение',
             START_SERVICE: 'Запустить службу',
             STOP_SERVICE: 'Остановить службу',
             RESTART_SERVICE: 'Перезапустить службу',
@@ -558,7 +564,10 @@ const I18n = {
         // 使用性能更好的选择器
         const container = document.querySelector('.page-container.active') || document;
         const elements = container.querySelectorAll('[data-i18n]');
-
+        
+        // 记录当前滚动位置
+        const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    
         // 使用requestAnimationFrame优化DOM操作
         requestAnimationFrame(() => {
             // 批量处理DOM更新
@@ -566,7 +575,7 @@ const I18n = {
                 const el = elements[i];
                 const key = el.getAttribute('data-i18n');
                 const translation = this.translate(key);
-
+    
                 if (translation) {
                     if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search')) {
                         if (el.placeholder !== translation) {
@@ -579,7 +588,7 @@ const I18n = {
                     }
                 }
             }
-
+    
             // 更新语言按钮标题
             const langButton = document.getElementById('language-button');
             if (langButton) {
@@ -686,11 +695,13 @@ const I18n = {
     // 观察DOM变化，自动翻译新添加的元素
     observeDOMChanges() {
         console.log('设置DOM变化监听...');
-
+    
         // 创建MutationObserver实例
         const observer = new MutationObserver((mutations) => {
             let needsTranslation = false;
-
+            // 记录当前滚动位置
+            const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    
             // 检查是否有新增的需要翻译的元素
             mutations.forEach(mutation => {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
@@ -700,7 +711,7 @@ const I18n = {
                             if (node.hasAttribute && node.hasAttribute('data-i18n')) {
                                 needsTranslation = true;
                             }
-
+    
                             // 检查子元素是否需要翻译
                             const i18nElements = node.querySelectorAll('[data-i18n]');
                             if (i18nElements.length > 0) {
@@ -715,13 +726,15 @@ const I18n = {
                     needsTranslation = true;
                 }
             });
-
+    
             // 如果有需要翻译的元素，应用翻译
             if (needsTranslation) {
                 this.applyTranslations();
+                // 恢复滚动位置
+                window.scrollTo(0, scrollTop);
             }
         });
-
+    
         // 配置观察选项
         const config = {
             childList: true,    // 观察子节点的添加或删除
@@ -729,7 +742,7 @@ const I18n = {
             attributes: true,   // 观察属性变化
             attributeFilter: ['data-i18n'] // 只观察data-i18n属性
         };
-
+    
         // 开始观察
         observer.observe(document.body, config);
         
