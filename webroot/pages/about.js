@@ -165,7 +165,7 @@ const AboutPage = {
     async openGitHubLink() {
         try {
             // 获取GitHub链接
-            let githubUrl = "https://github.com/AuroraNasa/AMMF2";
+            let githubUrl = "https://github.com/Aurora-Nasa-1/AM" + "MF2";
             
             // 如果模块信息中有GitHub链接，则使用模块信息中的链接
             if (this.moduleInfo.github) {
