@@ -8,6 +8,23 @@ class SettingsPage {
         this.moduleInfo = {};
     }
     
+    // 静态实例，确保可以从外部访问
+    static instance = null;
+    
+    // 静态初始化方法
+    static initialize() {
+        SettingsPage.instance = new SettingsPage();
+        return SettingsPage.instance;
+    }
+    
+    // 静态切换分区方法
+    static toggleSection(sectionId) {
+        const section = document.getElementById(`section-${sectionId}`);
+        if (section) {
+            section.classList.toggle('collapsed');
+        }
+    }
+    
     async init() {
         try {
             // 显示加载中状态
@@ -35,7 +52,7 @@ class SettingsPage {
             this.showLoading(false);
             
             // 确保事件绑定
-            this.bindEvents();
+            setTimeout(() => this.bindEvents(), 100);
             
             return true;
         } catch (error) {
@@ -595,5 +612,8 @@ class SettingsPage {
     }
 }
 
-// 创建设置页面实例
-const settingsPage = new SettingsPage();
+// 创建设置页面实例并导出
+const settingsPage = SettingsPage.initialize();
+
+// 确保页面可以从外部访问
+window.SettingsPage = SettingsPage;
