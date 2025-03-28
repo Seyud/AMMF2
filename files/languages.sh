@@ -14,6 +14,15 @@ lang_en() {
     ERROR_INVALID_LOCAL_VALUE="The value is invalid, must be true or false."
     KEY_VOLUME="Volume key"
     
+    # 日志系统相关
+    WARN_TEXT="Warning"
+    INFO_TEXT="Info"
+    DEBUG_TEXT="Debug"
+    LOG_INITIALIZED="Log system initialized"
+    LOG_FILE_SET="Log file set to"
+    LOG_FLUSHED="Log flushed"
+    LOG_CLEANED="Logs cleaned"
+    
     # 自定义脚本相关
     CUSTOM_SCRIPT_DISABLED="CustomScript is disabled. Custom scripts will not be executed."
     CUSTOM_SCRIPT_ENABLED="CustomScript is enabled. Executing custom scripts."
@@ -58,6 +67,12 @@ lang_en() {
     SERVICE_LOADING_SERVICE_SCRIPT="Loading service_script.sh"
     SERVICE_FILE_NOT_FOUND="File not found"
     SERVICE_LOG_ROTATED="Log rotated"
+    
+    # main.sh 相关
+    SCRIPT_INIT_COMPLETE="Script execution started - initialization complete"
+    LOGGER_NOT_LOADED="Warning: Logger system not loaded"
+    FILE_NOT_FOUND="File not found"
+    WARN_MISSING_PARAMETERS="Missing parameters"
 }
 
 # 中文
@@ -70,6 +85,15 @@ lang_zh() {
     ERROR_UPGRADE_ROOT_SCHEME="请升级root方案或更换root方案"
     ERROR_INVALID_LOCAL_VALUE="的值无效，必须为true或false。"
     KEY_VOLUME="音量键"
+    
+    # 日志系统相关
+    WARN_TEXT="警告"
+    INFO_TEXT="信息"
+    DEBUG_TEXT="调试"
+    LOG_INITIALIZED="日志系统已初始化"
+    LOG_FILE_SET="日志文件已设置为"
+    LOG_FLUSHED="日志已刷新"
+    LOG_CLEANED="日志已清理"
     
     # 自定义脚本相关
     CUSTOM_SCRIPT_DISABLED="已禁用CustomScript。将不执行自定义脚本。"
@@ -115,6 +139,12 @@ lang_zh() {
     SERVICE_LOADING_SERVICE_SCRIPT="加载 service_script.sh"
     SERVICE_FILE_NOT_FOUND="未找到文件"
     SERVICE_LOG_ROTATED="日志已轮换"
+    
+    # main.sh 相关
+    SCRIPT_INIT_COMPLETE="开始执行脚本 - 初始化完成"
+    LOGGER_NOT_LOADED="警告: 日志系统未加载"
+    FILE_NOT_FOUND="文件未找到"
+    WARN_MISSING_PARAMETERS="缺少参数"
 }
 
 # 俄语
@@ -127,6 +157,15 @@ lang_ru() {
     ERROR_UPGRADE_ROOT_SCHEME="Пожалуйста, обновите схему root или измените схему root"
     ERROR_INVALID_LOCAL_VALUE="Значение недействительно, должно быть true или false."
     KEY_VOLUME="Клавиша громкости"
+    
+    # 日志系统相关
+    WARN_TEXT="Предупреждение"
+    INFO_TEXT="Информация"
+    DEBUG_TEXT="Отладка"
+    LOG_INITIALIZED="Система журналирования инициализирована"
+    LOG_FILE_SET="Файл журнала установлен на"
+    LOG_FLUSHED="Журнал сброшен"
+    LOG_CLEANED="Журналы очищены"
     
     # 自定义脚本相关
     CUSTOM_SCRIPT_DISABLED="CustomScript отключен. Пользовательские скрипты не будут выполняться."

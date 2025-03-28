@@ -15,14 +15,6 @@ start_script() {
     fi
     
     # 加载日志系统
-    if [ -f "$NOW_PATH/files/scripts/default_scripts/logger.sh" ]; then
-        . "$NOW_PATH/files/scripts/default_scripts/logger.sh"
-        # 设置main脚本的日志文件
-        set_log_file "main"
-        log_info "开始执行脚本 - 初始化完成"
-    else
-        echo "警告: 日志系统未加载" >&2
-    fi
     
     if [ -z "$NOW_PATH" ]; then
         MODPATH="$1"
@@ -37,17 +29,25 @@ start_script() {
     download_destination="/$SDCARD/Download/AMMF/"
 
     if [ ! -f "$NOW_PATH/module_settings/config.sh" ]; then
-        abort "Notfound File!!!($NOW_PATH/module_settings/config.sh)"
+        abort "${FILE_NOT_FOUND:-文件未找到}!!!($NOW_PATH/module_settings/config.sh)"
     else
         # shellcheck source=/dev/null
         . "$NOW_PATH/module_settings/config.sh"
     fi
     if [ ! -f "$NOW_PATH/files/languages.sh" ]; then
-        abort "Notfound File!!!($NOW_PATH/files/languages.sh)"
+        abort "${FILE_NOT_FOUND:-文件未找到}!!!($NOW_PATH/files/languages.sh)"
     else
         # shellcheck source=/dev/null
         . "$NOW_PATH/files/languages.sh"
         eval "lang_$print_languages"
+    fi
+        if [ -f "$NOW_PATH/files/scripts/default_scripts/logger.sh" ]; then
+        . "$NOW_PATH/files/scripts/default_scripts/logger.sh"
+        # 设置main脚本的日志文件
+        set_log_file "main"
+        log_info "${SCRIPT_INIT_COMPLETE:-开始执行脚本 - 初始化完成}"
+    else
+        echo "${LOGGER_NOT_LOADED:-警告: 日志系统未加载}" >&2
     fi
 }
 key_select() {

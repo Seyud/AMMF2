@@ -69,19 +69,19 @@ flush_log() {
 
 # 日志函数
 log_error() {
-    [ "$LOG_LEVEL" -ge 1 ] && _write_log "ERROR" "$1"
+    [ "$LOG_LEVEL" -ge 1 ] && _write_log "${ERROR_TEXT:-ERROR}" "$1"
 }
 
 log_warn() {
-    [ "$LOG_LEVEL" -ge 2 ] && _write_log "WARN" "$1"
+    [ "$LOG_LEVEL" -ge 2 ] && _write_log "${WARN_TEXT:-WARN}" "$1"
 }
 
 log_info() {
-    [ "$LOG_LEVEL" -ge 3 ] && _write_log "INFO" "$1"
+    [ "$LOG_LEVEL" -ge 3 ] && _write_log "${INFO_TEXT:-INFO}" "$1"
 }
 
 log_debug() {
-    [ "$LOG_LEVEL" -ge 4 ] && _write_log "DEBUG" "$1"
+    [ "$LOG_LEVEL" -ge 4 ] && _write_log "${DEBUG_TEXT:-DEBUG}" "$1"
 }
 
 # 内部写日志函数
@@ -91,10 +91,10 @@ _write_log() {
     local level_num=3
     
     case "$level" in
-        "ERROR") level_num=1 ;;
-        "WARN") level_num=2 ;;
-        "INFO") level_num=3 ;;
-        "DEBUG") level_num=4 ;;
+        "${ERROR_TEXT:-ERROR}") level_num=1 ;;
+        "${WARN_TEXT:-WARN}") level_num=2 ;;
+        "${INFO_TEXT:-INFO}") level_num=3 ;;
+        "${DEBUG_TEXT:-DEBUG}") level_num=4 ;;
     esac
     
     if [ -f "$LOGMONITOR_BIN" ]; then

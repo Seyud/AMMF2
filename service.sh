@@ -23,12 +23,13 @@ fi
 
 # 加载主脚本
 if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
-    log_error "文件未找到: $MODPATH/files/scripts/default_scripts/main.sh"
     echo "错误: 文件未找到: $MODPATH/files/scripts/default_scripts/main.sh" > "$LOG_DIR/error.log"
     exit 1
 else
     . "$MODPATH/files/scripts/default_scripts/main.sh"
-    log_info "主脚本加载成功"
+    # 设置service脚本的日志文件
+    set_log_file "service"
+    log_info "${SERVICE_LOADING_MAIN:-加载 main.sh}"
 fi
 
 # 定义状态更新函数
@@ -95,4 +96,6 @@ update_status "NORMAL_EXIT"
 # 确保日志被刷新
 if [ -f "$MODPATH/bin/logmonitor" ]; then
     "$MODPATH/bin/logmonitor" -c flush >/dev/null 2>&1
+else
+    flush_log
 fi
