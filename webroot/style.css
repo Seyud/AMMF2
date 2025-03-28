@@ -1338,3 +1338,36 @@ body {
   background-color: var(--md-surface);
   color: var(--md-onSurface);
 }
+/* WebUI日志记录控制 */
+.webui-logging-control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  margin: var(--spacing-sm) 0;
+  background-color: var(--md-surfaceVariant);
+  border-radius: 4px;
+}
+
+.logging-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+#logging-status-indicator {
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+}
+
+#logging-status-indicator.enabled {
+  background-color: var(--md-primary);
+  color: var(--md-onPrimary);
+}
+
+#logging-status-indicator.disabled {
+  background-color: var(--md-outline);
+  color: var(--md-onSurfaceVariant);
+}
