@@ -9,8 +9,9 @@
 /* 导入布局样式 */
 @import url('css/layout.css');
 
-/* 导入组件样式 */
-@import url('css/components.css');
+/* 导入组件样式 - 拆分为基础组件和页面组件 */
+@import url('css/components-base.css');
+@import url('css/components-page.css');
 
 /* 导入动画效果 */
 @import url('css/animations.css');

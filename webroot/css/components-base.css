@@ -1,0 +1,374 @@
+/**
+ * 基础UI组件样式
+ * 包含按钮、表单元素、列表等通用组件样式
+ */
+
+/* 按钮样式 */
+.md-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  height: 40px;
+  border-radius: var(--button-border-radius);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-weight-medium);
+  text-transform: none;
+  letter-spacing: 0.1px;
+  border: none;
+  cursor: pointer;
+  background-color: rgba(var(--md-primary-rgb), 0.05);
+  color: var(--md-primary);
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.md-button:hover {
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md-button.primary-button {
+  background-color: var(--md-primary);
+  color: var(--md-onPrimary);
+}
+
+.md-button.primary-button:hover {
+  box-shadow: var(--md-sys-elevation-level2);
+}
+
+/* 图标按钮 */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background-color: rgba(var(--md-onSurface-rgb), 0.05);
+  color: var(--md-onSurfaceVariant);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.icon-button:hover {
+  background-color: rgba(var(--md-onSurface-rgb), 0.1);
+  color: var(--md-onSurface);
+}
+
+.icon-button.active {
+  color: var(--md-primary);
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+}
+
+/* 单选框样式 */
+.radio {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.radio input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.radio-mark {
+  position: relative;
+  height: 18px;
+  width: 18px;
+  background-color: transparent;
+  border: 2px solid var(--md-outline);
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.radio:hover input ~ .radio-mark {
+  background-color: rgba(var(--md-primary-rgb), 0.04);
+}
+
+.radio input:checked ~ .radio-mark {
+  border-color: var(--md-primary);
+}
+
+.radio-mark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  top: 4px;
+  left: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--md-primary);
+}
+
+.radio input:checked ~ .radio-mark:after {
+  display: block;
+}
+
+/* 滑块样式 */
+.slider-container {
+  width: 100%;
+  padding: 8px 0;
+}
+
+.setting-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--md-surfaceVariant);
+  border-radius: 2px;
+  outline: none;
+}
+
+.setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+.setting-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  box-shadow: var(--md-sys-elevation-level1);
+  border: none;
+}
+
+/* 列表样式 */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  min-height: 56px;
+  cursor: pointer;
+}
+
+.list-item:hover {
+  background-color: rgba(var(--md-onSurface-rgb), var(--md-sys-state-hover-opacity));
+}
+
+.list-item.active {
+  background-color: rgba(var(--md-primary-rgb), 0.08);
+}
+
+.list-item-content {
+  flex: 1;
+}
+
+/* 添加列表项图标样式 */
+.list-item-icon {
+  margin-right: 16px;
+  color: var(--md-onSurfaceVariant);
+}
+
+.list-item-title {
+  font-size: var(--md-sys-typescale-body-large-size);
+  color: var(--md-onSurface);
+}
+
+.list-item-subtitle {
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-onSurfaceVariant);
+}
+
+/* 分割线 */
+.divider {
+  height: 1px;
+  background-color: var(--md-outlineVariant);
+  margin: 16px 0;
+}
+
+/* 徽章 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background-color: var(--md-error);
+  color: var(--md-onError);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: var(--md-sys-typescale-weight-medium);
+}
+
+/* 芯片 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background-color: var(--md-surfaceVariant);
+  color: var(--md-onSurfaceVariant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-weight-medium);
+}
+
+.chip.selected {
+  background-color: var(--md-secondaryContainer);
+  color: var(--md-onSecondaryContainer);
+}
+
+/* 加载动画 */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(var(--md-primary-rgb), 0.2);
+  border-radius: 50%;
+  border-top-color: var(--md-primary);
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+}
+
+/* 开关样式 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--md-surfaceVariant);
+  transition: .3s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 2px;
+  background-color: var(--md-onSurfaceVariant);
+  transition: .3s;
+}
+
+input:checked + .slider {
+  background-color: var(--md-primaryContainer);
+}
+
+input:checked + .slider:before {
+  background-color: var(--md-primary);
+  transform: translateX(20px);
+}
+
+.slider.round {
+  border-radius: 22px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* 设置输入控件样式 */
+.setting-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-sys-shape-corner-small);
+  background-color: var(--md-surface);
+  color: var(--md-onSurface);
+  font-size: var(--md-sys-typescale-body-medium-size);
+}
+
+.setting-input:focus {
+  border-color: var(--md-primary);
+  outline: none;
+}
+
+/* 设置选择控件样式 */
+.setting-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-sys-shape-corner-small);
+  background-color: var(--md-surface);
+  color: var(--md-onSurface);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2371787e'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 24px;
+  padding-right: 32px;
+}
+
+.setting-select:focus {
+  border-color: var(--md-primary);
+  outline: none;
+}
+
+/* 加载覆盖层样式 */
+.settings-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--md-background-rgb), 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--md-surfaceVariant);
+  border-radius: 50%;
+  border-top: 4px solid var(--md-primary);
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
