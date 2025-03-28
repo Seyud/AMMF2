@@ -11,12 +11,6 @@ LOG_DIR="$MODPATH/logs"
 mkdir -p "$LOG_DIR"
 
 main() {
-    # 加载日志系统
-    if [ -f "$MODPATH/files/scripts/default_scripts/logger.sh" ]; then
-        . "$MODPATH/files/scripts/default_scripts/logger.sh"
-        # 设置安装脚本的日志文件
-        set_log_file "install"
-    fi
     
     if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
         log_error "Notfound File!!!($MODPATH/files/scripts/default_scripts/main.sh)"

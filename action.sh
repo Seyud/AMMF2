@@ -6,15 +6,6 @@ MODPATH="$MODDIR"
 LOG_DIR="$MODPATH/logs"
 mkdir -p "$LOG_DIR"
 
-# 加载日志系统
-if [ -f "$MODPATH/files/scripts/default_scripts/logger.sh" ]; then
-    . "$MODPATH/files/scripts/default_scripts/logger.sh"
-    # 设置action脚本的日志文件
-    set_log_file "action"
-else
-    echo "ERROR: Logger not found" > "$LOG_DIR/error.log"
-    exit 1
-fi
 
 if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
     log_error "File not found: $MODPATH/files/scripts/default_scripts/main.sh"

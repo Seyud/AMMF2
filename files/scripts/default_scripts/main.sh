@@ -22,7 +22,11 @@ start_script() {
     if [ -f "$NOW_PATH/files/scripts/default_scripts/logger.sh" ]; then
         . "$NOW_PATH/files/scripts/default_scripts/logger.sh"
         # 设置main脚本的日志文件
-        set_log_file "main"
+        set_log_file "main" || {
+            echo "无法设置日志文件，继续执行但不记录日志" >&2
+        }
+    else
+        echo "警告: 日志系统未找到，将不记录日志" >&2
     fi
     
     if [ -z "$NOW_PATH" ]; then
@@ -75,14 +79,18 @@ key_select() {
 Aurora_ui_print() {
     sleep 0.02
     # 使用新的日志系统
-    log_info "$1"
+    if type log_info >/dev/null 2>&1; then
+        log_info "$1"
+    fi
     echo "[${OUTPUT}] $1"
 }
 
 # 修改 Aurora_abort 函数
 Aurora_abort() {
     # 使用新的日志系统
-    log_error "$1"
+    if type log_error >/dev/null 2>&1; then
+        log_error "$1"
+    fi
     echo "[${ERROR_TEXT}] $1"
     abort "$ERROR_CODE_TEXT: $2"
 }
@@ -112,7 +120,9 @@ ui_print() {
         return
     fi
     # 使用新的日志系统
-    log_info "$1"
+    if type log_info >/dev/null 2>&1; then
+        log_info "$1"
+    fi
     echo "$1"
 }
 Aurora_test_input() {
