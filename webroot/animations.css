@@ -57,6 +57,7 @@
   min-height: calc(100vh - var(--header-height) - var(--nav-height));
   max-width: 100%; /* 防止水平溢出 */
   overflow-x: hidden; /* 防止水平滚动 */
+  overscroll-behavior: none; /* 禁用滑动回弹效果 */
 }
 
 /* 其余动画代码保持不变 */

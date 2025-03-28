@@ -1093,7 +1093,7 @@ input:focus + .slider {
 html {
   height: 100%;
   width: 100%;
-  overflow: hidden;
+  overscroll-behavior: none; /* 禁用滑动回弹效果 */
 }
 
 body {
@@ -1102,7 +1102,7 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: none; /* 禁用滑动过界反弹 */
+  overscroll-behavior: none; /* 禁用滑动回弹效果 */
 }
 
 /* 防止元素向右抖动 */
