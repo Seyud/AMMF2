@@ -4,7 +4,7 @@
 
 ## 📋 Overview
 
-This document provides development and customization guidelines for the WebUI component of the AMMF framework. The WebUI is a browser-based configuration interface that allows users to configure module settings, view status information, and perform common operations through a graphical interface.
+This document provides development and customization guidelines for the WebUI component of the AMMF framework. WebUI is a browser-based configuration interface that allows users to configure module settings, view status information, and perform common operations through a graphical interface.
 
 ## 🚀 Quick Start
 
@@ -18,15 +18,19 @@ WebUI-related files are located in the `webroot/` directory:
 webroot/
 ├── index.html         # Main page
 ├── app.js             # Main application logic
-├── styles.css         # Stylesheet
+├── core.js            # Core functionality module
+├── i18n.js            # Multi-language support
+├── logger.js          # Logging
+├── style.css          # Main stylesheet
 ├── animations.css     # Animation styles
-├── language.js        # Multi-language support
-├── navigation.js      # Navigation logic
-├── settings.js        # Settings handling
-├── status.js          # Status handling
+├── layout.css         # Layout styles
+├── theme.css          # Theme styles
 ├── theme.js           # Theme handling
-├── ui.js              # UI components
-└── utils.js           # Utility functions
+└── pages/             # Page modules
+    ├── status.js      # Status page
+    ├── logs.js        # Logs page
+    ├── settings.js    # Settings page
+    └── about.js       # About page
 ```
 
 ### Modifying the Interface Layout
@@ -35,33 +39,39 @@ To modify the WebUI interface layout, edit the `webroot/index.html` file. This f
 
 ```html
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AMMF WebUI</title>
-    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
 </head>
 <body>
-    <!-- Navigation bar -->
-    <nav id="main-nav">
-        <!-- Navigation items -->
-    </nav>
-    
-    <!-- Main content area -->
-    <main id="content">
-        <!-- Content will be dynamically loaded through JavaScript -->
-    </main>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">...</header>
+        
+        <!-- Main content area -->
+        <main id="main-content">...</main>
+        
+        <!-- Bottom navigation -->
+        <nav class="app-nav">...</nav>
+    </div>
     
     <!-- Script references -->
-    <script src="language.js"></script>
-    <script src="utils.js"></script>
-    <script src="ui.js"></script>
     <script src="theme.js"></script>
-    <script src="navigation.js"></script>
-    <script src="settings.js"></script>
-    <script src="status.js"></script>
+    <script src="i18n.js"></script>
+    <script src="core.js"></script>
+    <script src="logger.js"></script>
+    <script src="pages/status.js"></script>
+    <script src="pages/logs.js"></script>
+    <script src="pages/settings.js"></script>
+    <script src="pages/about.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
@@ -69,257 +79,359 @@ To modify the WebUI interface layout, edit the `webroot/index.html` file. This f
 
 ### Customizing Styles
 
-To modify the WebUI styles, edit the `webroot/styles.css` file. This file contains the CSS style definitions for the WebUI.
+To modify the WebUI styles, edit the `webroot/style.css` file. This file contains the CSS style definitions for the WebUI.
 
 ```css
 /* Example: Modify theme colors */
 :root {
-    --primary-color: #4285f4;
-    --secondary-color: #34a853;
-    --background-color: #ffffff;
-    --text-color: #202124;
-    /* Add more color variables */
+    --md-primary: #006495; /* Primary color */
+    --md-onPrimary: #ffffff;
+    --md-primaryContainer: #cde5ff;
+    --md-onPrimaryContainer: #001d31;
+    --md-secondary: #50606e;
+    --md-onSecondary: #ffffff;
+    --md-secondaryContainer: #d3e5f5;
+    --md-onSecondaryContainer: #0c1d29;
+    /* More color variables */
 }
 
-/* Example: Modify button styles */
-button.primary {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
+/* Dark theme */
+.dark-theme {
+    --md-primary: #91cbff;
+    --md-onPrimary: #003355;
+    --md-primaryContainer: #004a78;
+    --md-onPrimaryContainer: #cde5ff;
+    /* More dark theme variables */
 }
 ```
 
 ### Adding New Pages
 
-To add new pages, you need to modify the following files:
+To add new pages, follow these steps:
 
-1. Add a new navigation item in `navigation.js`:
-
-```javascript
-// Add new page to navigation menu
-function setupNavigation() {
-    const navItems = [
-        { id: 'dashboard', label: getTranslation('nav_dashboard'), icon: 'dashboard' },
-        { id: 'settings', label: getTranslation('nav_settings'), icon: 'settings' },
-        { id: 'status', label: getTranslation('nav_status'), icon: 'info' },
-        // Add new page
-        { id: 'new-page', label: getTranslation('nav_new_page'), icon: 'extension' }
-    ];
-    
-    // Create navigation items
-    createNavItems(navItems);
-}
-```
-
-2. Add a content rendering function for the new page in `app.js`:
+1. Create a new page JS file in the `webroot/pages/` directory, for example `newpage.js`:
 
 ```javascript
-// Render new page content
-function renderNewPage() {
-    const content = document.getElementById('content');
-    content.innerHTML = '';
-    
-    // Create page title
-    const title = document.createElement('h1');
-    title.textContent = getTranslation('new_page_title');
-    content.appendChild(title);
-    
-    // Add page content
-    const pageContent = document.createElement('div');
-    pageContent.innerHTML = `
-        <p>${getTranslation('new_page_description')}</p>
-        <!-- Add more content -->
-    `;
-    content.appendChild(pageContent);
-}
-```
+/**
+ * AMMF WebUI New Page Module
+ * Description of the new page functionality
+ */
 
-3. Add translation strings for the new page in `language.js`:
-
-```javascript
-const translations = {
-    'en': {
-        // Existing translations
-        'nav_new_page': 'New Page',
-        'new_page_title': 'New Page Title',
-        'new_page_description': 'This is a new page description.'
+const NewPage = {
+    // Initialization
+    async init() {
+        try {
+            // Initialization code
+            return true;
+        } catch (error) {
+            console.error('Failed to initialize new page:', error);
+            return false;
+        }
     },
-    'zh': {
-        // Existing translations
-        'nav_new_page': '新页面',
-        'new_page_title': '新页面标题',
-        'new_page_description': '这是新页面的描述。'
+    
+    // Render page
+    render() {
+        return `
+            <div class="page-container new-page">
+                <h2 data-i18n="NEW_PAGE_TITLE">New Page</h2>
+                <div class="card">
+                    <p data-i18n="NEW_PAGE_CONTENT">This is the content of the new page</p>
+                </div>
+            </div>
+        `;
+    },
+    
+    // After render callback
+    afterRender() {
+        // Bind events and other operations
     }
-    // Other languages
+};
+
+// Export page module
+window.NewPage = NewPage;
+```
+
+2. Include the new page script in `webroot/index.html`:
+
+```html
+<!-- Add after other page scripts -->
+<script src="pages/newpage.js"></script>
+```
+
+3. Register the new page in `webroot/app.js`:
+
+```javascript
+// Page modules
+this.pageModules = {
+    status: window.StatusPage,
+    logs: window.LogsPage,
+    settings: window.SettingsPage,
+    about: window.AboutPage,
+    newpage: window.NewPage  // Add new page
 };
 ```
 
-## 📊 Data Handling
+4. Add an entry for the new page in the navigation bar:
+
+```html
+<!-- Add in app-nav -->
+<div class="nav-item" data-page="newpage">
+    <span class="material-symbols-rounded">extension</span>
+    <span class="nav-label" data-i18n="NAV_NEW_PAGE">New Page</span>
+</div>
+```
+
+5. Add translation strings for the new page in `webroot/i18n.js`:
+
+```javascript
+// Chinese translation
+this.translations.zh = {
+    // Existing translations
+    NAV_NEW_PAGE: '新页面',
+    NEW_PAGE_TITLE: '新页面标题',
+    NEW_PAGE_CONTENT: '这是新页面的内容'
+};
+
+// English translation
+this.translations.en = {
+    // Existing translations
+    NAV_NEW_PAGE: 'New Page',
+    NEW_PAGE_TITLE: 'New Page Title',
+    NEW_PAGE_CONTENT: 'This is the content of the new page'
+};
+```
+
+## 📊 Data Processing
 
 ### Settings Handling
 
-The WebUI handles module settings through the `settings.js` file. This file is responsible for fetching settings from the server, displaying settings forms, and saving user-modified settings.
+WebUI handles module settings through the `pages/settings.js` file. This file is responsible for fetching settings from the server, displaying settings forms, and saving user-modified settings.
 
 ```javascript
-// Fetch settings
-async function fetchSettings() {
+// Load settings data
+async loadSettingsData() {
     try {
-        const response = await fetch('/api/settings');
-        const data = await response.json();
-        return data;
+        this.showLoading();
+        
+        // Execute Shell command to get settings
+        const settingsData = await Core.execCommand(`cat "${Core.MODULE_PATH}module_settings/settings.json"`);
+        this.settings = JSON.parse(settingsData);
+        
+        this.hideLoading();
+        return this.settings;
     } catch (error) {
-        console.error('Error fetching settings:', error);
+        console.error('Failed to load settings data:', error);
+        this.hideLoading();
+        Core.showToast(I18n.translate('SETTINGS_LOAD_ERROR', 'Failed to load settings'), 'error');
         return {};
     }
-}
+},
 
 // Save settings
-async function saveSettings(settings) {
+async saveSettings() {
     try {
-        const response = await fetch('/api/settings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(settings)
-        });
-        return await response.json();
+        this.showLoading();
+        
+        // Convert settings to JSON string
+        const settingsJson = JSON.stringify(this.settings, null, 4);
+        
+        // Execute Shell command to save settings
+        await Core.execCommand(`echo '${settingsJson}' > "${Core.MODULE_PATH}module_settings/settings.json"`);
+        
+        this.hideLoading();
+        Core.showToast(I18n.translate('SETTINGS_SAVED', 'Settings saved'), 'success');
+        return true;
     } catch (error) {
-        console.error('Error saving settings:', error);
-        return { success: false, error: error.message };
+        console.error('Failed to save settings:', error);
+        this.hideLoading();
+        Core.showToast(I18n.translate('SETTINGS_SAVE_ERROR', 'Failed to save settings'), 'error');
+        return false;
     }
 }
 ```
 
 ### Status Monitoring
 
-The WebUI handles module status information through the `status.js` file. This file is responsible for fetching status information from the server and displaying it in the interface.
+WebUI handles module status information through the `pages/status.js` file. This file is responsible for fetching status information from the server and displaying it in the interface.
 
 ```javascript
-// Fetch status information
-async function fetchStatus() {
+// Load module status
+async loadModuleStatus() {
     try {
-        const response = await fetch('/api/status');
-        const data = await response.json();
-        return data;
+        // Execute Shell command to get status
+        const statusOutput = await Core.execCommand(`cd "${Core.MODULE_PATH}" && busybox sh service.sh status`);
+        
+        // Parse status output
+        if (statusOutput.includes('running')) {
+            this.moduleStatus = 'RUNNING';
+        } else if (statusOutput.includes('stopped')) {
+            this.moduleStatus = 'STOPPED';
+        } else if (statusOutput.includes('paused')) {
+            this.moduleStatus = 'PAUSED';
+        } else {
+            this.moduleStatus = 'UNKNOWN';
+        }
+        
+        return this.moduleStatus;
     } catch (error) {
-        console.error('Error fetching status:', error);
-        return {};
-    }
-}
-
-// Update status display
-function updateStatusDisplay(status) {
-    const statusContainer = document.getElementById('status-container');
-    if (!statusContainer) return;
-    
-    // Clear container
-    statusContainer.innerHTML = '';
-    
-    // Add status information
-    for (const [key, value] of Object.entries(status)) {
-        const statusItem = document.createElement('div');
-        statusItem.className = 'status-item';
-        statusItem.innerHTML = `
-            <span class="status-label">${getTranslation('status_' + key)}:</span>
-            <span class="status-value ${value ? 'active' : 'inactive'}">${value ? getTranslation('status_active') : getTranslation('status_inactive')}</span>
-        `;
-        statusContainer.appendChild(statusItem);
+        console.error('Failed to load module status:', error);
+        this.moduleStatus = 'UNKNOWN';
+        return this.moduleStatus;
     }
 }
 ```
 
-## 🔄 API Interfaces
+## 🔄 API Interface
 
-The WebUI communicates with the backend through the following API interfaces:
+WebUI communicates with the backend through the API provided by the Core module:
 
-### Settings API
+### Core API
 
-- **Get Settings**: `GET /api/settings`
-- **Save Settings**: `POST /api/settings`
+`core.js` provides core functionality for interacting with Shell:
 
-### Status API
-
-- **Get Status**: `GET /api/status`
-- **Execute Action**: `POST /api/action`
+```javascript
+// Execute Shell command
+async execCommand(command) {
+    const callbackName = `exec_callback_${Date.now()}`;
+    return new Promise((resolve, reject) => {
+        window[callbackName] = (errno, stdout, stderr) => {
+            delete window[callbackName];
+            errno === 0 ? resolve(stdout) : reject(stderr);
+        };
+        ksu.exec(command, "{}", callbackName);
+    });
+}
+```
 
 ## 🌐 Multi-language Support
 
-The WebUI supports multiple languages through the `language.js` file. This file contains translation strings for various languages and language switching functionality.
+WebUI supports multiple languages through the `i18n.js` file. This file contains translation strings for various languages and language switching functionality.
 
 ```javascript
-// Get current language
-function getCurrentLanguage() {
-    return localStorage.getItem('language') || 'en';
-}
+// Initialize language module
+async init() {
+    try {
+        // Load default translations
+        this.loadDefaultTranslations();
 
-// Set language
-function setLanguage(lang) {
-    localStorage.setItem('language', lang);
-    updateUILanguage();
-}
+        // Apply default language translations
+        this.applyTranslations();
+
+        // Determine initial language
+        await this.determineInitialLanguage();
+
+        // Apply language again (using determined language)
+        this.applyTranslations();
+
+        // Initialize language selector
+        this.initLanguageSelector();
+
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize language module:', error);
+        // Use default language
+        this.currentLang = 'zh';
+        return false;
+    }
+},
 
 // Get translation string
-function getTranslation(key) {
-    const lang = getCurrentLanguage();
-    return translations[lang]?.[key] || translations['en'][key] || key;
-}
+translate(key, fallback = '') {
+    const translation = this.translations[this.currentLang]?.[key] || 
+                       this.translations['zh']?.[key] || 
+                       fallback || 
+                       key;
+    return translation;
+},
 
-// Update UI language
-function updateUILanguage() {
-    // Update all elements with data-i18n attribute
+// Apply translations to DOM elements
+applyTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
-        element.textContent = getTranslation(key);
+        element.textContent = this.translate(key, element.textContent);
     });
 }
 ```
 
 ## 🎭 Theme Support
 
-The WebUI supports light and dark themes through the `theme.js` file. This file contains theme switching functionality and theme-related style handling.
+WebUI supports light and dark theme switching through the `theme.js` file. This file contains theme switching functionality and theme-related style handling.
 
 ```javascript
-// Get current theme
-function getCurrentTheme() {
-    return localStorage.getItem('theme') || 'light';
-}
+// Initialize theme
+init() {
+    // Get stored theme or system theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        this.setTheme(savedTheme);
+    } else {
+        // Use system theme
+        this.useSystemTheme();
+    }
+    
+    // Bind theme toggle button
+    this.bindThemeToggle();
+    
+    // Watch for system theme changes
+    this.watchSystemTheme();
+},
 
 // Set theme
-function setTheme(theme) {
+setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
-    document.body.setAttribute('data-theme', theme);
-}
-
-// Toggle theme
-function toggleTheme() {
-    const currentTheme = getCurrentTheme();
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
+    
+    // Update theme icon
+    const themeIcon = document.querySelector('#theme-toggle .material-symbols-rounded');
+    if (themeIcon) {
+        themeIcon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
+    }
 }
 ```
 
 ## 📱 Responsive Design
 
-The WebUI uses responsive design to adapt to different screen sizes. Responsive design is primarily implemented through CSS media queries.
+WebUI uses responsive design to adapt to different screen sizes. Responsive design is primarily implemented through CSS media queries.
 
 ```css
 /* Desktop devices */
 @media (min-width: 1024px) {
-    /* Desktop styles */
+    .app-nav {
+        width: 80px;
+        height: 100%;
+        flex-direction: column;
+        top: 60px;
+        left: 0;
+    }
+    
+    #main-content {
+        margin-left: 80px;
+        margin-bottom: 0;
+    }
 }
 
 /* Tablet devices */
 @media (min-width: 768px) and (max-width: 1023px) {
-    /* Tablet styles */
+    .app-nav {
+        height: 60px;
+        bottom: 0;
+    }
+    
+    #main-content {
+        margin-bottom: 60px;
+    }
 }
 
 /* Mobile devices */
 @media (max-width: 767px) {
-    /* Mobile device styles */
+    .app-nav {
+        height: 56px;
+        bottom: 0;
+    }
+    
+    #main-content {
+        margin-bottom: 56px;
+    }
 }
 ```
 
@@ -329,15 +441,21 @@ The WebUI uses responsive design to adapt to different screen sizes. Responsive 
 
 2. **Add debug logs**: Add `console.log()` statements in JavaScript code to output debug information.
 
-3. **Check network requests**: View API requests and responses in the Network tab of developer tools.
+3. **Use the logger.js module**: Use the built-in logging module to record information.
 
+```javascript
+// Record logs
+Logger.log('Information', 'info');
+Logger.log('Warning', 'warning');
+Logger.log('Error', 'error');
+```
 
 ## 🔄 Version Compatibility
 
 When upgrading the AMMF framework, pay attention to changes in the following files:
 
 1. `webroot/app.js` - Main application logic may change
-2. `webroot/settings.js` - Settings handling logic may be updated
-3. `webroot/language.js` - Language strings may be updated
+2. `webroot/core.js` - Core functionality may be updated
+3. `webroot/i18n.js` - Language strings may be updated
 
-It's recommended to back up customized WebUI files before upgrading, then carefully merge any changes.
+It is recommended to back up customized WebUI files before upgrading, then carefully merge any changes.
