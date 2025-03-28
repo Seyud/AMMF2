@@ -28,6 +28,7 @@ if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
 else
     . "$MODPATH/files/scripts/default_scripts/main.sh"
     # 设置service脚本的日志文件
+    start_script
     set_log_file "service"
     log_info "${SERVICE_LOADING_MAIN:-加载 main.sh}"
 fi

@@ -13,9 +13,9 @@ start_script() {
         NOW_PATH="$MODPATH"
         SH_ON_MAGISK=true
     fi
-    
+
     # 加载日志系统
-    
+
     if [ -z "$NOW_PATH" ]; then
         MODPATH="$1"
     fi
@@ -41,7 +41,7 @@ start_script() {
         . "$NOW_PATH/files/languages.sh"
         eval "lang_$print_languages"
     fi
-        if [ -f "$NOW_PATH/files/scripts/default_scripts/logger.sh" ]; then
+    if [ -f "$NOW_PATH/files/scripts/default_scripts/logger.sh" ]; then
         . "$NOW_PATH/files/scripts/default_scripts/logger.sh"
         # 设置main脚本的日志文件
         set_log_file "main"
@@ -90,15 +90,15 @@ Aurora_abort() {
 
 # 修改 ui_print 函数
 ui_print() {
-    if [ "$1" = "- Setting permissions" ] || 
-       [ "$1" = "- Extracting module files" ] || 
-       [ "$1" = "- Current boot slot: $SLOT" ] || 
-       [ "$1" = "- Device is system-as-root" ] || 
-       [ "$1" = "- Done" ] || 
-       [ "$(echo "$1" | grep -c '^ - Mounting ')" -gt 0 ]; then
+    if [ "$1" = "- Setting permissions" ] ||
+        [ "$1" = "- Extracting module files" ] ||
+        [ "$1" = "- Current boot slot: $SLOT" ] ||
+        [ "$1" = "- Device is system-as-root" ] ||
+        [ "$1" = "- Done" ] ||
+        [ "$(echo "$1" | grep -c '^ - Mounting ')" -gt 0 ]; then
         return
     fi
-    
+
     # 使用日志系统
     log_info "$1"
     echo "$1"
@@ -139,7 +139,7 @@ check_network() {
 }
 download_file() {
     Aurora_test_input "download_file" "1" "$1"
-    local max_retries=3 
+    local max_retries=3
     local link="$1"
     local filename=$(wget --spider -S "$link" 2>&1 | grep -o -E 'filename="[^"]*"' | sed -e 's/^filename="//' -e 's/"$//')
     local local_path="$download_destination/$filename"

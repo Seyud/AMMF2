@@ -14,7 +14,7 @@ init_logger() {
 
     # 日志目录
     if [ -z "$LOG_DIR" ]; then
-        LOG_DIR="${MODPATH:-${0%/*}}/logs"
+        LOG_DIR="${MODPATH}/logs"
     fi
 
     # 确保日志目录存在
@@ -29,7 +29,7 @@ init_logger() {
     fi
     
     # 检查 logmonitor 可执行文件是否存在
-    LOGMONITOR_BIN="${MODPATH:-${0%/*}}/bin/logmonitor"
+    LOGMONITOR_BIN="${MODPATH}/bin/logmonitor"
     if [ ! -f "$LOGMONITOR_BIN" ]; then
         echo "警告: logmonitor 可执行文件未找到: $LOGMONITOR_BIN" >&2
         echo "将使用简化的日志功能" >&2
