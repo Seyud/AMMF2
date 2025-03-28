@@ -73,15 +73,12 @@ const AboutPage = {
         `;
     },
 
-// 修改模块信息渲染方法，添加翻译支持
-renderModuleInfo() {
+    // 修改模块信息渲染方法，只保留模块ID和版本信息
+    renderModuleInfo() {
         const infoItems = [
             { key: 'action_id', label: 'MODULE_ID', icon: 'tag' },
             { key: 'action_version', label: 'MODULE_VERSION', icon: 'new_releases' },
-            { key: 'magisk_min_version', label: 'MAGISK_MIN_VERSION', icon: 'system_update' },
-            { key: 'ksu_min_version', label: 'KSU_MIN_VERSION', icon: 'terminal' },
-            { key: 'apatch_min_version', label: 'APATCH_MIN_VERSION', icon: 'build' },
-            { key: 'ANDROID_API', label: 'ANDROID_API', icon: 'android' }
+            { key: 'version', label: 'VERSION', icon: 'update' }
         ];
         
         let html = '';
@@ -101,6 +98,21 @@ renderModuleInfo() {
                 `;
             }
         });
+        
+        // 添加从module.prop读取的版本信息
+        if (this.moduleInfo.version) {
+            html += `
+                <div class="info-item">
+                    <div class="info-icon">
+                        <span class="material-symbols-rounded">update</span>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label" data-i18n="VERSION">版本</div>
+                        <div class="info-value">${this.moduleInfo.version}</div>
+                    </div>
+                </div>
+            `;
+        }
         
         return html || `<div class="no-info" data-i18n="NO_INFO">无可用信息</div>`;
     },
