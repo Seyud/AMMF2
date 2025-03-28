@@ -76,6 +76,12 @@ lang_en() {
     WEBUI_RUNNING="Running"
     WEBUI_STOPPED="Stopped"
     WEBUI_UNKNOWN="Unknown"
+    WEBUI_REFRESH_STATUS="Refresh Status"
+    WEBUI_STATUS_REFRESHED="Status refreshed"
+    WEBUI_STATUS_REFRESH_ERROR="Error refreshing status"
+    WEBUI_RUN_ACTION="Run Action"
+    WEBUI_DEVICE_INFO="Device Info"
+    
     
     # WebUI日志页
     WEBUI_LOGS_TITLE="Logs"
@@ -90,6 +96,18 @@ lang_en() {
     # WebUI关于页
     WEBUI_ABOUT_TITLE="About"
     WEBUI_ABOUT_INFO="AMMF Module - A Magisk/KernelSU Module Framework"
+    WEBUI_MODULE_INFO="Module Info"
+    WEBUI_MODULE_ID="Module ID"
+    WEBUI_MODULE_VERSION="Module Version"
+    WEBUI_MAGISK_MIN_VERSION="Magisk Min Version"
+    WEBUI_KSU_MIN_VERSION="KernelSU Min Version"
+    WEBUI_APATCH_MIN_VERSION="APatch Min Version"
+    WEBUI_ANDROID_API="Android API"
+    WEBUI_ABOUT_WEBUI="About WebUI"
+    WEBUI_VERSION="Version"
+    WEBUI_DEVELOPER_INFO="Developer Info"
+    WEBUI_DEVELOPER="Developer"
+    WEBUI_NO_INFO="No information available"
     
     # WebUI通用元素
     WEBUI_LOADING="Loading..."
@@ -182,6 +200,11 @@ lang_zh() {
     WEBUI_RUNNING="运行中"
     WEBUI_STOPPED="已停止"
     WEBUI_UNKNOWN="未知"
+    WEBUI_REFRESH_STATUS="刷新状态"
+    WEBUI_STATUS_REFRESHED="状态已刷新"
+    WEBUI_STATUS_REFRESH_ERROR="刷新状态失败"
+    WEBUI_RUN_ACTION="运行Action"
+    WEBUI_DEVICE_INFO="设备信息"
     
     # WebUI日志页
     WEBUI_LOGS_TITLE="运行日志"
@@ -196,6 +219,18 @@ lang_zh() {
     # WebUI关于页
     WEBUI_ABOUT_TITLE="关于"
     WEBUI_ABOUT_INFO="AMMF模块 - 一个Magisk/KernelSU模块框架"
+    WEBUI_MODULE_INFO="模块信息"
+    WEBUI_MODULE_ID="模块ID"
+    WEBUI_MODULE_VERSION="模块版本"
+    WEBUI_MAGISK_MIN_VERSION="Magisk最低版本"
+    WEBUI_KSU_MIN_VERSION="KernelSU最低版本"
+    WEBUI_APATCH_MIN_VERSION="APatch最低版本"
+    WEBUI_ANDROID_API="Android API"
+    WEBUI_ABOUT_WEBUI="关于WebUI"
+    WEBUI_VERSION="版本"
+    WEBUI_DEVELOPER_INFO="开发者信息"
+    WEBUI_DEVELOPER="开发者"
+    WEBUI_NO_INFO="无可用信息"
     
     # WebUI通用元素
     WEBUI_LOADING="加载中..."
@@ -288,6 +323,11 @@ lang_ru() {
     WEBUI_RUNNING="Работает"
     WEBUI_STOPPED="Остановлен"
     WEBUI_UNKNOWN="Неизвестно"
+    WEBUI_REFRESH_STATUS="Обновить статус"
+    WEBUI_STATUS_REFRESHED="Статус обновлен"
+    WEBUI_STATUS_REFRESH_ERROR="Ошибка обновления статуса"
+    WEBUI_RUN_ACTION="Выполнить Action"
+    WEBUI_DEVICE_INFO="Информация об устройстве"
     
     # WebUI日志页
     WEBUI_LOGS_TITLE="Журналы"
@@ -302,6 +342,18 @@ lang_ru() {
         # WebUI关于页
     WEBUI_ABOUT_TITLE="О модуле"
     WEBUI_ABOUT_INFO="Модуль AMMF - Фреймворк модуля Magisk/KernelSU"
+    WEBUI_MODULE_INFO="Информация о модуле"
+    WEBUI_MODULE_ID="ID модуля"
+    WEBUI_MODULE_VERSION="Версия модуля"
+    WEBUI_MAGISK_MIN_VERSION="Мин. версия Magisk"
+    WEBUI_KSU_MIN_VERSION="Мин. версия KernelSU"
+    WEBUI_APATCH_MIN_VERSION="Мин. версия APatch"
+    WEBUI_ANDROID_API="Android API"
+    WEBUI_ABOUT_WEBUI="О WebUI"
+    WEBUI_VERSION="Версия"
+    WEBUI_DEVELOPER_INFO="Информация о разработчике"
+    WEBUI_DEVELOPER="Разработчик"
+    WEBUI_NO_INFO="Нет доступной информации"
     
     # WebUI通用元素
     WEBUI_LOADING="Загрузка..."
