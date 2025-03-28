@@ -40,6 +40,7 @@ jobs:
             cat module.prop
             rm latest_tag.txt
             rm current_time.txt
+            mkdir bin
             
       - name: Replace module ID in files
         run: |

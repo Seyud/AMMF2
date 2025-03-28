@@ -41,6 +41,7 @@ jobs:
             echo "versionCode=${CURRENT_TIME}" >> module.prop
             echo "author=${action_author}" >> module.prop
             echo "description=${action_description}" >> module.prop
+            mkdir bin
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
