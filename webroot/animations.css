@@ -3,7 +3,7 @@
  * 包含所有动画和过渡效果
  */
 
-/* 页面切换动画 */
+/* 页面切换动画 - 修复底栏位移和界面抖动问题 */
 .page-enter {
   opacity: 0;
   transform: translateY(20px);
@@ -13,16 +13,16 @@
   width: 100%;
   left: 0;
   top: 0;
-  pointer-events: none;
-  max-width: 100%;
-  overflow-x: hidden;
+  pointer-events: none; /* 防止在过渡期间与元素交互 */
+  max-width: 100%; /* 防止水平溢出 */
+  overflow-x: hidden; /* 防止水平滚动 */
 }
 
 .page-enter.page-active {
   opacity: 1;
   transform: translateY(0);
-  position: relative;
-  pointer-events: auto;
+  position: relative; /* 恢复正常文档流 */
+  pointer-events: auto; /* 恢复交互能力 */
 }
 
 .page-exit {
@@ -30,20 +30,37 @@
   transform: translateY(0);
   transition: opacity 0.25s ease-in, transform 0.25s ease-in;
   will-change: opacity, transform;
-  position: absolute;
+  position: absolute; /* 确保退出的页面不影响布局 */
   width: 100%;
   left: 0;
   top: 0;
-  max-width: 100%;
-  overflow-x: hidden;
+  max-width: 100%; /* 防止水平溢出 */
+  overflow-x: hidden; /* 防止水平滚动 */
 }
 
 .page-exit.page-active {
   opacity: 0;
   transform: translateY(-20px);
-  pointer-events: none;
+  pointer-events: none; /* 防止在过渡期间与元素交互 */
 }
 
+/* 确保主内容区域有足够的最小高度，防止页面切换时高度塌陷导致底栏跳动 */
+#main-content {
+  min-height: calc(100vh - var(--header-height) - var(--nav-height));
+  position: relative; /* 为绝对定位的子元素提供参考 */
+  overflow-x: hidden; /* 防止水平滚动 */
+}
+
+/* 页面容器样式，确保一致的布局 */
+.page-container {
+  width: 100%;
+  min-height: calc(100vh - var(--header-height) - var(--nav-height));
+  max-width: 100%; /* 防止水平溢出 */
+  overflow-x: hidden; /* 防止水平滚动 */
+  overscroll-behavior: none; /* 禁用滑动回弹效果 */
+}
+
+/* 其余动画代码保持不变 */
 /* 加载动画 */
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -97,85 +114,163 @@
   to { transform: translateX(-30px); opacity: 0; }
 }
 
-/* 按钮涟漪效果 */
-.ripple {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  transform: scale(0);
-  animation: ripple 0.6s linear;
-  pointer-events: none;
+/* Toast 动画 */
+.toast {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s, transform 0.3s;
 }
 
-@keyframes ripple {
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 语言选择器动画 - 增强版 */
+.language-selector {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s 0.3s;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.language-selector.show {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0s;
+  pointer-events: auto;
+}
+
+.language-selector-content {
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 90%;
+  width: 320px;
+}
+
+.language-selector.show .language-selector-content {
+  transform: translateY(0) scale(1);
+}
+
+/* 页面切换增强动画 */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
   to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageExit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}
+
+/* 卡片动画效果 - 移除 */
+.card {
+  transition: none;
+}
+
+.card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 模态框关闭动画 */
+@keyframes modalClose {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.modal-closing {
+  animation: modalClose 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 按钮涟漪效果 */
+.md-button, .icon-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.md-button::after, .icon-button::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(var(--md-onSurface-rgb), 0.1) 1%, transparent 1%);
+  background-position: 50%;
+  background-repeat: no-repeat;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.md-button:active::after, .icon-button:active::after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+/* 主题切换动画 */
+.theme-transition {
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* 主题切换涟漪效果 */
+@keyframes themeRipple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
     transform: scale(4);
     opacity: 0;
   }
 }
 
-/* 卡片悬浮效果 */
-.card-hover {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+.theme-ripple {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: var(--md-primary);
+  transform: scale(0);
+  pointer-events: none;
+  z-index: 9999;
 }
 
-.card-hover:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--elevation-2);
-}
-
-/* 脉冲动画 */
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-.pulse {
-  animation: pulse 1.5s ease infinite;
-}
-
-/* 闪烁动画 */
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.blink {
-  animation: blink 1s ease infinite;
-}
-
-/* 抖动动画 */
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-  20%, 40%, 60%, 80% { transform: translateX(5px); }
-}
-
-.shake {
-  animation: shake 0.8s ease;
-}
-
-/* 弹跳动画 */
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-20px); }
-  60% { transform: translateY(-10px); }
-}
-
-.bounce {
-  animation: bounce 1s ease;
-}
-
-/* 渐变背景动画 */
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.gradient-animation {
-  background: linear-gradient(270deg, var(--md-primary), var(--md-secondary));
-  background-size: 200% 200%;
-  animation: gradientShift 3s ease infinite;
+.theme-ripple.active {
+  animation: themeRipple 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
