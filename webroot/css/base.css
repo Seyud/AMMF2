@@ -1,0 +1,222 @@
+/**
+ * 基础样式和变量定义
+ * 包含颜色变量、排版和基础元素样式
+ */
+
+/* 基础变量 */
+:root {
+  /* 卡片和元素圆角 */
+  --card-border-radius: 12px;
+  --button-border-radius: 20px;
+  
+  /* 阴影 */
+  --md-sys-elevation-level1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-level2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-level3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+  
+  /* 状态层不透明度 */
+  --md-sys-state-hover-opacity: 0.08;
+  --md-sys-state-focus-opacity: 0.12;
+  --md-sys-state-pressed-opacity: 0.12;
+  --md-sys-state-dragged-opacity: 0.16;
+  
+  /* 字体大小 */
+  --md-sys-typescale-display-large-size: 57px; /* 添加 */
+  --md-sys-typescale-display-medium-size: 45px; /* 添加 */
+  --md-sys-typescale-display-small-size: 36px; /* 添加 */
+  --md-sys-typescale-headline-large-size: 32px; /* 添加 */
+  --md-sys-typescale-headline-medium-size: 28px; /* 添加 */
+  --md-sys-typescale-headline-small-size: 24px; /* 添加 */
+  --md-sys-typescale-title-large-size: 22px; /* 添加 */
+  --md-sys-typescale-title-medium-size: 16px; /* 添加 */
+  --md-sys-typescale-title-small-size: 14px; /* 添加 */
+  --md-sys-typescale-body-large-size: 16px;
+  --md-sys-typescale-body-medium-size: 14px;
+  --md-sys-typescale-body-small-size: 12px;
+  --md-sys-typescale-label-large-size: 14px;
+  --md-sys-typescale-label-medium-size: 12px;
+  --md-sys-typescale-label-small-size: 11px;
+  
+  /* 字体粗细 */
+  --md-sys-typescale-weight-regular: 400;
+  --md-sys-typescale-weight-medium: 500;
+  --md-sys-typescale-weight-bold: 700;
+  
+  /* 形状 - 添加 */
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  
+  /* 表面色级别 */
+  --md-surface-1: rgba(var(--md-primary-rgb), 0.05);
+  --md-surface-2: rgba(var(--md-primary-rgb), 0.08);
+  --md-surface-3: rgba(var(--md-primary-rgb), 0.11);
+  --md-surface-4: rgba(var(--md-primary-rgb), 0.12); /* 添加 */
+  --md-surface-5: rgba(var(--md-primary-rgb), 0.14); /* 添加 */
+}
+
+/* 浅色主题 */
+.light-theme {
+  /* 主色 */
+  --md-primary: #006495;
+  --md-primary-rgb: 0, 100, 149;
+  --md-onPrimary: #ffffff;
+  --md-primaryContainer: #cbe6ff;
+  --md-onPrimaryContainer: #001e30;
+  
+  /* 次要色 */
+  --md-secondary: #4f616e;
+  --md-onSecondary: #ffffff;
+  --md-secondaryContainer: #d2e5f5;
+  --md-onSecondaryContainer: #0b1d29;
+  
+  /* 错误色 */
+  --md-error: #ba1a1a;
+  --md-error-rgb: 186, 26, 26;
+  --md-onError: #ffffff;
+  --md-errorContainer: #ffdad6;
+  --md-onErrorContainer: #410002;
+  
+  /* 背景色 */
+  --md-background: #f8f9ff;
+  --md-background-rgb: 248, 249, 255;
+  --md-onBackground: #191c1e;
+  
+  /* 表面色 */
+  --md-surface: #f8f9ff;
+  --md-onSurface: #191c1e;
+  --md-onSurface-rgb: 25, 28, 30;
+  --md-surfaceVariant: #dde3ea;
+  --md-onSurfaceVariant: #41484d;
+  
+  /* 轮廓色 */
+  --md-outline: #71787e;
+  --md-outlineVariant: #c1c7ce;
+  
+  /* 反色 - 添加 */
+  --md-inverseSurface: #2e3133;
+  --md-inverseOnSurface: #eff1f3;
+  
+  /* 阴影色 - 添加 */
+  --md-shadow: #000000;
+  
+  /* 涟漪颜色 - 添加 */
+  --ripple-color: #006495;
+  
+  /* 卡片背景 */
+  --card-background: #ffffff;
+}
+
+/* 深色主题 */
+.dark-theme {
+  /* 主色 */
+  --md-primary: #8fcdff;
+  --md-primary-rgb: 143, 205, 255;
+  --md-onPrimary: #00344f;
+  --md-primaryContainer: #004b71;
+  --md-onPrimaryContainer: #cbe6ff;
+  
+  /* 次要色 */
+  --md-secondary: #b6c9d8;
+  --md-onSecondary: #21323f;
+  --md-secondaryContainer: #384956;
+  --md-onSecondaryContainer: #d2e5f5;
+  
+  /* 错误色 */
+  --md-error: #ffb4ab;
+  --md-error-rgb: 255, 180, 171;
+  --md-onError: #690005;
+  --md-errorContainer: #93000a;
+  --md-onErrorContainer: #ffdad6;
+  
+  /* 背景色 */
+  --md-background: #191c1e;
+  --md-background-rgb: 25, 28, 30;
+  --md-onBackground: #e1e2e5;
+  
+  /* 表面色 */
+  --md-surface: #191c1e;
+  --md-onSurface: #e1e2e5;
+  --md-onSurface-rgb: 225, 226, 229;
+  --md-surfaceVariant: #41484d;
+  --md-onSurfaceVariant: #c1c7ce;
+  
+  /* 轮廓色 */
+  --md-outline: #8b9198;
+  --md-outlineVariant: #41484d;
+  
+  /* 反色 - 添加 */
+  --md-inverseSurface: #e1e2e5;
+  --md-inverseOnSurface: #2e3133;
+  
+  /* 阴影色 - 添加 */
+  --md-shadow: #000000;
+  
+  /* 涟漪颜色 - 添加 */
+  --ripple-color: #8fcdff;
+  
+  /* 卡片背景 */
+  --card-background: #252a2e;
+}
+
+/* 基础元素样式 */
+body {
+  font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--md-background);
+  color: var(--md-onBackground);
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--md-surfaceVariant);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-onSurfaceVariant);
+}
+
+/* 响应式修复 */
+img, svg, video, canvas, audio, iframe, embed, object {
+  display: block;
+  max-width: 100%;
+}
+
+table {
+  width: 100%;
+  table-layout: fixed;
+  overflow-wrap: break-word;
+}
+
+pre, code {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+input, select, textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}

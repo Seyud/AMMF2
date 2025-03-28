@@ -1,0 +1,127 @@
+/**
+ * 布局相关样式
+ * 包含页面结构、网格和容器样式
+ */
+
+/* 主内容区域 */
+#main-content {
+  padding-bottom: calc(var(--nav-height) + var(--spacing-md));
+  min-height: calc(100vh - var(--header-height) - var(--nav-height));
+  padding-top: var(--spacing-sm);
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* 页面容器 */
+.page-container {
+  padding: var(--spacing-md);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 头部样式 */
+.app-header {
+  background-color: rgba(var(--md-background-rgb), 0.85);
+  color: var(--md-onSurface);
+  height: var(--header-height);
+  box-shadow: var(--md-sys-elevation-level2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 0 var(--spacing-md);
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* 导航栏样式 */
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  background-color: var(--card-background);
+  display: flex;
+  justify-content: space-around;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.nav-content {
+  display: flex;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs) 0;
+  color: var(--md-onSurfaceVariant);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-item.active {
+  color: var(--md-primary);
+}
+
+/* 卡片布局 */
+.card {
+  background-color: var(--card-background);
+  border-radius: var(--card-border-radius);
+  padding: 16px;
+  box-shadow: var(--md-sys-elevation-level1);
+  margin-bottom: 16px;
+  border: none;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--md-sys-elevation-level2);
+}
+
+/* 响应式布局调整 */
+@media (min-width: 600px) {
+  .card {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-container {
+    padding: var(--spacing-sm);
+  }
+  
+  .module-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  
+  .settings-actions,
+  .logs-actions {
+    width: 100%;
+  }
+}
