@@ -1,0 +1,308 @@
+/**
+ * Material Design 3 主题变量
+ * 定义了浅色和深色主题的所有颜色变量
+ */
+
+/* 基础变量 */
+:root {
+  /* 卡片和元素圆角 */
+  --card-border-radius: 12px;
+  --button-border-radius: 20px;
+  
+  /* 阴影 */
+  --md-sys-elevation-level1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-level2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-level3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+  
+  /* 状态层不透明度 */
+  --md-sys-state-hover-state-layer-opacity: 0.08;
+  --md-sys-state-focus-state-layer-opacity: 0.12;
+  --md-sys-state-pressed-state-layer-opacity: 0.12;
+  --md-sys-state-dragged-state-layer-opacity: 0.16;
+  
+  /* 字体大小 */
+  --md-sys-typescale-display-large-size: 57px;
+  --md-sys-typescale-display-medium-size: 45px;
+  --md-sys-typescale-display-small-size: 36px;
+  --md-sys-typescale-headline-large-size: 32px;
+  --md-sys-typescale-headline-medium-size: 28px;
+  --md-sys-typescale-headline-small-size: 24px;
+  --md-sys-typescale-title-large-size: 22px;
+  --md-sys-typescale-title-medium-size: 16px;
+  --md-sys-typescale-title-small-size: 14px;
+  --md-sys-typescale-body-large-size: 16px;
+  --md-sys-typescale-body-medium-size: 14px;
+  --md-sys-typescale-body-small-size: 12px;
+  --md-sys-typescale-label-large-size: 14px;
+  --md-sys-typescale-label-medium-size: 12px;
+  --md-sys-typescale-label-small-size: 11px;
+  
+  /* 字体粗细 */
+  --md-sys-typescale-weight-regular: 400;
+  --md-sys-typescale-weight-medium: 500;
+  --md-sys-typescale-weight-bold: 700;
+  
+  /* 形状 */
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+}
+
+/* 浅色主题 */
+.light-theme {
+  /* 主色 */
+  --md-primary: #006495;
+  --md-primary-rgb: 0, 100, 149;
+  --md-onPrimary: #ffffff;
+  --md-primaryContainer: #cbe6ff;
+  --md-onPrimaryContainer: #001e30;
+  
+  /* 次要色 */
+  --md-secondary: #4f616e;
+  --md-onSecondary: #ffffff;
+  --md-secondaryContainer: #d2e5f5;
+  --md-onSecondaryContainer: #0b1d29;
+  
+  /* 第三色 */
+  --md-tertiary: #63597c;
+  --md-onTertiary: #ffffff;
+  --md-tertiaryContainer: #e9ddff;
+  --md-onTertiaryContainer: #1e1635;
+  
+  /* 错误色 */
+  --md-error: #ba1a1a;
+  --md-error-rgb: 186, 26, 26;
+  --md-onError: #ffffff;
+  --md-errorContainer: #ffdad6;
+  --md-onErrorContainer: #410002;
+  
+  /* 背景色 */
+  --md-background: #f8f9ff;
+  --md-background-rgb: 248, 249, 255;  /* 添加 RGB 变量 */
+  --md-onBackground: #191c1e;
+  
+  /* 表面色 */
+  --md-surface: #f8f9ff;
+  --md-onSurface: #191c1e;
+  --md-onSurface-rgb: 25, 28, 30;
+  --md-surfaceVariant: #dde3ea;
+  --md-onSurfaceVariant: #41484d;
+  --md-surfaceTint: #006495;
+  
+  /* 反色 */
+  --md-inverseSurface: #2e3133;
+  --md-inverseOnSurface: #eff1f3;
+  
+  /* 轮廓色 */
+  --md-outline: #71787e;
+  --md-outlineVariant: #c1c7ce;
+  
+  /* 阴影色 */
+  --md-shadow: #000000;
+  
+  /* 涟漪颜色 */
+  --ripple-color: #006495;
+  
+  /* 卡片背景 */
+  --card-background: #ffffff;
+}
+
+/* 深色主题 */
+.dark-theme {
+  /* 主色 */
+  --md-primary: #8fcdff;
+  --md-primary-rgb: 143, 205, 255;
+  --md-onPrimary: #00344f;
+  --md-primaryContainer: #004b71;
+  --md-onPrimaryContainer: #cbe6ff;
+  
+  /* 次要色 */
+  --md-secondary: #b6c9d8;
+  --md-onSecondary: #21323f;
+  --md-secondaryContainer: #384956;
+  --md-onSecondaryContainer: #d2e5f5;
+  
+  /* 第三色 */
+  --md-tertiary: #cdc0e9;
+  --md-onTertiary: #342b4b;
+  --md-tertiaryContainer: #4b4163;
+  --md-onTertiaryContainer: #e9ddff;
+  
+  /* 错误色 */
+  --md-error: #ffb4ab;
+  --md-error-rgb: 255, 180, 171;
+  --md-onError: #690005;
+  --md-errorContainer: #93000a;
+  --md-onErrorContainer: #ffdad6;
+  
+  /* 背景色 */
+  --md-background: #191c1e;
+  --md-background-rgb: 25, 28, 30;  /* 添加 RGB 变量 */
+  --md-onBackground: #e1e2e5;
+  
+  /* 表面色 */
+  --md-surface: #191c1e;
+  --md-onSurface: #e1e2e5;
+  --md-onSurface-rgb: 225, 226, 229;
+  --md-surfaceVariant: #41484d;
+  --md-onSurfaceVariant: #c1c7ce;
+  --md-surfaceTint: #8fcdff;
+  
+  /* 反色 */
+  --md-inverseSurface: #e1e2e5;
+  --md-inverseOnSurface: #2e3133;
+  
+  /* 轮廓色 */
+  --md-outline: #8b9198;
+  --md-outlineVariant: #41484d;
+  
+  /* 阴影色 */
+  --md-shadow: #000000;
+  
+  /* 涟漪颜色 */
+  --ripple-color: #8fcdff;
+  
+  /* 卡片背景 */
+  --card-background: #1e2124;
+}
+
+/* 卡片样式 */
+.card {
+  background-color: var(--card-background);
+  border-radius: var(--card-border-radius);
+  padding: 16px;
+  box-shadow: var(--md-sys-elevation-level1);
+  margin-bottom: 16px;
+  border: 1px solid var(--md-outlineVariant);
+}
+
+/* 按钮样式 */
+.md-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  height: 40px;
+  border-radius: var(--button-border-radius);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-weight-medium);
+  text-transform: none;
+  letter-spacing: 0.1px;
+  border: none;
+  cursor: pointer;
+  background-color: transparent;
+  color: var(--md-primary);
+  transition: background-color 0.2s;
+}
+
+.md-button:hover {
+  background-color: rgba(var(--md-primary-rgb), var(--md-sys-state-hover-state-layer-opacity));
+}
+
+.md-button.primary-button {
+  background-color: var(--md-primary);
+  color: var(--md-onPrimary);
+}
+
+.md-button.primary-button:hover {
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+/* 图标按钮 */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background-color: transparent;
+  color: var(--md-onSurfaceVariant);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.icon-button:hover {
+  background-color: rgba(var(--md-onSurface-rgb), var(--md-sys-state-hover-state-layer-opacity));
+}
+
+/* 底部导航栏 */
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  background-color: var(--card-background);
+  display: flex;
+  justify-content: space-around;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+/* 加载动画容器 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+}
+
+/* 错误容器 */
+.error-container {
+  text-align: center;
+  padding: 32px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.error-icon {
+  font-size: 48px;
+  color: var(--md-error);
+  margin-bottom: 16px;
+}
+
+/* 设置项样式 */
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.setting-item:hover {
+  background-color: rgba(var(--md-primary-rgb), 0.04);
+}
+
+/* 吐司容器 */
+.toast-container {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 400px;
+  padding: 0 16px;
+}
+
+.toast {
+  transform: translateY(100px);
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
