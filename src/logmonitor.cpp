@@ -48,10 +48,20 @@ public:
     LogMonitor(const std::string& dir, int level = 3, size_t size_limit = 102400)
         : log_dir(dir), log_level(level), log_size_limit(size_limit), buffer_max_size(4096), running(true) {
         
-        // Create log directory
-        mkdir(log_dir.c_str(), 0755);
+        // 创建日志目录 - 使用递归创建
+        std::string cmd = "mkdir -p " + log_dir;
+        system(cmd.c_str());
         
-        // Initialize inotify
+        // 确认目录是否存在
+        struct stat st;
+        if (stat(log_dir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)) {
+            std::cerr << "无法创建或访问日志目录: " << log_dir << std::endl;
+            // 尝试使用当前目录
+            log_dir = "./logs";
+            system(("mkdir -p " + log_dir).c_str());
+        }
+        
+        // 初始化 inotify
         inotify_fd = inotify_init();
         if (inotify_fd == -1) {
             std::cerr << "Failed to initialize inotify: " << strerror(errno) << std::endl;
@@ -100,8 +110,10 @@ public:
     }
     
     // Write log entry
+    // 修复 write_log 函数
     void write_log(const std::string& log_name, LogLevel level, const std::string& message) {
-        if (level > log_level) return;
+        // 修改判断逻辑，确保日志级别正确处理
+        if (static_cast<int>(level) > log_level) return;
         
         std::string level_str;
         switch (level) {
@@ -112,13 +124,13 @@ public:
             default:        level_str = "INFO";  break;
         }
         
-        // Get current time
+        // 获取当前时间
         auto now = std::chrono::system_clock::now();
         std::time_t now_time = std::chrono::system_clock::to_time_t(now);
         char time_str[64];
         std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", std::localtime(&now_time));
         
-        // Format log message
+        // 格式化日志消息
         std::string log_entry = std::string(time_str) + " [" + level_str + "] " + message + "\n";
         
         std::lock_guard<std::mutex> lock(log_mutex);
@@ -271,6 +283,7 @@ void signal_handler(int sig) {
 }
 
 // Main function
+// 修复 main 函数中的命令行参数处理
 int main(int argc, char* argv[]) {
     std::string log_dir = "/data/adb/modules/AMMF2/logs";
     int log_level = 3;
@@ -278,13 +291,18 @@ int main(int argc, char* argv[]) {
     std::string log_name = "system";
     std::string message;
     
-    // Parse command line arguments
+    // 解析命令行参数
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
         if (arg == "-d" && i + 1 < argc) {
             log_dir = argv[++i];
         } else if (arg == "-l" && i + 1 < argc) {
-            log_level = std::stoi(argv[++i]);
+            try {
+                log_level = std::stoi(argv[++i]);
+            } catch (const std::exception& e) {
+                std::cerr << "Invalid log level: " << argv[i] << std::endl;
+                log_level = 3; // 使用默认值
+            }
         } else if (arg == "-c" && i + 1 < argc) {
             command = argv[++i];
         } else if (arg == "-n" && i + 1 < argc) {
@@ -359,6 +377,7 @@ int main(int argc, char* argv[]) {
         
         LogLevel level = static_cast<LogLevel>(log_level);
         g_log_monitor->write_log(log_name, level, message);
+        g_log_monitor->flush_all(); // 立即刷新，确保写入
         return 0;
     } else if (command == "flush") {
         // Flush logs

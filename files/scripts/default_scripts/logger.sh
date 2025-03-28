@@ -99,7 +99,9 @@ _write_log() {
     
     if [ -f "$LOGMONITOR_BIN" ]; then
         # 使用 logmonitor 写日志
-        "$LOGMONITOR_BIN" -c write -d "$LOG_DIR" -l "$level_num" -n "${LOG_FILE_NAME:-system}" -m "$message" >/dev/null 2>&1
+        # 添加调试信息
+        echo "执行: $LOGMONITOR_BIN -c write -d \"$LOG_DIR\" -l $level_num -n \"${LOG_FILE_NAME:-system}\" -m \"$message\"" >> "$LOG_DIR/logmonitor_debug.log"
+        "$LOGMONITOR_BIN" -c write -d "$LOG_DIR" -l "$level_num" -n "${LOG_FILE_NAME:-system}" -m "$message" 2>> "$LOG_DIR/logmonitor_error.log"
     else
         # 简化的日志写入（备用方案）
         local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
