@@ -187,7 +187,7 @@ const SettingsPage = {
             this.showLoading();
             
             // 从配置文件加载设置
-            const configPath = `${Core.MODULE_PATH}config.sh`;
+            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
             const configContent = await Core.execCommand(`cat "${configPath}"`);
             
             if (!configContent) {
@@ -318,7 +318,7 @@ const SettingsPage = {
             }
             
             // 写入配置文件
-            const configPath = `${Core.MODULE_PATH}config.sh`;
+            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
             await Core.execCommand(`echo '${configContent.replace(/'/g, "'\\''")}' > "${configPath}"`);
             
             // 更新本地设置
