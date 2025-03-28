@@ -5,9 +5,9 @@
 
 /* 主内容区域 */
 #main-content {
+  padding-top: calc(var(--header-height) + var(--spacing-sm));
   padding-bottom: calc(var(--nav-height) + var(--spacing-md));
   min-height: calc(100vh - var(--header-height) - var(--nav-height));
-  padding-top: var(--spacing-sm);
   width: 100%;
   overflow-x: hidden;
 }
@@ -27,8 +27,10 @@
   color: var(--md-onSurface);
   height: var(--header-height);
   box-shadow: var(--md-sys-elevation-level2);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -67,24 +69,38 @@
 .nav-content {
   display: flex;
   max-width: 1440px;
-  margin: 0 auto;
   width: 100%;
+  margin: 0 auto;
+  justify-content: space-around;
 }
 
 .nav-item {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xs) 0;
+  padding: 8px 0;
   color: var(--md-onSurfaceVariant);
   text-decoration: none;
+  width: 80px;
+  position: relative;
   transition: color 0.2s;
 }
 
 .nav-item.active {
   color: var(--md-primary);
+}
+
+.nav-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.nav-label {
+  font-size: 12px;
+  font-weight: var(--md-sys-typescale-weight-medium);
+  text-align: center;
+  line-height: 1;
 }
 
 /* 卡片布局 */
