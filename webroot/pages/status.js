@@ -45,7 +45,7 @@ const StatusPage = {
                 <div class="status-card card">
                     <div class="status-indicator ${this.getStatusClass()}">
                         <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
-                        <span>${this.getStatusText()}</span>
+                        <span data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
                     </div>
                     
                     <div class="status-actions">
@@ -253,15 +253,35 @@ const StatusPage = {
         }
     },
     
+    // 添加状态界面和关于界面的翻译支持
+    
+
+    getStatusI18nKey() {
+        switch (this.moduleStatus) {
+            case 'RUNNING':
+                return 'RUNNING';
+            case 'STOPPED':
+                return 'STOPPED';
+            case 'ERROR':
+                return 'ERROR';
+            default:
+                return 'UNKNOWN';
+        }
+    },
+
+    // 修改设备信息渲染方法，添加翻译支持
     renderDeviceInfo() {
+        if (!this.deviceInfo || Object.keys(this.deviceInfo).length === 0) {
+            return `<div class="no-info" data-i18n="NO_DEVICE_INFO">无设备信息</div>`;
+        }
+        
         const infoItems = [
-            { key: 'android', label: 'Android 版本', icon: 'android' },
-            { key: 'android_api', label: 'Android API', icon: 'api' },
-            { key: 'device_abi', label: '设备架构', icon: 'memory' },
-            { key: 'model', label: '设备型号', icon: 'smartphone' },
-            { key: 'kernel', label: '内核版本', icon: 'terminal' },
-            { key: 'magisk', label: 'Magisk 版本', icon: 'security' },
-            { key: 'ksu', label: 'KernelSU 版本', icon: 'admin_panel_settings' }
+            { key: 'device', label: 'DEVICE_MODEL', icon: 'smartphone' },
+            { key: 'android', label: 'ANDROID_VERSION', icon: 'android' },
+            { key: 'cpu', label: 'CPU_INFO', icon: 'memory' },
+            { key: 'kernel', label: 'KERNEL_VERSION', icon: 'terminal' },
+            { key: 'root', label: 'ROOT_METHOD', icon: 'security' },
+            { key: 'root_version', label: 'ROOT_VERSION', icon: 'new_releases' }
         ];
         
         let html = '';
@@ -274,7 +294,7 @@ const StatusPage = {
                             <span class="material-symbols-rounded">${item.icon}</span>
                         </div>
                         <div class="info-content">
-                            <div class="info-label">${item.label}</div>
+                            <div class="info-label" data-i18n="${item.label}">${I18n.translate(item.label, item.key)}</div>
                             <div class="info-value">${this.deviceInfo[item.key]}</div>
                         </div>
                     </div>
@@ -282,7 +302,7 @@ const StatusPage = {
             }
         });
         
-        return html || '<div class="no-info">无可用信息</div>';
+        return html || `<div class="no-info" data-i18n="NO_DEVICE_INFO">无设备信息</div>`;
     },
     
     // 刷新状态

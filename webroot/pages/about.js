@@ -28,7 +28,7 @@ const AboutPage = {
                         <span class="material-symbols-rounded">extension</span>
                     </div>
                     <h2>${this.moduleInfo.action_name || 'AMMF 模块'}</h2>
-                    <p class="module-description">${this.moduleInfo.description || this.moduleInfo.action_description || '模块描述未提供'}</p>
+                    <p class="module-description">${this.moduleInfo.description || this.moduleInfo.action_description || I18n.translate('MODULE_DESCRIPTION_DEFAULT', '模块描述未提供')}</p>
                 </div>
                 
                 <div class="about-content">
@@ -45,7 +45,7 @@ const AboutPage = {
                             <div class="webui-logo">
                                 <span class="material-symbols-rounded">web</span>
                             </div>
-                            <p>AMMF WebUI 是一个用于管理和配置 AMMF 模块的网页界面。</p>
+                            <p data-i18n="WEBUI_DESCRIPTION">AMMF WebUI 是一个用于管理和配置 AMMF 模块的网页界面。</p>
                             <div class="version-info">
                                 <span data-i18n="VERSION">版本</span>: <span class="version-number">4.1.2</span>
                             </div>
@@ -55,7 +55,7 @@ const AboutPage = {
                     <div class="about-card developer-card">
                         <h3 data-i18n="DEVELOPER_INFO">开发者信息</h3>
                         <div class="developer-content">
-                            <p><span data-i18n="DEVELOPER">开发者</span>: ${this.moduleInfo.action_author || 'Unknown'}</p>
+                            <p><span data-i18n="DEVELOPER">开发者</span>: ${this.moduleInfo.action_author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</p>
                             <div class="social-links">
                                 <a href="#" class="social-link" id="github-link">
                                     <span class="material-symbols-rounded">code</span>
@@ -67,10 +67,42 @@ const AboutPage = {
                 </div>
                 
                 <div class="about-footer">
-                    <p>© 2025 Aurora星空. All rights reserved.</p>
+                    <p data-i18n="COPYRIGHT_INFO">© 2025 Aurora星空. All rights reserved.</p>
                 </div>
             </div>
         `;
+    },
+
+// 修改模块信息渲染方法，添加翻译支持
+renderModuleInfo() {
+        const infoItems = [
+            { key: 'action_id', label: 'MODULE_ID', icon: 'tag' },
+            { key: 'action_version', label: 'MODULE_VERSION', icon: 'new_releases' },
+            { key: 'magisk_min_version', label: 'MAGISK_MIN_VERSION', icon: 'system_update' },
+            { key: 'ksu_min_version', label: 'KSU_MIN_VERSION', icon: 'terminal' },
+            { key: 'apatch_min_version', label: 'APATCH_MIN_VERSION', icon: 'build' },
+            { key: 'ANDROID_API', label: 'ANDROID_API', icon: 'android' }
+        ];
+        
+        let html = '';
+        
+        infoItems.forEach(item => {
+            if (this.moduleInfo[item.key]) {
+                html += `
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <span class="material-symbols-rounded">${item.icon}</span>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-label" data-i18n="${item.label}">${I18n.translate(item.label, item.key)}</div>
+                            <div class="info-value">${this.moduleInfo[item.key]}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        
+        return html || `<div class="no-info" data-i18n="NO_INFO">无可用信息</div>`;
     },
     
     // 加载模块信息
@@ -103,38 +135,6 @@ const AboutPage = {
             console.error('加载模块信息失败:', error);
             this.moduleInfo = {};
         }
-    },
-    
-    // 渲染模块信息
-    renderModuleInfo() {
-        const infoItems = [
-            { key: 'action_id', label: '模块ID', icon: 'tag' },
-            { key: 'action_version', label: '模块版本', icon: 'new_releases' },
-            { key: 'magisk_min_version', label: 'Magisk最低版本', icon: 'system_update' },
-            { key: 'ksu_min_version', label: 'KernelSU最低版本', icon: 'terminal' },
-            { key: 'apatch_min_version', label: 'APatch最低版本', icon: 'build' },
-            { key: 'ANDROID_API', label: 'Android API', icon: 'android' }
-        ];
-        
-        let html = '';
-        
-        infoItems.forEach(item => {
-            if (this.moduleInfo[item.key]) {
-                html += `
-                    <div class="info-item">
-                        <div class="info-icon">
-                            <span class="material-symbols-rounded">${item.icon}</span>
-                        </div>
-                        <div class="info-content">
-                            <div class="info-label">${item.label}</div>
-                            <div class="info-value">${this.moduleInfo[item.key]}</div>
-                        </div>
-                    </div>
-                `;
-            }
-        });
-        
-        return html || '<div class="no-info">无可用信息</div>';
     },
     
     // 渲染后的回调
