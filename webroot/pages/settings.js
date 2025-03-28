@@ -1,511 +1,144 @@
 /**
  * AMMF WebUI 设置页面模块
- * 简化版 - 优化界面和配置文件管理
+ * 管理模块配置和设置
  */
 
 const SettingsPage = {
-    // 基础配置
-    configPath: `${Core.MODULE_PATH}module_settings/config.sh`,
-    settingsJsonPath: `${Core.MODULE_PATH}module_settings/settings.json`,
-    configData: {},
-    settingsJson: null,
-    availableConfigs: [],
-    currentConfigName: 'config',
-    isLoading: false,
+    // 设置状态
+    settings: {},
+    settingsDescriptions: {},
+    settingsOptions: {},
+    excludedSettings: [],
+    availableLanguages: [],
     
     // 初始化
     async init() {
         try {
-            this.isLoading = true;
-            await this.scanConfigs();
-            await this.loadConfig();
-            this.isLoading = false;
+            // 显示加载中状态
+            this.showLoading(true);
+            
+            // 加载设置配置
+            await this.loadSettingsConfig();
+            
+            // 加载可用语言
+            await this.loadAvailableLanguages();
+            
+            // 加载设置
+            await this.loadSettings();
+            
+            // 隐藏加载状态
+            this.showLoading(false);
+            
             return true;
         } catch (error) {
             console.error('初始化设置页面失败:', error);
-            this.configData = { ENABLED: "true", DEBUG: "false" };
-            this.isLoading = false;
+            this.showLoading(false);
             return false;
         }
     },
     
-    // 扫描可用配置文件
-    async scanConfigs() {
-        try {
-            const configsDir = `${Core.MODULE_PATH}module_settings/`;
-            const mainConfigPath = `${configsDir}config.sh`;
-            
-            // 检查主配置文件是否存在
-            if (await this.fileExists(mainConfigPath)) {
-                // 检查开发者配置
-                const configContent = await Core.execCommand(`cat "${mainConfigPath}"`);
-                const match = configContent.match(/Module_Config_DEVELOPER=["']?(.*?)["']?(\s*#.*)?$/m);
-                
-                if (match && match[1] && match[1] !== "None" && match[1].trim() !== "") {
-                    const devConfigPath = match[1].startsWith('/') ? match[1] : `${configsDir}${match[1]}`;
-                    
-                    if (await this.fileExists(devConfigPath)) {
-                        console.log(`找到开发者配置: ${devConfigPath}`);
-                        const devConfigName = devConfigPath.split('/').pop().replace('.sh', '');
-                        this.availableConfigs = [{ name: devConfigName, path: devConfigPath }];
-                        this.currentConfigName = devConfigName;
-                        this.configPath = devConfigPath;
-                        return;
-                    }
-                }
-            }
-            
-            // 扫描所有配置文件
-            const result = await Core.execCommand(`ls -1 "${configsDir}" | grep "\\.sh$" | grep -v "^save-"`);
-            
-            if (!result) {
-                this.availableConfigs = [];
-                return;
-            }
-            
-            const files = result.split('\n').filter(file => file.trim() !== '');
-            this.availableConfigs = files.map(file => ({
-                name: file.replace('.sh', ''),
-                path: `${configsDir}${file}`
-            }));
-            
-            if (this.availableConfigs.length > 0) {
-                const defaultConfig = this.availableConfigs.find(config => config.name === 'config') || this.availableConfigs[0];
-                this.currentConfigName = defaultConfig.name;
-                this.configPath = defaultConfig.path;
-            }
-        } catch (error) {
-            console.error('扫描配置文件失败:', error);
-            this.availableConfigs = [];
-            this.configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
-            this.currentConfigName = 'config';
-        }
-    },
-    
-    // 检查文件是否存在
-    async fileExists(path) {
-        const result = await Core.execCommand(`[ -f "${path}" ] && echo "true" || echo "false"`);
-        return result.trim() === "true";
-    },
-    
-    // 加载配置
-    async loadConfig(showToast = false) {
-        try {
-            this.isLoading = true;
-            this.updateLoadingState(true);
-            
-            if (!this.configPath || !await this.fileExists(this.configPath)) {
-                if (showToast) {
-                    Core.showToast(I18n.translate('CONFIG_FILE_NOT_FOUND', '找不到配置文件'), 'error');
-                }
-                this.configData = { ENABLED: "true", DEBUG: "false" };
-            } else {
-                const configContent = await Core.execCommand(`cat "${this.configPath}"`);
-                if (!configContent) {
-                    this.configData = { ENABLED: "true", DEBUG: "false" };
-                    if (showToast) {
-                        Core.showToast(I18n.translate('CONFIG_READ_ERROR', '读取配置文件失败'), 'error');
-                    }
-                } else {
-                    this.configData = this.parseConfig(configContent);
-                    this.originalContent = configContent;
-                    if (showToast) {
-                        Core.showToast(I18n.translate('SETTINGS_REFRESHED', '设置已刷新'));
-                    }
-                }
-            }
-            
-            await this.loadSettingsJson();
-            this.updateUI();
-            
-            this.isLoading = false;
-            this.updateLoadingState(false);
-            return true;
-        } catch (error) {
-            console.error('加载配置失败:', error);
-            this.configData = { ENABLED: "true", DEBUG: "false" };
-            this.updateUI();
-            
-            if (showToast) {
-                Core.showToast(I18n.translate('SETTINGS_REFRESH_ERROR', '刷新设置时出错'), 'error');
-            }
-            
-            this.isLoading = false;
-            this.updateLoadingState(false);
-            return false;
-        }
-    },
-    
-    // 更新加载状态
-    updateLoadingState(isLoading) {
-        const settingsContent = document.querySelector('.settings-content');
-        const loadingOverlay = document.querySelector('.settings-loading-overlay');
-        
-        if (isLoading) {
-            if (!loadingOverlay && settingsContent) {
-                const overlay = document.createElement('div');
-                overlay.className = 'settings-loading-overlay';
-                overlay.innerHTML = `
+    // 渲染页面
+    render() {
+        return `
+            <div class="page-container settings-page">
+                <div class="settings-loading-overlay" id="settings-loading">
                     <div class="loading-spinner"></div>
-                    <div class="loading-text">${I18n.translate('LOADING_SETTINGS', '加载设置中...')}</div>
-                `;
-                settingsContent.appendChild(overlay);
-            }
-        } else {
-            if (loadingOverlay) {
-                loadingOverlay.remove();
-            }
-        }
-        
-        // 更新按钮状态
-        const refreshBtn = document.getElementById('refresh-settings');
-        const saveBtn = document.getElementById('save-settings');
-        const configSelector = document.getElementById('config-selector');
-        
-        if (refreshBtn) refreshBtn.disabled = isLoading;
-        if (saveBtn) saveBtn.disabled = isLoading;
-        if (configSelector) configSelector.disabled = isLoading;
-    },
-    
-    // 加载settings.json
-    async loadSettingsJson() {
-        try {
-            if (!await this.fileExists(this.settingsJsonPath)) {
-                this.settingsJson = null;
-                return;
-            }
-            
-            const jsonContent = await Core.execCommand(`cat "${this.settingsJsonPath}"`);
-            if (!jsonContent) {
-                this.settingsJson = null;
-                return;
-            }
-            
-            this.settingsJson = JSON.parse(jsonContent);
-            
-            // 预处理描述
-            if (this.settingsJson.descriptions) {
-                const currentLang = I18n.currentLang || 'zh';
-                this.descriptions = {};
+                    <p data-i18n="LOADING_SETTINGS">加载设置中...</p>
+                </div>
                 
-                for (const key in this.settingsJson.descriptions) {
-                    const description = this.settingsJson.descriptions[key];
-                    this.descriptions[key] = description[currentLang] || description.en || '';
-                }
-            }
-        } catch (error) {
-            console.error('加载设置JSON失败:', error);
-            this.settingsJson = null;
-            this.descriptions = {};
-        }
-    },
-    
-    // 解析配置文件
-    parseConfig(content) {
-        const config = {};
-        const lines = content.split('\n');
-        
-        for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (trimmedLine === '' || trimmedLine.startsWith('#')) continue;
-            
-            const regex = /^([A-Za-z0-9_]+)=(?:["']([^"']*)["']|([^#\s][^#]*?))(?:\s*#.*)?$/;
-            const match = trimmedLine.match(regex);
-            
-            if (match) {
-                const key = match[1];
-                const value = (match[2] !== undefined) ? match[2] : match[3];
+                <div class="settings-header card">
+                    <h2 data-i18n="MODULE_SETTINGS">模块设置</h2>
+                    <div class="settings-actions">
+                        <button id="refresh-settings" class="md-button">
+                            <span class="material-symbols-rounded">refresh</span>
+                            <span data-i18n="REFRESH_SETTINGS">刷新设置</span>
+                        </button>
+                        <button id="save-settings" class="md-button primary">
+                            <span class="material-symbols-rounded">save</span>
+                            <span data-i18n="SAVE_SETTINGS">保存设置</span>
+                        </button>
+                    </div>
+                </div>
                 
-                if (value !== undefined) {
-                    config[key] = value.trim();
-                }
-            }
-        }
-        
-        return config;
-    },
-    
-    // 生成配置文件内容
-    generateConfigContent() {
-        if (this.originalContent) {
-            const lines = this.originalContent.split('\n');
-            let result = '';
-            let processedKeys = new Set();
-            
-            for (const line of lines) {
-                const trimmedLine = line.trim();
-                if (trimmedLine === '' || trimmedLine.startsWith('#')) {
-                    result += line + '\n';
-                    continue;
-                }
-                
-                const regex = /^([A-Za-z0-9_]+)=(?:["']([^"']*)["']|([^#\s][^#]*?))(?:\s*#.*)?$/;
-                const match = trimmedLine.match(regex);
-                
-                if (match) {
-                    const key = match[1];
-                    const commentMatch = line.match(/#.*$/);
-                    const comment = commentMatch ? commentMatch[0] : '';
-                    
-                    if (this.configData[key] !== undefined) {
-                        const hasQuotes = line.includes('"') || line.includes("'");
-                        const quoteChar = line.includes("'") ? "'" : '"';
-                        
-                        const needQuotes = this.configData[key].includes(' ') || 
-                                          this.configData[key].includes('#') || 
-                                          hasQuotes;
-                        
-                        if (needQuotes) {
-                            result += `${key}=${quoteChar}${this.configData[key]}${quoteChar}${comment ? ' ' + comment : ''}\n`;
-                        } else {
-                            result += `${key}=${this.configData[key]}${comment ? ' ' + comment : ''}\n`;
-                        }
-                        
-                        processedKeys.add(key);
-                    } else {
-                        result += line + '\n';
-                    }
-                } else {
-                    result += line + '\n';
-                }
-            }
-            
-            // 添加新的配置项
-            for (const key in this.configData) {
-                if (!processedKeys.has(key)) {
-                    const needQuotes = this.configData[key].includes(' ') || 
-                                      this.configData[key].includes('#');
-                    
-                    if (needQuotes) {
-                        result += `${key}="${this.configData[key]}"\n`;
-                    } else {
-                        result += `${key}=${this.configData[key]}\n`;
-                    }
-                }
-            }
-            
-            return result.trim();
-        }
-        
-        // 创建新配置文件
-        let result = '#!/bin/sh\n# AMMF 模块配置文件\n# 由 WebUI 生成\n\n';
-        for (const [key, value] of Object.entries(this.configData)) {
-            const needQuotes = value.includes(' ') || value.includes('#');
-            if (needQuotes) {
-                result += `${key}="${value}"\n`;
-            } else {
-                result += `${key}=${value}\n`;
-            }
-        }
-        
-        return result.trim();
-    },
-    
-    // 保存配置
-    async saveConfig() {
-        if (this.isLoading) return false;
-        
-        try {
-            this.isLoading = true;
-            this.updateLoadingState(true);
-            
-            if (!this.configData || Object.keys(this.configData).length === 0) {
-                Core.showToast(I18n.translate('NO_CONFIG_DATA', '没有可保存的配置数据'), 'error');
-                this.isLoading = false;
-                this.updateLoadingState(false);
-                return false;
-            }
-            
-            // 收集表单数据
-            this.collectFormData();
-            
-            const newContent = this.generateConfigContent();
-            
-            // 确保目录存在
-            const dirPath = this.configPath.substring(0, this.configPath.lastIndexOf('/'));
-            await Core.execCommand(`mkdir -p "${dirPath}"`);
-            
-            // 写入配置
-            const tempFile = `${dirPath}/temp_config_${Date.now()}.sh`;
-            await Core.execCommand(`echo '${newContent.replace(/'/g, "'\\''").replace(/\n/g, "\\n")}' > "${tempFile}"`);
-            await Core.execCommand(`mv "${tempFile}" "${this.configPath}"`);
-            
-            this.originalContent = newContent;
-            
-            // 执行保存脚本
-            const saveScriptPath = `${Core.MODULE_PATH}module_settings/save-${this.currentConfigName}.sh`;
-            if (await this.fileExists(saveScriptPath)) {
-                await Core.execCommand(`sh "${saveScriptPath}"`);
-            }
-            
-            Core.showToast(I18n.translate('SETTINGS_SAVED', '设置已保存'));
-            this.isLoading = false;
-            this.updateLoadingState(false);
-            return true;
-        } catch (error) {
-            console.error('保存配置出错:', error);
-            Core.showToast(I18n.translate('SAVE_CONFIG_ERROR', '保存配置失败'), 'error');
-            this.isLoading = false;
-            this.updateLoadingState(false);
-            return false;
-        }
-    },
-    
-    // 切换配置文件
-    async switchConfig(configName) {
-        if (this.isLoading || configName === this.currentConfigName) return;
-        
-        const configFile = this.availableConfigs.find(config => config.name === configName);
-        if (!configFile) {
-            Core.showToast(I18n.translate('CONFIG_NOT_FOUND', '找不到配置文件'), 'error');
-            return;
-        }
-        
-        this.currentConfigName = configName;
-        this.configPath = configFile.path;
-        
-        await this.loadConfig(true);
-    },
-    
-    // 收集表单数据
-    collectFormData() {
-        document.querySelectorAll('.setting-input').forEach(input => {
-            const key = input.getAttribute('data-key');
-            if (key) {
-                if (input.type === 'checkbox') {
-                    this.configData[key] = input.checked ? 'true' : 'false';
-                } else if (input.type === 'number' || input.type === 'range') {
-                    this.configData[key] = input.value.toString();
-                } else {
-                    this.configData[key] = input.value;
-                }
-            }
-        });
-    },
-    
-    // 生成设置HTML
-    generateHTML() {
-        if (!this.configData || Object.keys(this.configData).length === 0) {
-            return '<div class="settings-placeholder">没有可用的设置</div>';
-        }
-        
-        let html = `
-            <div class="settings-search-container">
-                <div class="search-input-wrapper">
-                    <span class="material-symbols-rounded">search</span>
-                    <input type="text" id="settings-search" placeholder="${I18n.translate('SEARCH_SETTINGS', '搜索设置...')}">
-                    <button id="clear-search" class="clear-search">
-                        <span class="material-symbols-rounded">close</span>
-                    </button>
+                <div class="settings-content card">
+                    <div id="settings-form">
+                        ${this.renderSettingsForm()}
+                    </div>
                 </div>
             </div>
-            <div class="no-search-results" style="display:none;">
-                <span class="material-symbols-rounded">search_off</span>
-                <p>没有找到匹配的设置</p>
-            </div>
-            <div class="settings-list">
         `;
-        
-        // 使用settings.json生成结构化设置
-        if (this.settingsJson && this.settingsJson.settings) {
-            html += this.generateStructuredHTML();
-        } else {
-            html += this.generateSimpleHTML();
-        }
-        
-        html += '</div>';
-        return html;
     },
     
-    // 生成结构化设置HTML
-    generateStructuredHTML() {
+    // 渲染设置表单
+    renderSettingsForm() {
+        if (Object.keys(this.settings).length === 0) {
+            return `<p data-i18n="NO_SETTINGS">没有可用的设置</p>`;
+        }
+        
         let html = '';
         
-        // 按照sections分组显示设置
-        if (this.settingsJson.sections && Array.isArray(this.settingsJson.sections)) {
-            this.settingsJson.sections.forEach(section => {
-                html += `
-                    <div class="settings-section">
-                        <div class="section-title">
-                            <h3>${section.title || '设置'}</h3>
-                            <span class="material-symbols-rounded toggle-icon">expand_more</span>
-                        </div>
-                        ${section.description ? `<p class="section-description">${section.description}</p>` : ''}
-                        <div class="settings-group">
-                `;
-                
-                if (section.settings && Array.isArray(section.settings)) {
-                    section.settings.forEach(settingKey => {
-                        if (this.configData.hasOwnProperty(settingKey)) {
-                            html += this.generateSettingItem(settingKey);
-                        }
-                    });
-                }
-                
-                html += `
-                        </div>
-                    </div>
-                `;
-            });
+        // 按类别分组设置
+        const generalSettings = [];
+        const languageSettings = [];
+        const compatibilitySettings = [];
+        
+        // 分类设置
+        for (const key in this.settings) {
+            // 跳过排除的设置
+            if (this.excludedSettings.includes(key)) {
+                continue;
+            }
+            
+            // 语言相关设置
+            if (key === 'print_languages') {
+                languageSettings.push(key);
+            }
+            // 兼容性相关设置
+            else if (['magisk_min_version', 'ksu_min_version', 'ksu_min_kernel_version', 'apatch_min_version', 'ANDROID_API'].includes(key)) {
+                compatibilitySettings.push(key);
+            }
+            // 其他一般设置
+            else {
+                generalSettings.push(key);
+            }
         }
         
-        // 处理未分组的设置
-        const ungroupedSettings = Object.keys(this.configData).filter(key => {
-            if (!this.settingsJson.sections) return true;
-            
-            return !this.settingsJson.sections.some(section => 
-                section.settings && section.settings.includes(key)
-            );
-        });
+        // 渲染语言设置
+        if (languageSettings.length > 0) {
+            html += this.renderSettingsSection('LANGUAGE_SETTINGS', '语言设置', 'language', languageSettings);
+        }
         
-        if (ungroupedSettings.length > 0) {
-            html += `
-                <div class="settings-section">
-                    <div class="section-title">
-                        <h3>其他设置</h3>
-                        <span class="material-symbols-rounded toggle-icon">expand_more</span>
-                    </div>
-                    <div class="settings-group">
-            `;
-            
-            ungroupedSettings.forEach(key => {
-                html += this.generateSettingItem(key);
-            });
-            
-            html += `
-                    </div>
-                </div>
-            `;
+        // 渲染一般设置
+        if (generalSettings.length > 0) {
+            html += this.renderSettingsSection('GENERAL_SETTINGS', '一般设置', 'settings', generalSettings);
+        }
+        
+        // 渲染兼容性设置
+        if (compatibilitySettings.length > 0) {
+            html += this.renderSettingsSection('COMPATIBILITY_SETTINGS', '兼容性设置', 'build', compatibilitySettings);
         }
         
         return html;
     },
     
-    // 生成简单设置HTML
-    generateSimpleHTML() {
+    // 渲染设置分区
+    renderSettingsSection(i18nKey, defaultTitle, icon, settingKeys) {
         let html = `
-            <div class="settings-section">
-                <div class="section-title">
-                    <h3>常规设置</h3>
+            <div class="settings-section" id="section-${i18nKey.toLowerCase()}">
+                <div class="section-title" onclick="SettingsPage.toggleSection('${i18nKey.toLowerCase()}')">
+                    <h3>
+                        <span class="material-symbols-rounded">${icon}</span>
+                        <span data-i18n="${i18nKey}">${defaultTitle}</span>
+                    </h3>
                     <span class="material-symbols-rounded toggle-icon">expand_more</span>
                 </div>
                 <div class="settings-group">
         `;
         
-        // 先处理ENABLED和DEBUG
-        const priorityKeys = ['ENABLED', 'DEBUG'];
-        priorityKeys.forEach(key => {
-            if (this.configData.hasOwnProperty(key)) {
-                html += this.generateSettingItem(key);
-            }
-        });
-        
-        // 处理其他设置
-        Object.keys(this.configData)
-            .filter(key => !priorityKeys.includes(key))
-            .forEach(key => {
-                html += this.generateSettingItem(key);
-            });
+        // 渲染该分区的所有设置项
+        for (const key of settingKeys) {
+            html += this.renderSettingItem(key);
+        }
         
         html += `
                 </div>
@@ -515,307 +148,452 @@ const SettingsPage = {
         return html;
     },
     
-    // 生成单个设置项
-    generateSettingItem(key) {
-        const value = this.configData[key];
-        const description = this.descriptions && this.descriptions[key] ? this.descriptions[key] : '';
+    // 渲染单个设置项
+    renderSettingItem(key) {
+        const setting = this.settings[key];
+        if (!setting) return '';
         
-        // 根据设置类型生成不同的控件
-        let controlHtml = '';
+        // 获取设置描述
+        const description = this.settingsDescriptions[key] ? 
+            (this.settingsDescriptions[key][I18n.currentLang] || this.settingsDescriptions[key].en) : '';
         
-        if (key === 'ENABLED' || key === 'DEBUG' || value === 'true' || value === 'false') {
-            // 布尔值使用开关
-            controlHtml = `
-                <label class="switch">
-                    <input type="checkbox" class="setting-input" data-key="${key}" ${value === 'true' ? 'checked' : ''}>
-                    <span class="slider round"></span>
-                </label>
-            `;
-        } else if (!isNaN(Number(value)) && value.trim() !== '') {
-            // 数字使用滑块+输入框
-            const min = 0;
-            const max = value > 100 ? value * 2 : 100;
-            controlHtml = `
-                <div class="number-control">
-                    <input type="range" class="setting-slider" min="${min}" max="${max}" value="${value}">
-                    <input type="number" class="setting-number setting-input" data-key="${key}" value="${value}">
-                </div>
-            `;
-        } else if (this.settingsJson && this.settingsJson.options && this.settingsJson.options[key]) {
-            // 如果有预定义选项，使用下拉菜单
-            const options = this.settingsJson.options[key];
-            let optionsHtml = '';
-            
-            options.forEach(option => {
-                const optionValue = typeof option === 'object' ? option.value : option;
-                const optionLabel = typeof option === 'object' ? option.label : option;
-                optionsHtml += `<option value="${optionValue}" ${value === optionValue ? 'selected' : ''}>${optionLabel}</option>`;
-            });
-            
-            controlHtml = `
-                <select class="setting-input" data-key="${key}">
-                    ${optionsHtml}
-                </select>
-            `;
-        } else {
-            // 默认使用文本输入框
-            controlHtml = `<input type="text" class="setting-input" data-key="${key}" value="${value}">`;
-        }
-        
-        return `
+        let html = `
             <div class="setting-item" data-key="${key}">
                 <div class="setting-info">
                     <div class="setting-key">${key}</div>
                     ${description ? `<div class="setting-description">${description}</div>` : ''}
                 </div>
                 <div class="setting-control">
-                    ${controlHtml}
+        `;
+        
+        // 根据设置类型渲染不同的控件
+        if (this.settingsOptions[key] && this.settingsOptions[key].options) {
+            // 选择框
+            html += this.renderSelectControl(key, setting.value);
+        } else if (setting.type === 'boolean') {
+            // 开关
+            html += this.renderBooleanControl(key, setting.value === 'true');
+        } else if (setting.type === 'number') {
+            // 数字输入
+            html += this.renderNumberControl(key, setting.value);
+        } else {
+            // 文本输入
+            html += this.renderTextControl(key, setting.value);
+        }
+        
+        html += `
                 </div>
             </div>
         `;
+        
+        return html;
     },
     
-    // 更新UI
-    updateUI() {
-        const settingsContent = document.querySelector('.settings-content');
-        if (settingsContent) {
-            settingsContent.innerHTML = this.generateHTML();
-        }
+    // 渲染选择控件
+    renderSelectControl(key, value) {
+        const options = this.settingsOptions[key].options;
         
-        // 添加事件监听器
-        this.setupEventListeners();
-    },
-    
-    // 设置事件监听器
-    setupEventListeners() {
-        // 刷新按钮
-        document.getElementById('refresh-settings')?.addEventListener('click', () => this.loadConfig(true));
+        let html = `<select id="setting-${key}" class="setting-select">`;
         
-        // 保存按钮
-        document.getElementById('save-settings')?.addEventListener('click', () => this.saveConfig());
-        
-        // 配置选择器
-        const configSelector = document.getElementById('config-selector');
-        if (configSelector) {
-            configSelector.addEventListener('change', (e) => this.switchConfig(e.target.value));
-        }
-        
-        // 重置按钮
-        document.getElementById('reset-settings')?.addEventListener('click', () => this.confirmResetSettings());
-        
-        // 添加设置事件监听器
-        this.addSettingListeners();
-        
-        // 处理数字输入和滑块同步
-        this.setupNumberControls();
-        
-        // 添加搜索功能
-        this.setupSearch();
-    },
-    
-    // 添加设置事件监听器
-    addSettingListeners() {
-        document.querySelectorAll('.setting-input').forEach(input => {
-            if (input.type === 'checkbox') {
-                input.addEventListener('change', () => {
-                    const key = input.getAttribute('data-key');
-                    if (key) this.configData[key] = input.checked ? 'true' : 'false';
-                });
-            } else {
-                input.addEventListener('input', () => {
-                    const key = input.getAttribute('data-key');
-                    if (key) this.configData[key] = input.value;
-                });
-            }
-        });
-        
-        // 添加分类折叠功能
-        document.querySelectorAll('.section-title').forEach(title => {
-            title.addEventListener('click', (e) => {
-                const section = e.currentTarget.closest('.settings-section');
-                section.classList.toggle('collapsed');
-            });
-        });
-    },
-    
-    // 设置数字控件的同步
-    setupNumberControls() {
-        document.querySelectorAll('.number-control').forEach(control => {
-            const slider = control.querySelector('.setting-slider');
-            const numberInput = control.querySelector('.setting-number');
-            
-            if (slider && numberInput) {
-                // 滑块变化时更新数字输入框
-                slider.addEventListener('input', () => {
-                    numberInput.value = slider.value;
-                    // 触发数字输入框的input事件以更新configData
-                    numberInput.dispatchEvent(new Event('input'));
-                });
+        options.forEach(option => {
+            const label = option.label ? 
+                (option.label[I18n.currentLang] || option.label.en || option.value) : 
+                option.value;
                 
-                // 数字输入框变化时更新滑块
-                numberInput.addEventListener('input', () => {
-                    slider.value = numberInput.value;
-                });
-            }
-        });
-    },
-    
-    // 设置搜索功能
-    setupSearch() {
-        const searchInput = document.getElementById('settings-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                this.filterSettings(searchTerm);
-            });
-            
-            // 清除搜索按钮
-            const clearSearchBtn = document.getElementById('clear-search');
-            if (clearSearchBtn) {
-                clearSearchBtn.addEventListener('click', () => {
-                    searchInput.value = '';
-                    this.filterSettings('');
-                });
-            }
-        }
-    },
-    
-    // 过滤设置项
-    filterSettings(searchTerm) {
-        const settingItems = document.querySelectorAll('.setting-item');
-        const sections = document.querySelectorAll('.settings-section');
-        let hasVisibleItems = false;
-        
-        settingItems.forEach(item => {
-            const key = item.getAttribute('data-key');
-            const keyText = item.querySelector('.setting-key').textContent.toLowerCase();
-            const description = item.querySelector('.setting-description');
-            const descText = description ? description.textContent.toLowerCase() : '';
-            
-            if (keyText.includes(searchTerm) || descText.includes(searchTerm) || key.toLowerCase().includes(searchTerm)) {
-                item.style.display = '';
-                hasVisibleItems = true;
-            } else {
-                item.style.display = 'none';
-            }
+            html += `<option value="${option.value}" ${option.value === value ? 'selected' : ''}>${label}</option>`;
         });
         
-        // 处理分组显示/隐藏
-        sections.forEach(section => {
-            const visibleItems = Array.from(section.querySelectorAll('.setting-item')).filter(item => item.style.display !== 'none');
-            section.style.display = visibleItems.length === 0 ? 'none' : '';
-        });
-        
-        // 显示无结果提示
-        const noResults = document.querySelector('.no-search-results');
-        if (noResults) {
-            noResults.style.display = hasVisibleItems ? 'none' : '';
-        }
+        html += `</select>`;
+        return html;
     },
     
-    // 重置设置
-    async resetSettings() {
-        try {
-            this.isLoading = true;
-            this.updateLoadingState(true);
-            
-            // 备份当前配置
-            const backupPath = `${this.configPath}.bak.${Date.now()}`;
-            await Core.execCommand(`cp "${this.configPath}" "${backupPath}"`);
-            
-            // 重置为默认配置
-            const defaultConfigPath = `${Core.MODULE_PATH}module_settings/default.sh`;
-            if (await this.fileExists(defaultConfigPath)) {
-                await Core.execCommand(`cp "${defaultConfigPath}" "${this.configPath}"`);
-            } else {
-                // 如果没有默认配置，创建一个基本配置
-                const basicConfig = '#!/bin/sh\n# AMMF 模块配置文件\n# 由 WebUI 生成\n\nENABLED="true"\nDEBUG="false"\n';
-                await Core.execCommand(`echo '${basicConfig}' > "${this.configPath}"`);
-            }
-            
-            // 重新加载配置
-            await this.loadConfig();
-            
-            Core.showToast(I18n.translate('SETTINGS_RESET', '设置已重置'));
-            this.isLoading = false;
-            this.updateLoadingState(false);
-        } catch (error) {
-            console.error('重置设置失败:', error);
-            Core.showToast(I18n.translate('SETTINGS_RESET_ERROR', '重置设置失败'), 'error');
-            this.isLoading = false;
-            this.updateLoadingState(false);
-        }
+    // 渲染布尔控件
+    renderBooleanControl(key, isChecked) {
+        return `
+            <label class="switch">
+                <input type="checkbox" id="setting-${key}" ${isChecked ? 'checked' : ''}>
+                <span class="slider"></span>
+            </label>
+            <span class="boolean-value">${isChecked ? 
+                I18n.translate('ENABLED', '已启用') : 
+                I18n.translate('DISABLED', '已禁用')}</span>
+        `;
     },
     
-    // 确认重置设置
-    confirmResetSettings() {
-        if (confirm(I18n.translate('CONFIRM_RESET_SETTINGS', '确定要重置所有设置吗？此操作不可撤销。'))) {
-            this.resetSettings();
-        }
-    },
-    
-    // 渲染页面
-    render() {
-        // 配置选择器
-        let configSelector = '';
-        if (this.availableConfigs.length > 1) {
-            let options = '';
-            this.availableConfigs.forEach(config => {
-                options += `<option value="${config.name}" ${this.currentConfigName === config.name ? 'selected' : ''}>${config.name}</option>`;
-            });
-            
-            configSelector = `
-                <div class="config-selector-container">
-                    <select id="config-selector">${options}</select>
-                </div>
-            `;
-        }
+    // 渲染数字控件
+    renderNumberControl(key, value) {
+        const numValue = parseInt(value);
+        const useInputBox = numValue > 100;
         
         return `
-            <div class="page-container settings-page">
-                <div class="settings-header card">
-                    <h2>模块设置</h2>
-                    <div class="settings-actions">
-                        ${configSelector}
-                        <button id="refresh-settings" class="md-button" ${this.isLoading ? 'disabled' : ''}>
-                            <span class="material-symbols-rounded">refresh</span>
-                            <span>刷新设置</span>
-                        </button>
-                        <button id="save-settings" class="md-button primary" ${this.isLoading ? 'disabled' : ''}>
-                            <span class="material-symbols-rounded">save</span>
-                            <span>保存设置</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="settings-content">
-                    ${this.generateHTML()}
-                </div>
-                
-                <div class="settings-footer">
-                    <button id="reset-settings" class="md-button danger">
-                        <span class="material-symbols-rounded">restart_alt</span>
-                        <span>重置设置</span>
-                    </button>
-                </div>
+            <div class="number-control">
+                <input type="range" id="setting-${key}-range" class="setting-slider" 
+                    min="0" max="${Math.max(100, numValue * 2)}" value="${numValue}" 
+                    style="display: ${useInputBox ? 'none' : 'block'}"
+                    oninput="SettingsPage.updateNumberValue('${key}', this.value)">
+                <input type="number" id="setting-${key}" class="setting-number" value="${numValue}" 
+                    style="display: ${useInputBox ? 'block' : 'none'}"
+                    oninput="SettingsPage.updateRangeValue('${key}', this.value)">
+                <span class="range-value" id="setting-${key}-value" 
+                    style="display: ${useInputBox ? 'none' : 'inline-block'}">${numValue}</span>
+                <button class="icon-button" onclick="SettingsPage.toggleNumberInput('${key}')">
+                    <span class="material-symbols-rounded">${useInputBox ? 'tune' : 'edit'}</span>
+                </button>
             </div>
         `;
     },
     
-    // 页面挂载
-    async mount() {
-        await this.init();
-        this.setupEventListeners();
+    // 渲染文本控件
+    renderTextControl(key, value) {
+        return `<input type="text" id="setting-${key}" class="setting-text" value="${value}">`;
     },
     
-    // 页面卸载
-    unmount() {
-        // 清理事件监听器
-        document.getElementById('refresh-settings')?.removeEventListener('click', this.loadConfig);
-        document.getElementById('save-settings')?.removeEventListener('click', this.saveConfig);
-        document.getElementById('reset-settings')?.removeEventListener('click', this.confirmResetSettings);
+    // 渲染后的回调
+    afterRender() {
+        // 绑定刷新按钮
+        document.getElementById('refresh-settings')?.addEventListener('click', () => {
+            this.refreshSettings();
+        });
+        
+        // 绑定保存按钮
+        document.getElementById('save-settings')?.addEventListener('click', () => {
+            this.saveSettings();
+        });
+    },
+    
+    // 显示/隐藏加载状态
+    showLoading(show) {
+        const loadingElement = document.getElementById('settings-loading');
+        if (loadingElement) {
+            loadingElement.style.display = show ? 'flex' : 'none';
+        }
+    },
+    
+    // 切换设置分区的展开/折叠状态
+    toggleSection(sectionId) {
+        const section = document.getElementById(`section-${sectionId}`);
+        if (section) {
+            section.classList.toggle('collapsed');
+        }
+    },
+    
+    // 更新数字输入值
+    updateNumberValue(key, value) {
+        const numberInput = document.getElementById(`setting-${key}`);
+        const valueDisplay = document.getElementById(`setting-${key}-value`);
+        
+        if (numberInput) numberInput.value = value;
+        if (valueDisplay) valueDisplay.textContent = value;
+    },
+    
+    // 更新范围滑块值
+    updateRangeValue(key, value) {
+        const rangeInput = document.getElementById(`setting-${key}-range`);
+        const valueDisplay = document.getElementById(`setting-${key}-value`);
+        
+        if (rangeInput) rangeInput.value = value;
+        if (valueDisplay) valueDisplay.textContent = value;
+    },
+    
+    // 切换数字输入方式
+    toggleNumberInput(key) {
+        const rangeInput = document.getElementById(`setting-${key}-range`);
+        const numberInput = document.getElementById(`setting-${key}`);
+        const valueDisplay = document.getElementById(`setting-${key}-value`);
+        const toggleButton = document.querySelector(`[onclick="SettingsPage.toggleNumberInput('${key}')"] .material-symbols-rounded`);
+        
+        const isRangeVisible = rangeInput.style.display !== 'none';
+        
+        rangeInput.style.display = isRangeVisible ? 'none' : 'block';
+        numberInput.style.display = isRangeVisible ? 'block' : 'none';
+        valueDisplay.style.display = isRangeVisible ? 'none' : 'inline-block';
+        
+        if (toggleButton) {
+            toggleButton.textContent = isRangeVisible ? 'tune' : 'edit';
+        }
+    },
+    
+    // 加载设置配置
+    async loadSettingsConfig() {
+        try {
+            console.log('加载设置配置...');
+            
+            // 从整合的JSON文件加载设置配置
+            const configPath = `${Core.MODULE_PATH}module_settings/settings.json`;
+            
+            // 检查文件是否存在
+            const fileExistsResult = await Core.execCommand(`[ -f "${configPath}" ] && echo "true" || echo "false"`);
+            if (fileExistsResult.trim() !== "true") {
+                console.error('设置配置文件不存在');
+                return false;
+            }
+            
+            // 读取配置文件内容
+            const configContent = await Core.execCommand(`cat "${configPath}"`);
+            if (!configContent) {
+                console.error('设置配置文件为空');
+                return false;
+            }
+            
+            // 解析JSON
+            const config = JSON.parse(configContent);
+            
+            // 设置排除项
+            this.excludedSettings = config.excluded || [];
+            
+            // 设置描述
+            this.settingsDescriptions = config.descriptions || {};
+            
+            // 设置选项
+            this.settingsOptions = config.options || {};
+            
+            console.log('设置配置加载完成');
+            return true;
+        } catch (error) {
+            console.error('加载设置配置失败:', error);
+            return false;
+        }
+    },
+    
+    // 加载可用语言
+    async loadAvailableLanguages() {
+        try {
+            console.log('加载可用语言...');
+            
+            // 获取当前可用的语言列表
+            this.availableLanguages = I18n.supportedLangs;
+            
+            // 如果有print_languages选项，更新其选项列表
+            if (this.settingsOptions.print_languages) {
+                this.settingsOptions.print_languages.options = this.availableLanguages.map(langCode => {
+                    return {
+                        value: langCode,
+                        label: {
+                            en: I18n.getLanguageName(langCode, 'en'),
+                            zh: I18n.getLanguageName(langCode, 'zh')
+                        }
+                    };
+                });
+            }
+            
+            console.log('可用语言加载完成:', this.availableLanguages);
+            return true;
+        } catch (error) {
+            console.error('加载可用语言失败:', error);
+            return false;
+        }
+    },
+    
+    // 加载设置
+    async loadSettings() {
+        try {
+            console.log('加载设置...');
+            
+            // 读取config.sh文件
+            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+            
+            // 检查文件是否存在
+            const fileExistsResult = await Core.execCommand(`[ -f "${configPath}" ] && echo "true" || echo "false"`);
+            if (fileExistsResult.trim() !== "true") {
+                console.error('配置文件不存在');
+                return false;
+            }
+            
+            // 读取配置文件内容
+            const configContent = await Core.execCommand(`cat "${configPath}"`);
+            if (!configContent) {
+                console.error('配置文件为空');
+                return false;
+            }
+            
+            // 解析设置
+            this.parseSettings(configContent);
+            
+            console.log('设置加载完成');
+            return true;
+        } catch (error) {
+            console.error('加载设置失败:', error);
+            return false;
+        }
+    },
+    
+    // 解析设置文件
+    parseSettings(content) {
+        const lines = content.split('\n');
+        this.settings = {};
+        
+        for (const line of lines) {
+            // 跳过注释和空行
+            if (line.trim().startsWith('#') || line.trim() === '') continue;
+            
+            // 使用更精确的正则表达式匹配变量赋值，处理行尾注释
+            const match = line.match(/^([A-Za-z0-9_]+)=([^#]*)(#.*)?$/);
+            if (match) {
+                const key = match[1];
+                // 去除值两端的空格
+                let value = match[2].trim();
+                let originalFormat = value; // 保存原始格式用于保存时恢复引号和格式
+                
+                // 检查是否为带引号的字符串，并提取实际值用于类型判断
+                let valueForTypeCheck = value;
+                if ((value.startsWith('"') && value.endsWith('"')) || 
+                    (value.startsWith("'") && value.endsWith("'"))) {
+                    // 保存原始值（带引号）用于保存时恢复格式
+                    originalFormat = value;
+                    // 移除引号用于显示和类型判断
+                    valueForTypeCheck = value.substring(1, value.length - 1);
+                    value = valueForTypeCheck;
+                }
+                
+                // 确定变量类型
+                let type = 'text';
+                
+                // 检查是否为布尔值
+                if (valueForTypeCheck === 'true' || valueForTypeCheck === 'false') {
+                    type = 'boolean';
+                } 
+                // 检查是否为数字
+                else if (!isNaN(valueForTypeCheck) && valueForTypeCheck.trim() !== '') {
+                    type = 'number';
+                }
+                
+                // 存储设置
+                this.settings[key] = {
+                    value: value,
+                    type: type,
+                    originalFormat: originalFormat // 保存原始格式信息
+                };
+            }
+        }
+    },
+    
+    // 刷新设置
+    async refreshSettings() {
+        try {
+            this.showLoading(true);
+            
+            // 重新加载设置配置
+            await this.loadSettingsConfig();
+            
+            // 重新加载可用语言
+            await this.loadAvailableLanguages();
+            
+            // 重新加载设置
+            await this.loadSettings();
+            
+            // 重新渲染设置表单
+            const settingsForm = document.getElementById('settings-form');
+            if (settingsForm) {
+                settingsForm.innerHTML = this.renderSettingsForm();
+            }
+            
+            this.showLoading(false);
+            Core.showToast(I18n.translate('SETTINGS_REFRESHED', '设置已刷新'));
+        } catch (error) {
+            console.error('刷新设置失败:', error);
+            this.showLoading(false);
+            Core.showToast(I18n.translate('REFRESH_SETTINGS_ERROR', '刷新设置失败'), 'error');
+        }
+    },
+    
+    // 保存设置
+    async saveSettings() {
+        try {
+            this.showLoading(true);
+            
+            // 收集所有设置的当前值
+            const updatedSettings = {};
+            
+            for (const key in this.settings) {
+                const setting = this.settings[key];
+                
+                // 对于排除的设置项，保持原值和原始格式
+                if (this.excludedSettings.includes(key)) {
+                    updatedSettings[key] = setting.originalFormat || setting.value;
+                    continue;
+                }
+                
+                const input = document.getElementById(`setting-${key}`);
+                
+                // 如果找不到输入元素，跳过
+                if (!input) continue;
+                
+                if (setting.type === 'boolean') {
+                    updatedSettings[key] = input.checked ? 'true' : 'false';
+                } else if (setting.type === 'number') {
+                    // 确保数字值有效
+                    let numValue = parseInt(input.value);
+                    if (isNaN(numValue)) numValue = 0;
+                    updatedSettings[key] = numValue.toString();
+                } else {
+                    // 文本类型，检查原始格式以保持一致性
+                    let value = input.value;
+                    
+                    // 如果原始值有引号格式，恢复相同的引号格式
+                    if (setting.originalFormat && 
+                       ((setting.originalFormat.startsWith('"') && setting.originalFormat.endsWith('"')) || 
+                        (setting.originalFormat.startsWith("'") && setting.originalFormat.endsWith("'")))) {
+                        // 确定使用的是单引号还是双引号
+                        const quoteChar = setting.originalFormat.startsWith('"') ? '"' : "'";
+                        value = `${quoteChar}${value}${quoteChar}`;
+                    }
+                    
+                    updatedSettings[key] = value;
+                }
+            }
+            
+            // 生成新的 config.sh 内容
+            let newContent = '';
+            
+            // 获取原始文件内容以保留注释
+            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+            const originalContent = await Core.execCommand(`cat "${configPath}"`);
+            const lines = originalContent.split('\n');
+            
+            for (const line of lines) {
+                // 保留注释和空行
+                if (line.trim().startsWith('#') || line.trim() === '') {
+                    newContent += line + '\n';
+                    continue;
+                }
+                
+                // 查找变量赋值
+                const match = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
+                if (match) {
+                    const key = match[1];
+                    if (updatedSettings[key] !== undefined) {
+                        // 提取行尾注释
+                        const commentMatch = line.match(/#.*$/);
+                        const comment = commentMatch ? commentMatch[0] : '';
+                        
+                        // 添加变量赋值和注释
+                        newContent += `${key}=${updatedSettings[key]} ${comment}\n`;
+                    } else {
+                        newContent += line + '\n';
+                    }
+                } else {
+                    newContent += line + '\n';
+                }
+            }
+            
+            // 写入新的设置文件
+            await Core.execCommand(`cat > "${configPath}" << 'EOF'\n${newContent}\nEOF`);
+            
+            // 如果更改了语言设置，更新UI语言
+            const langInput = document.getElementById('setting-print_languages');
+            if (langInput && langInput.value !== I18n.currentLang) {
+                await I18n.setLanguage(langInput.value);
+            }
+            
+            this.showLoading(false);
+            Core.showToast(I18n.translate('SETTINGS_SAVED', '设置已保存'), 'success');
+        } catch (error) {
+            console.error('保存设置失败:', error);
+            this.showLoading(false);
+            Core.showToast(I18n.translate('SAVE_SETTINGS_ERROR', '保存设置失败'), 'error');
+        }
     }
 };
 
-// 导出模块
-export default SettingsPage;
+// 导出设置页面模块
+window.SettingsPage = SettingsPage;

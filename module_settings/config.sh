@@ -5,7 +5,6 @@ action_author="Module Author"
 action_description="Module Description"
 
 print_languages="en"                   # Default language for printing
-Module_Config_DEVELOPER="None"           # Module Config File Name
 
 # About Install
 magisk_min_version="25400"             # Minimum required version of Magisk
