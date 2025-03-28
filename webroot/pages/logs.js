@@ -314,21 +314,6 @@ const LogsPage = {
                     <p><small data-i18n="LOGS_READ_ONLY_NOTE">注意：日志查看功能默认为只读模式，不会自动修改日志文件。</small></p>
                 </div>
                 
-                <div class="webui-logging-control card">
-                    <div class="logging-status">
-                        <span data-i18n="WEBUI_LOGGING_STATUS">WebUI日志记录状态:</span>
-                        <span id="logging-status-indicator" class="${Logger.loggingEnabled ? 'enabled' : 'disabled'}">
-                            ${Logger.loggingEnabled ? I18n.translate('LOGGING_ENABLED', '已启用') : I18n.translate('LOGGING_DISABLED', '已禁用')}
-                        </span>
-                    </div>
-                    <button id="toggle-logging" class="md-button ${Logger.loggingEnabled ? 'warning' : 'primary'}">
-                        <span class="material-symbols-rounded">${Logger.loggingEnabled ? 'stop_circle' : 'fiber_manual_record'}</span>
-                        <span data-i18n="${Logger.loggingEnabled ? 'STOP_LOGGING' : 'START_LOGGING'}">
-                            ${Logger.loggingEnabled ? '停止记录' : '开始记录'}
-                        </span>
-                    </button>
-                </div>
-                
                 <div class="logs-content card">
                     <pre id="logs-display">${hasLogFiles ? this.escapeHtml(this.logContent) || I18n.translate('NO_LOGS', '没有可用的日志') : I18n.translate('NO_LOGS_FILES', '没有找到日志文件')}</pre>
                 </div>
@@ -394,21 +379,6 @@ const LogsPage = {
             });
         }
         
-        // 添加日志记录开关按钮事件
-        const toggleLoggingButton = document.getElementById('toggle-logging');
-        if (toggleLoggingButton) {
-            toggleLoggingButton.addEventListener('click', () => {
-                if (Logger.loggingEnabled) {
-                    Logger.stopLogging();
-                } else {
-                    Logger.startLogging();
-                }
-                
-                // 更新按钮状态
-                Logger.updateLoggingUI();
-            });
-        }
-        
         // 如果设置了自动刷新，启动自动刷新
         if (this.autoRefresh) {
             this.startAutoRefresh();
@@ -421,9 +391,6 @@ const LogsPage = {
         if (this.autoRefresh) {
             this.startAutoRefresh();
         }
-        
-        // 更新日志记录UI状态
-        Logger.updateLoggingUI();
     },
     
     // 页面停用时的回调
