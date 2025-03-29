@@ -6,7 +6,7 @@
 const AboutPage = {
     // 模块信息
     moduleInfo: {},
-    version: '4.3.0',
+    version: '5.0.0',
     
     // 初始化
     async init() {
@@ -29,49 +29,77 @@ const AboutPage = {
         document.getElementById('page-actions').innerHTML = '';
         
         return `
-            <div class="about-page">
-                <!-- WebUI信息 -->
-                <div class="about-card shadow-sm">
-                    <div class="webui-content">
-                        <div class="webui-logo">
-                            <span class="material-symbols-rounded">dashboard</span>
-                        </div>
-                        <h3>AMMF WebUI</h3>
-                        <div class="version-info">
-                            <span>${I18n.translate('VERSION', '版本')}: </span>
-                            <span class="version-number">${this.version}</span>
-                        </div>
+        <div class="about-page">
+            <!-- WebUI信息 -->
+            <div class="about-card">
+                <div class="webui-content">
+                    <div class="webui-logo">
+                        <span class="material-symbols-rounded">dashboard_customize</span>
                     </div>
-                </div>
-                
-                <!-- 模块信息 -->
-                <div class="about-card shadow-sm">
-                    <h3 data-i18n="MODULE_INFO">${I18n.translate('MODULE_INFO', '模块信息')}</h3>
-                    <div class="info-grid">
-                        ${this.renderModuleInfo()}
+                    <h2>AMMF WebUI</h2>
+                    <div class="version-info">
+                        <span>${I18n.translate('VERSION', '版本')}:</span>
+                        <span class="version-number">${this.version}</span>
                     </div>
-                </div>
-                
-                <!-- 开发者信息 -->
-                <div class="about-card shadow-sm">
-                    <h3 data-i18n="DEVELOPER_INFO">${I18n.translate('DEVELOPER_INFO', '开发者信息')}</h3>
-                    <div class="developer-content">
-                        <p><span data-i18n="DEVELOPER">${I18n.translate('DEVELOPER', '开发者')}</span>: ${this.moduleInfo.author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</p>
-                        <div class="social-links">
-                            <a href="#" class="social-link" id="github-link">
-                                <span class="material-symbols-rounded">code</span>
-                                <span>GitHub</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="about-footer">
-                    <p data-i18n="COPYRIGHT_INFO">© ${new Date().getFullYear()} Aurora星空. All rights reserved.</p>
                 </div>
             </div>
-        `;
-    },
+            
+            <!-- 模块信息 -->
+            <div class="about-card">
+                <h2 data-i18n="MODULE_INFO">${I18n.translate('MODULE_INFO', '模块信息')}</h2>
+                <div class="info-grid">
+                    ${this.renderModuleInfo()}
+                </div>
+            </div>
+            
+            <!-- 模块开发者信息 -->
+            <div class="about-card">
+                <h2 data-i18n="MODULE_DEVELOPER">${I18n.translate('MODULE_DEVELOPER', '模块开发者')}</h2>
+                <div class="developer-content">
+                    <div class="info-item">
+                        <span class="material-symbols-rounded info-icon">person</span>
+                        <div class="info-content">
+                            <div class="info-label">${I18n.translate('DEVELOPER', '开发者')}</div>
+                            <div class="info-value">${this.moduleInfo.author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</div>
+                        </div>
+                    </div>
+                </div>
+                ${this.moduleInfo.github ? `
+                <div class="social-links">
+                    <a href="#" class="social-link" id="module-github-link">
+                        <span class="material-symbols-rounded">code</span>
+                        <span>GitHub</span>
+                    </a>
+                </div>
+                ` : ''}
+            </div>
+            
+            <!-- AMMF框架开发者信息 -->
+            <div class="about-card">
+                <h2 data-i18n="FRAMEWORK_DEVELOPER">${I18n.translate('FRAMEWORK_DEVELOPER', '框架开发者')}</h2>
+                <div class="developer-content">
+                    <div class="info-item">
+                        <span class="material-symbols-rounded info-icon">person</span>
+                        <div class="info-content">
+                            <div class="info-label">${I18n.translate('DEVELOPER', '开发者')}</div>
+                            <div class="info-value">Aurora星空</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="social-links">
+                    <a href="#" class="social-link" id="github-link">
+                        <span class="material-symbols-rounded">code</span>
+                        <span>GitHub</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="about-footer">
+                <p data-i18n="COPYRIGHT_INFO">© ${new Date().getFullYear()} Aurora星空. All rights reserved.</p>
+            </div>
+        </div>
+    `;
+},
 
     // 修改模块信息渲染方法，只保留模块名称和版本信息
     renderModuleInfo() {
@@ -145,8 +173,16 @@ const AboutPage = {
                 this.openGitHubLink();
             });
         }
+        
+        // 添加模块GitHub链接点击事件
+        const moduleGithubLink = document.getElementById('module-github-link');
+        if (moduleGithubLink) {
+            moduleGithubLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.openModuleGitHubLink();
+            });
+        }
     },
-    
     // 打开GitHub链接
     async openGitHubLink() {
         try {

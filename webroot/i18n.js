@@ -109,7 +109,9 @@ const I18n = {
             CLEAR_LOGS: '清除日志',
             LOGS_REFRESHED: '日志已刷新',
             LOGS_FILES_FOUND: '找到 {count} 个日志文件',
-            DEVELOPER_INFO: '开发者信息'
+            DEVELOPER_INFO: '开发者信息',
+            FRAMEWORK_DEVELOPER: '框架开发者',
+            MODULE_DEVELOPER: '模块开发者',
         };
         this.translations.en = {
             NAV_STATUS: 'Status',
@@ -189,7 +191,9 @@ const I18n = {
             CLEAR_LOGS: 'Clear logs',
             LOGS_REFRESHED: 'Logs refreshed',
             LOGS_FILES_FOUND: 'Found {count} log files',
-            DEVELOPER_INFO: 'Developer Info'
+            DEVELOPER_INFO: 'Developer Info',
+            FRAMEWORK_DEVELOPER: 'Framework Developer',
+            MODULE_DEVELOPER: 'Module Developer',
         };
         this.translations.ru = {
             NAV_STATUS: 'Статус',
@@ -269,7 +273,9 @@ const I18n = {
             CLEAR_LOGS: 'Очистить журналы',
             LOGS_REFRESHED: 'Журналы обновлены',
             LOGS_FILES_FOUND: 'Найдено {count} файлов журналов',
-            DEVELOPER_INFO: 'Информация о разработчике'
+            DEVELOPER_INFO: 'Информация о разработчике',
+            FRAMEWORK_DEVELOPER: 'Разработчик AMMF',
+            MODULE_DEVELOPER: 'Разработчик модуля',
         };
         console.log('默认翻译已加载');
     },
