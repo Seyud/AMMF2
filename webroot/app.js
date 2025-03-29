@@ -54,6 +54,9 @@ class App {
                 this.initialized = true;
                 document.dispatchEvent(new CustomEvent('appInitialized'));
                 this.bindEvents();
+                
+                // 强制显示初始页面
+                this.forceLoadInitialPage();
             }, 5000);
 
             // 确保配置文件可访问
@@ -90,7 +93,41 @@ class App {
         } catch (error) {
             console.error('初始化应用出错:', error);
             this.hideLoading();
-            this.showError('初始化应用失败');
+            this.showError('初始化应用失败: ' + error.message);
+            
+            // 强制显示初始页面
+            this.forceLoadInitialPage();
+        }
+    }
+    
+    // 添加强制加载初始页面的方法
+    forceLoadInitialPage() {
+        try {
+            // 确保页面模块存在
+            if (this.pageModules[this.currentPage]) {
+                const mainContent = document.getElementById('main-content');
+                
+                // 尝试渲染页面
+                if (typeof this.pageModules[this.currentPage].render === 'function') {
+                    mainContent.innerHTML = this.pageModules[this.currentPage].render();
+                    
+                    // 调用afterRender方法
+                    if (typeof this.pageModules[this.currentPage].afterRender === 'function') {
+                        this.pageModules[this.currentPage].afterRender();
+                    }
+                    
+                    // 应用翻译
+                    I18n.applyTranslations();
+                    
+                    // 确保页面可见
+                    document.body.classList.add('app-loaded');
+                } else {
+                    mainContent.innerHTML = '<div class="error-container"><p>无法加载页面内容</p></div>';
+                }
+            }
+        } catch (e) {
+            console.error('强制加载页面失败:', e);
+            document.getElementById('main-content').innerHTML = '<div class="error-container"><p>页面加载失败</p></div>';
         }
     }
 
@@ -243,16 +280,26 @@ class App {
                 pageContent = this.pageCache[pageName];
             } else {
                 // 初始化页面模块（如果尚未初始化）
-                if (typeof this.pageModules[pageName].init === 'function' && !this.pageModules[pageName].initialized) {
-                    await this.pageModules[pageName].init();
-                    this.pageModules[pageName].initialized = true;
+                try {
+                    if (typeof this.pageModules[pageName].init === 'function' && !this.pageModules[pageName].initialized) {
+                        await this.pageModules[pageName].init();
+                        this.pageModules[pageName].initialized = true;
+                    }
+                } catch (initError) {
+                    console.error(`初始化页面模块失败: ${pageName}`, initError);
+                    // 继续尝试渲染页面
                 }
                 
                 // 渲染页面
                 if (typeof this.pageModules[pageName].render === 'function') {
-                    pageContent = this.pageModules[pageName].render();
-                    // 缓存页面内容
-                    this.pageCache[pageName] = pageContent;
+                    try {
+                        pageContent = this.pageModules[pageName].render();
+                        // 缓存页面内容
+                        this.pageCache[pageName] = pageContent;
+                    } catch (renderError) {
+                        console.error(`渲染页面失败: ${pageName}`, renderError);
+                        throw new Error(`渲染页面失败: ${renderError.message}`);
+                    }
                 } else {
                     throw new Error(`页面模块没有render方法: ${pageName}`);
                 }
@@ -279,8 +326,13 @@ class App {
             mainContent.innerHTML = pageContent;
             
             // 调用afterRender方法
-            if (typeof this.pageModules[pageName].afterRender === 'function') {
-                this.pageModules[pageName].afterRender();
+            try {
+                if (typeof this.pageModules[pageName].afterRender === 'function') {
+                    this.pageModules[pageName].afterRender();
+                }
+            } catch (afterRenderError) {
+                console.error(`afterRender执行失败: ${pageName}`, afterRenderError);
+                // 继续执行，不中断页面加载
             }
             
             // 应用翻译
@@ -346,14 +398,38 @@ class App {
         const loadingContainer = document.querySelector('.loading-container');
         if (loadingContainer) {
             loadingContainer.style.display = 'flex';
+            // 确保加载指示器可见
+            loadingContainer.style.opacity = '1';
+            loadingContainer.style.zIndex = '1000';
+        } else {
+            // 如果找不到加载容器，创建一个
+            const mainContent = document.getElementById('main-content');
+            if (mainContent) {
+                const newLoadingContainer = document.createElement('div');
+                newLoadingContainer.className = 'loading-container';
+                newLoadingContainer.innerHTML = `
+                    <div class="spinner"></div>
+                    <p data-i18n="LOADING">加载中...</p>
+                `;
+                mainContent.appendChild(newLoadingContainer);
+            }
         }
     }
 
-    // 隐藏加载指示器
     hideLoading() {
         const loadingContainer = document.querySelector('.loading-container');
         if (loadingContainer) {
-            loadingContainer.style.display = 'none';
+            // 修改这里：不要直接设置display为none，而是添加淡出效果
+            loadingContainer.style.opacity = '0';
+            setTimeout(() => {
+                loadingContainer.style.display = 'none';
+            }, 300); // 等待淡出动画完成
+        }
+        
+        // 确保页面内容可见
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.style.opacity = '1';
         }
     }
 

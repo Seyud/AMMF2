@@ -109,15 +109,17 @@ const ThemeManager = {
         const themeToggle = document.getElementById('theme-toggle');
         if (!themeToggle) return;
         
-        const iconElement = themeToggle.querySelector('.material-symbols-rounded');
+        const iconElement = themeToggle.querySelector('i');
         if (!iconElement) return;
         
         // 根据当前主题设置图标
         if (this.currentTheme === 'light') {
-            iconElement.textContent = 'light_mode';
+            // 移除所有可能的类名
+            iconElement.className = 'mdi mdi-weather-sunny';
             themeToggle.setAttribute('title', '浅色主题 (点击切换)');
         } else {
-            iconElement.textContent = 'dark_mode';
+            // 移除所有可能的类名
+            iconElement.className = 'mdi mdi-weather-night';
             themeToggle.setAttribute('title', '深色主题 (点击切换)');
         }
     },
