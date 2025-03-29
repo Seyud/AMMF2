@@ -43,7 +43,7 @@ const SettingsPage = {
         // 添加刷新按钮到页面操作区
         const pageActions = document.getElementById('page-actions');
         pageActions.innerHTML = `
-            <button id="refresh-settings" class="icon-button" title="${I18n.translate('REFRESH_SETTINGS', '刷新设置')}">
+            <button id="refresh-settings" class="md-button icon-only" title="${I18n.translate('REFRESH_SETTINGS', '刷新设置')}">
                 <span class="material-symbols-rounded">refresh</span>
             </button>
         `;
@@ -57,7 +57,7 @@ const SettingsPage = {
                 </div>
                 
                 <div class="settings-footer">
-                    <button id="save-settings" class="md-button primary-button">
+                    <button id="save-settings" class="md-button filled">
                         <span class="material-symbols-rounded">save</span>
                         <span data-i18n="SAVE_SETTINGS">保存设置</span>
                     </button>

@@ -287,13 +287,13 @@ const LogsPage = {
         // 添加刷新按钮到页面操作区
         const pageActions = document.getElementById('page-actions');
         pageActions.innerHTML = `
-            <button id="refresh-logs" class="icon-button" title="${I18n.translate('REFRESH_LOGS', '刷新日志')}">
+            <button id="refresh-logs" class="md-button icon-only" title="${I18n.translate('REFRESH_LOGS', '刷新日志')}">
                 <span class="material-symbols-rounded">refresh</span>
             </button>
-            <button id="export-logs" class="icon-button" title="${I18n.translate('EXPORT_LOGS', '导出日志')}">
+            <button id="export-logs" class="md-button icon-only" title="${I18n.translate('EXPORT_LOGS', '导出日志')}">
                 <span class="material-symbols-rounded">download</span>
             </button>
-            <button id="clear-logs" class="icon-button" title="${I18n.translate('CLEAR_LOGS', '清除日志')}">
+            <button id="clear-logs" class="md-button icon-only" title="${I18n.translate('CLEAR_LOGS', '清除日志')}">
                 <span class="material-symbols-rounded">delete</span>
             </button>
         `;
@@ -313,11 +313,12 @@ const LogsPage = {
                                 </select>
                             </div>
                             <div class="log-refresh-controls">
-                                <label class="md-switch auto-refresh-toggle">
-                                    <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
-                                    <span class="md-switch-track"></span>
-                                    <span class="md-switch-thumb"></span>
-                                    <span class="md-switch-label">${I18n.translate('AUTO_REFRESH', '自动刷新')}</span>
+                                <label class="auto-refresh-toggle">
+                                    <span class="switch">
+                                        <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
+                                        <span class="slider round"></span>
+                                    </span>
+                                    <span class="switch-label">${I18n.translate('AUTO_REFRESH', '自动刷新')}</span>
                                 </label>
                             </div>
                         </div>

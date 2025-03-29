@@ -92,7 +92,9 @@ const I18n = {
             KERNEL_VERSION: '内核版本',
             ROOT_METHOD: 'Root方式',
             ROOT_VERSION: 'Root版本',
-
+            LAST_UPDATE: '最后更新',
+            MODULE_PATH: '模块路径',
+        
             // 日志页
             SELECT_LOG_FILE: '选择日志文件',
             SERVICE_LOG: '服务日志',
@@ -208,7 +210,9 @@ const I18n = {
             KERNEL_VERSION: 'Kernel Version',
             ROOT_METHOD: 'Root Method',
             ROOT_VERSION: 'Root Version',
-
+            LAST_UPDATE: 'Last Update',
+            MODULE_PATH: 'Module Path',
+        
             // Logs page
             SELECT_LOG_FILE: 'Select Log File',
             SERVICE_LOG: 'Service Log',
@@ -638,8 +642,6 @@ const I18n = {
             // 添加显示类，触发动画
             languageSelector.classList.add('show');
 
-            // 防止滚动
-            document.body.style.overflow = 'hidden';
         });
 
         // 添加取消按钮点击事件
@@ -647,9 +649,6 @@ const I18n = {
             cancelButton.addEventListener('click', () => {
                 // 移除显示类，触发关闭动画
                 languageSelector.classList.remove('show');
-
-                // 恢复滚动
-                document.body.style.overflow = '';
             });
         }
 
@@ -659,7 +658,6 @@ const I18n = {
                 !languageSelector.contains(e.target) && 
                 e.target !== languageButton) {
                 languageSelector.classList.remove('show');
-                document.body.style.overflow = '';
             }
         });
     },

@@ -147,6 +147,20 @@
 .overflow-x-hidden { overflow-x: hidden !important; }
 .overflow-y-hidden { overflow-y: hidden !important; }
 
+/* 添加移动端滚动控制类 */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobile-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* 阴影工具类 - 修改为符合无阴影设计 */
 .shadow-none { box-shadow: none !important; }
 .shadow-sm { box-shadow: none !important; } /* 原为 var(--md-sys-elevation-level1) */

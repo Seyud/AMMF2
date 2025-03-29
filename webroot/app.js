@@ -100,16 +100,40 @@ function createRippleEffect(e) {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
+        // 创建按钮涟漪
         const ripple = document.createElement('span');
         ripple.className = 'ripple';
         ripple.style.left = `${x}px`;
         ripple.style.top = `${y}px`;
+        ripple.style.width = '20px';
+        ripple.style.height = '20px';
         
         button.appendChild(ripple);
         
         setTimeout(() => {
             ripple.remove();
         }, 400); // 与CSS中的动画时间一致
+        
+        // 如果是激活状态的导航项，还需要在覆盖层上创建涟漪
+        if (button.classList.contains('active')) {
+            const overlayRipple = document.createElement('span');
+            overlayRipple.className = 'overlay-ripple';
+            
+            // 计算覆盖层中心位置
+            const overlayX = x - (button.querySelector('.nav-item.active::before') ? 30 : 30);
+            const overlayY = y - 26; // 覆盖层的top位置
+            
+            overlayRipple.style.left = `${overlayX}px`;
+            overlayRipple.style.top = `${overlayY}px`;
+            overlayRipple.style.width = '20px';
+            overlayRipple.style.height = '20px';
+            
+            button.appendChild(overlayRipple);
+            
+            setTimeout(() => {
+                overlayRipple.remove();
+            }, 400);
+        }
         
         return;
     }
@@ -198,48 +222,57 @@ async function loadPage(pageName) {
         // 7. 添加新页面到 DOM
         elements.mainContent.appendChild(pageContainer);
         
-        // 8. 触发动画
-        await new Promise(resolve => setTimeout(resolve, 50));
-        pageContainer.classList.add('page-active');
+        // 8. 强制重排以确保动画生效
+        pageContainer.offsetWidth; // 触发重排
+        
+        // 9. 触发动画
+        requestAnimationFrame(() => {
+            pageContainer.classList.add('page-active');
+            
+            if (oldPageContainer) {
+                oldPageContainer.classList.add('page-active');
+            }
+        });
+        
+        // 10. 等待动画完成后移除旧页面
+        await new Promise(resolve => setTimeout(resolve, 300)); // 与CSS中的动画时长一致
         
         if (oldPageContainer) {
-            oldPageContainer.classList.add('page-active');
-            
-            // 9. 等待动画完成后移除旧页面
-            setTimeout(() => {
-                oldPageContainer.remove();
-            }, 300);
+            oldPageContainer.remove();
         }
         
-        // 10. 淡入页面标题和操作按钮
-        setTimeout(() => {
-            elements.pageTitle.classList.remove('changing');
-            elements.pageActions.classList.remove('changing');
-        }, 150);
+        // 11. 淡入页面标题和操作按钮
+        elements.pageTitle.classList.remove('changing');
+        elements.pageActions.classList.remove('changing');
         
-        // 11. 更新应用状态
+        // 12. 更新应用状态
         appState.currentPage = pageName;
         
-        // 12. 如果页面有初始化方法，调用它
+        // 13. 如果页面有初始化方法，调用它
         if (newPageInstance.init) {
             await newPageInstance.init();
         }
         
-        // 13. 如果页面有afterRender方法，调用它
+        // 14. 如果页面有afterRender方法，调用它
         if (newPageInstance.afterRender) {
             newPageInstance.afterRender();
         }
         
-        // 14. 保存页面实例以便后续使用
+        // 15. 保存页面实例以便后续使用
         if (appState.pageInstance && appState.pageInstance.destroy) {
             appState.pageInstance.destroy();
         }
         appState.pageInstance = newPageInstance;
         
-        // 15. 触发页面切换事件
+        // 16. 触发页面切换事件
         document.dispatchEvent(new CustomEvent('pageChanged', { 
             detail: { page: pageName }
         }));
+        
+        // 17. 调用页面的onActivate方法（如果存在）
+        if (newPageInstance.onActivate) {
+            newPageInstance.onActivate();
+        }
         
     } catch (error) {
         console.error('加载页面失败:', error);
@@ -252,7 +285,10 @@ async function loadPage(pageName) {
             </div>
         `;
     } finally {
-        appState.pageChanging = false;
+        // 延迟重置pageChanging状态，确保所有动画都已完成
+        setTimeout(() => {
+            appState.pageChanging = false;
+        }, 350);
     }
 }
 

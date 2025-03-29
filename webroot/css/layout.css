@@ -20,7 +20,29 @@
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
-  /* 移除之前添加的 transition: none; */
+  overflow-x: hidden; /* 防止水平滚动 */
+  overscroll-behavior: none; /* 防止滑动越界反弹 */
+}
+
+/* 确保所有可滚动容器在移动端没有滚动条 */
+@media (max-width: 768px) {
+  .page-container,
+  #main-content,
+  .card,
+  .list-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .page-container::-webkit-scrollbar,
+  #main-content::-webkit-scrollbar,
+  .card::-webkit-scrollbar,
+  .list-container::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
 }
 
 /* 添加页面容器内元素的间距 */
@@ -83,6 +105,8 @@
   width: 1px;
   background-color: var(--md-outlineVariant);
   margin-left: var(--spacing-sm);
+  align-self: center;
+  display: flex;
 }
 
 /* 导航栏样式 - 增加高度 */
@@ -123,14 +147,11 @@
   transition: color 0.2s, background-color 0.2s;
   /* 添加这一行，确保内容有足够的空间 */
   height: 100%;
+  gap: 6px; /* 从8px减少到4px，进一步降低图标与文字的间距 */
 }
 
 .nav-item.active {
   color: var(--md-primary);
-}
-
-/* 修改选中状态样式 */
-.nav-item.active {
   position: relative;
 }
 
@@ -138,13 +159,13 @@
 .nav-item.active::before {
   content: "";
   position: absolute;
-  top: 28px;  /* 调整覆盖层位置，从24px改为28px，使其与图标对齐 */
+  top: 26px;  /* 修改：从22px调整为28px，使覆盖层与图标正确对齐 */
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 48px;
-  height: 32px;  /* 增加高度，从28px改为32px */
+  width: 60px;
+  height: 30px;
   background-color: var(--md-primaryContainer);
-  border-radius: 16px;  /* 调整圆角，从14px改为16px */
+  border-radius: 16px;
   z-index: -1;
 }
 
@@ -160,7 +181,7 @@
 
 /* 添加新的样式，使用 flex 布局控制间距 */
 .nav-item {
-  gap: 12px; /* 在图标和文字之间添加间距 */
+  gap: 6px; /* 从8px减少到4px，进一步降低图标与文字的间距 */
 }
 
 /* Material Symbols 图标样式 */

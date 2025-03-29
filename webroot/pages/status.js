@@ -34,13 +34,12 @@ const StatusPage = {
         // 设置页面标题
         document.getElementById('page-title').textContent = I18n.translate('NAV_STATUS', '状态');
         
-        // 添加刷新按钮到页面操作区
         const pageActions = document.getElementById('page-actions');
         pageActions.innerHTML = `
-            <button id="refresh-status" class="icon-button" title="${I18n.translate('REFRESH', '刷新')}">
+            <button id="refresh-status" class="md-button icon-only" title="${I18n.translate('REFRESH', '刷新')}">
                 <span class="material-symbols-rounded">refresh</span>
             </button>
-            <button id="run-action" class="icon-button" title="${I18n.translate('RUN_ACTION', '运行Action')}">
+            <button id="run-action" class="md-button icon-only" title="${I18n.translate('RUN_ACTION', '运行Action')}">
                 <span class="material-symbols-rounded">play_arrow</span>
             </button>
         `;
@@ -50,25 +49,20 @@ const StatusPage = {
             <div class="status-page">
                 <!-- 模块状态卡片 -->
                 <div class="status-card">
-                    <div class="status-card-header">
-                        <h3 class="status-card-title" data-i18n="MODULE_STATUS">模块状态</h3>
-                        <div class="status-indicator ${this.getStatusClass()}">
-                            <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
-                            <span data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
-                        </div>
-                    </div>
                     <div class="status-card-content">
-                        <div class="status-card-row">
-                            <span class="status-card-label" data-i18n="LAST_UPDATE">最后更新</span>
-                            <span>${new Date().toLocaleString()}</span>
+                        <div class="status-icon-container">
+                            <div class="status-indicator ${this.getStatusClass()}">
+                                <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
+                            </div>
                         </div>
-                        <div class="status-card-row">
-                            <span class="status-card-label" data-i18n="MODULE_PATH">模块路径</span>
-                            <span>${Core.MODULE_PATH}</span>
-                        </div>
-                        <div class="status-card-row">
-                            <span class="status-card-label" data-i18n="MODULE_VERSION">模块版本</span>
-                            <span>1.0.0</span>
+                        <div class="status-info-container">
+                            <div class="status-title-row">
+                                <span class="status-title" data-i18n="MODULE_STATUS">模块状态</span>
+                                <span class="status-value" data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
+                            </div>
+                            <div class="status-update-row">
+                                <span class="status-update-time">${new Date().toLocaleString()}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -84,28 +78,18 @@ const StatusPage = {
 
     // 渲染后的回调
     afterRender() {
-        // 获取按钮元素
+        // 绑定刷新按钮事件
         const refreshButton = document.getElementById('refresh-status');
-        const runActionButton = document.getElementById('run-action');
-        
-        // 移除旧的事件监听器（如果存在）
         if (refreshButton) {
-            refreshButton.replaceWith(refreshButton.cloneNode(true));
-            // 重新获取新的元素引用
-            const newRefreshButton = document.getElementById('refresh-status');
-            // 绑定新的事件监听器
-            newRefreshButton.addEventListener('click', () => {
+            refreshButton.addEventListener('click', () => {
                 this.refreshStatus(true);
             });
         }
         
-        // 对运行Action按钮执行相同操作
+        // 绑定运行Action按钮事件
+        const runActionButton = document.getElementById('run-action');
         if (runActionButton) {
-            runActionButton.replaceWith(runActionButton.cloneNode(true));
-            // 重新获取新的元素引用
-            const newRunActionButton = document.getElementById('run-action');
-            // 绑定新的事件监听器
-            newRunActionButton.addEventListener('click', () => {
+            runActionButton.addEventListener('click', () => {
                 this.runAction();
             });
         }
@@ -353,25 +337,20 @@ const StatusPage = {
                 statusPage.innerHTML = `
                     <!-- 模块状态卡片 -->
                     <div class="status-card">
-                        <div class="status-card-header">
-                            <h3 class="status-card-title" data-i18n="MODULE_STATUS">模块状态</h3>
-                            <div class="status-indicator ${this.getStatusClass()}">
-                                <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
-                                <span data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
-                            </div>
-                        </div>
                         <div class="status-card-content">
-                            <div class="status-card-row">
-                                <span class="status-card-label" data-i18n="LAST_UPDATE">最后更新</span>
-                                <span>${new Date().toLocaleString()}</span>
+                            <div class="status-icon-container">
+                                <div class="status-indicator ${this.getStatusClass()}">
+                                    <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
+                                </div>
                             </div>
-                            <div class="status-card-row">
-                                <span class="status-card-label" data-i18n="MODULE_PATH">模块路径</span>
-                                <span>${Core.MODULE_PATH}</span>
-                            </div>
-                            <div class="status-card-row">
-                                <span class="status-card-label" data-i18n="MODULE_VERSION">模块版本</span>
-                                <span>1.0.0</span>
+                            <div class="status-info-container">
+                                <div class="status-title-row">
+                                    <span class="status-title" data-i18n="MODULE_STATUS">模块状态</span>
+                                    <span class="status-value" data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
+                                </div>
+                                <div class="status-update-row">
+                                    <span class="status-update-time">${new Date().toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
