@@ -281,13 +281,15 @@ const StatusPage = {
             return `<div class="no-info" data-i18n="NO_DEVICE_INFO">无设备信息</div>`;
         }
         
+        // 修改信息项映射，使其与实际获取的设备信息匹配
         const infoItems = [
-            { key: 'device', label: 'DEVICE_MODEL', icon: 'smartphone' },
+            { key: 'model', label: 'DEVICE_MODEL', icon: 'smartphone' },
             { key: 'android', label: 'ANDROID_VERSION', icon: 'android' },
-            { key: 'cpu', label: 'CPU_INFO', icon: 'memory' },
+            { key: 'android_api', label: 'ANDROID_API', icon: 'api' },
+            { key: 'device_abi', label: 'DEVICE_ABI', icon: 'memory' },
             { key: 'kernel', label: 'KERNEL_VERSION', icon: 'terminal' },
-            { key: 'root', label: 'ROOT_METHOD', icon: 'security' },
-            { key: 'root_version', label: 'ROOT_VERSION', icon: 'new_releases' }
+            { key: 'magisk', label: 'MAGISK_VERSION', icon: 'security' },
+            { key: 'ksu', label: 'KSU_VERSION', icon: 'new_releases' }
         ];
         
         let html = '';

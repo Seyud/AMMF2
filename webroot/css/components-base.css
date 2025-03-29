@@ -408,21 +408,21 @@ color: var(--md-primary);
 
 /* 图标按钮中的图标颜色 */
 .icon-button .material-symbols-rounded {
-color: var(--md-onSurfaceVariant);
+  color: var(--md-onSurfaceVariant);
 }
 
 .icon-button:hover .material-symbols-rounded {
-color: var(--md-onSurface);
+  color: var(--md-onSurface);
 }
 
 .icon-button.active .material-symbols-rounded {
-color: var(--md-primary);
+  color: var(--md-primary);
 }
 
 /* 保持禁用状态的图标样式 */
 button:disabled .material-symbols-rounded,
 .icon-button:disabled .material-symbols-rounded,
 .md-button:disabled .material-symbols-rounded {
-opacity: 0.5;
-color: var(--md-outline);
+  opacity: 0.5;
+  color: var(--md-outline);
 }

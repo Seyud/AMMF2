@@ -233,6 +233,9 @@ class App {
         // 加载页面内容
         await this.loadPage(pageName);
         
+        // 更新页面标题 - 添加这段代码
+        this.updatePageTitle(pageName);
+        
         // 调用新页面的onActivate方法
         if (this.pageModules[pageName] && typeof this.pageModules[pageName].onActivate === 'function') {
             this.pageModules[pageName].onActivate();
@@ -240,6 +243,30 @@ class App {
         
         // 更新导航栏活动状态
         this.updateNavActiveState();
+    }
+    
+    // 添加更新页面标题的方法
+    updatePageTitle(pageName) {
+        const titleElement = document.getElementById('page-title');
+        if (!titleElement) return;
+        
+        // 根据页面名称设置对应的标题
+        switch(pageName) {
+            case 'status':
+                titleElement.textContent = I18n.translate('NAV_STATUS', '状态');
+                break;
+            case 'logs':
+                titleElement.textContent = I18n.translate('NAV_LOGS', '日志');
+                break;
+            case 'settings':
+                titleElement.textContent = I18n.translate('NAV_SETTINGS', '设置');
+                break;
+            case 'about':
+                titleElement.textContent = I18n.translate('NAV_ABOUT', '关于');
+                break;
+            default:
+                titleElement.textContent = 'AMMF WebUI';
+        }
     }
 
     // 加载页面
@@ -337,6 +364,18 @@ class App {
             
             // 应用翻译
             I18n.applyTranslations();
+            
+            // 重新添加页面操作按钮 - 添加这段代码
+            if (typeof this.pageModules[pageName].render === 'function') {
+                // 重新调用render方法来获取页面操作按钮
+                try {
+                    // 这里只是为了触发render方法中设置页面操作按钮的代码
+                    // 实际上我们不需要使用返回的HTML内容
+                    this.pageModules[pageName].render();
+                } catch (error) {
+                    console.error(`重新添加页面操作按钮失败: ${pageName}`, error);
+                }
+            }
             
             this.hidePageLoading();
         } catch (error) {
