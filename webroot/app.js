@@ -269,85 +269,19 @@ function setupThemeToggle() {
 
 // 设置语言切换
 function setupLanguageToggle() {
-    elements.languageButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        showLanguageSelector();
-    });
-    
-    // 绑定语言选择器的取消按钮
-    document.getElementById('cancel-language')?.addEventListener('click', () => {
-        hideLanguageSelector();
-    });
-    
-    // 加载语言选项
-    loadLanguageOptions();
-}
-
-// 显示语言选择器
-function showLanguageSelector() {
-    const selector = document.getElementById('language-selector');
-    if (selector) {
-        selector.classList.add('show');
-    }
-}
-
-// 隐藏语言选择器
-function hideLanguageSelector() {
-    const selector = document.getElementById('language-selector');
-    if (selector) {
-        selector.classList.remove('show');
-    }
-}
-
-// 加载语言选项
-function loadLanguageOptions() {
-    const optionsContainer = document.getElementById('language-options');
-    if (!optionsContainer) return;
-    
-    const currentLang = localStorage.getItem('language') || 'zh';
-    
-    // 支持的语言列表
-    const languages = [
-        { code: 'zh', name: '简体中文' },
-        { code: 'en', name: 'English' }
-    ];
-    
-    let html = '';
-    languages.forEach(lang => {
-        html += `
-            <div class="language-option ${lang.code === currentLang ? 'active' : ''}" data-lang="${lang.code}">
-                ${lang.name}
-            </div>
-        `;
-    });
-    
-    optionsContainer.innerHTML = html;
-    
-    // 绑定语言选项点击事件
-    const options = optionsContainer.querySelectorAll('.language-option');
-    options.forEach(option => {
-        option.addEventListener('click', () => {
-            const langCode = option.getAttribute('data-lang');
-            setLanguage(langCode);
+    // 确保I18n模块已初始化
+    if (window.I18n && typeof I18n.initLanguageSelector === 'function') {
+        // 调用I18n模块的语言选择器初始化方法
+        I18n.initLanguageSelector();
+    } else {
+        // 如果I18n模块尚未准备好，等待它加载完成
+        document.addEventListener('i18nReady', () => {
+            I18n.initLanguageSelector();
         });
-    });
+    }
 }
 
-// 设置语言
-function setLanguage(langCode) {
-    const currentLang = localStorage.getItem('language') || 'zh';
-    
-    if (langCode === currentLang) {
-        hideLanguageSelector();
-        return;
-    }
-    
-    // 保存新语言设置
-    localStorage.setItem('language', langCode);
-    
-    // 重新加载页面以应用新语言
-    window.location.reload();
-}
+
 
 // 更新主题图标
 function updateThemeIcon() {

@@ -29,7 +29,7 @@ const StatusPage = {
         }
     },
     
-    // 在 StatusPage 类的 render 方法中修改
+    // 渲染页面
     render() {
         // 设置页面标题
         document.getElementById('page-title').textContent = I18n.translate('NAV_STATUS', '状态');
@@ -48,7 +48,7 @@ const StatusPage = {
         // 渲染页面内容
         return `
             <div class="status-page">
-                <!-- 状态卡片 -->
+                <!-- 模块状态卡片 -->
                 <div class="status-card">
                     <div class="status-card-header">
                         <h3 class="status-card-title" data-i18n="MODULE_STATUS">模块状态</h3>
@@ -73,9 +73,9 @@ const StatusPage = {
                     </div>
                 </div>
                 
-                <!-- 设备信息 -->
-                <div class="device-info shadow-sm">
-                    <h3>${I18n.translate('DEVICE_INFO', '设备信息')}</h3>
+                <!-- 设备信息卡片 -->
+                <div class="card device-info">
+                    <h3 data-i18n="DEVICE_INFO">设备信息</h3>
                     ${this.renderDeviceInfo()}
                 </div>
             </div>
@@ -269,9 +269,6 @@ const StatusPage = {
         }
     },
     
-    // 添加状态界面和关于界面的翻译支持
-    
-
     getStatusI18nKey() {
         switch (this.moduleStatus) {
             case 'RUNNING':
@@ -289,13 +286,13 @@ const StatusPage = {
         }
     },
 
-    // 修改设备信息渲染方法，添加翻译支持
+    // 渲染设备信息
     renderDeviceInfo() {
         if (!this.deviceInfo || Object.keys(this.deviceInfo).length === 0) {
             return `<div class="no-info" data-i18n="NO_DEVICE_INFO">无设备信息</div>`;
         }
         
-        // 修改信息项映射，使其与实际获取的设备信息匹配
+        // 设备信息项映射
         const infoItems = [
             { key: 'model', label: 'DEVICE_MODEL', icon: 'smartphone' },
             { key: 'android', label: 'ANDROID_VERSION', icon: 'android' },
@@ -336,7 +333,40 @@ const StatusPage = {
             // 更新UI
             const statusPage = document.querySelector('.status-page');
             if (statusPage) {
-                statusPage.innerHTML = this.render();
+                statusPage.innerHTML = '';
+                statusPage.innerHTML = `
+                    <!-- 模块状态卡片 -->
+                    <div class="status-card">
+                        <div class="status-card-header">
+                            <h3 class="status-card-title" data-i18n="MODULE_STATUS">模块状态</h3>
+                            <div class="status-indicator ${this.getStatusClass()}">
+                                <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
+                                <span data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
+                            </div>
+                        </div>
+                        <div class="status-card-content">
+                            <div class="status-card-row">
+                                <span class="status-card-label" data-i18n="LAST_UPDATE">最后更新</span>
+                                <span>${new Date().toLocaleString()}</span>
+                            </div>
+                            <div class="status-card-row">
+                                <span class="status-card-label" data-i18n="MODULE_PATH">模块路径</span>
+                                <span>${Core.MODULE_PATH}</span>
+                            </div>
+                            <div class="status-card-row">
+                                <span class="status-card-label" data-i18n="MODULE_VERSION">模块版本</span>
+                                <span>1.0.0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 设备信息卡片 -->
+                    <div class="card device-info">
+                        <h3 data-i18n="DEVICE_INFO">设备信息</h3>
+                        ${this.renderDeviceInfo()}
+                    </div>
+                `;
+                
                 this.afterRender();
             }
             
@@ -401,6 +431,20 @@ const StatusPage = {
             case 'NORMAL_EXIT': return I18n.translate('NORMAL_EXIT', '正常退出');
             default: return I18n.translate('UNKNOWN', '未知');
         }
+    },
+    
+    // 页面激活时的回调
+    onActivate() {
+        console.log('状态页面已激活');
+        // 刷新状态
+        this.refreshStatus();
+    },
+    
+    // 页面停用时的回调
+    onDeactivate() {
+        console.log('状态页面已停用');
+        // 停止自动刷新
+        this.stopAutoRefresh();
     }
 };
 

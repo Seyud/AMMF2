@@ -147,6 +147,7 @@
   border-radius: var(--card-border-radius);
   padding: var(--spacing-lg);
   box-shadow: var(--md-sys-elevation-level1);
+  margin-bottom: var(--spacing-lg);
 }
 
 .about-card h3 {
@@ -395,12 +396,18 @@
   margin-bottom: var(--spacing-md);
   /* 移除阴影 */
   box-shadow: none;
+  /* 确保内容左对齐 */
+  text-align: left;
+  /* 移除任何可能导致居中的样式 */
+  display: block;
 }
 
 .device-info h3 {
   margin-top: 0;
   margin-bottom: var(--spacing-md);
   color: var(--md-onSurface);
+  /* 确保标题左对齐 */
+  text-align: left;
 }
 
 .info-item {

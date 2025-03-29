@@ -523,7 +523,7 @@ const I18n = {
             this.currentLang = lang;
             localStorage.setItem('currentLanguage', lang);
 
-            // 应用翻译
+            // 应用翻译 - 确保应用到所有元素
             this.applyTranslations();
 
             // 更新配置文件中的语言设置
@@ -562,8 +562,8 @@ const I18n = {
     // 应用翻译到DOM
     applyTranslations() {
         // 使用性能更好的选择器
-        const container = document.querySelector('.page-container.active') || document;
-        const elements = container.querySelectorAll('[data-i18n]');
+        // 修改：不限制在活动页面容器内，而是应用到整个文档
+        const elements = document.querySelectorAll('[data-i18n]');
         
         // 记录当前滚动位置
         const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
