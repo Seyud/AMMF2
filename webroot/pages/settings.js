@@ -59,14 +59,14 @@ const SettingsPage = {
                 <div class="settings-footer">
                     <button id="save-settings" class="md-button filled">
                         <span class="material-symbols-rounded">save</span>
-                        <span data-i18n="SAVE_SETTINGS">保存设置</span>
+                        <span data-i18n="SAVE_SETTINGS">${I18n.translate('SAVE_SETTINGS', '保存设置')}</span>
                     </button>
                 </div>
                 
                 <!-- 加载覆盖层 -->
                 <div id="settings-loading" class="settings-loading-overlay" style="display: none;">
                     <div class="loading-spinner"></div>
-                    <p data-i18n="LOADING_SETTINGS">加载设置中...</p>
+                    <p data-i18n="LOADING_SETTINGS">${I18n.translate('LOADING_SETTINGS', '加载设置中...')}</p>
                 </div>
             </div>
         `;

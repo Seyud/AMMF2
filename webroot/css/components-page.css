@@ -518,17 +518,20 @@
 /* 修改状态卡片内容为水平布局 */
 .status-card-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* 改为顶部对齐 */
   width: 100%;
   height: 100%;
+  justify-content: flex-start; /* 改为左对齐 */
+  text-align: left; /* 确保文本左对齐 */
 }
 
 /* 状态图标容器 */
 .status-icon-container {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* 图标靠左 */
   margin-right: var(--spacing-lg);
+  margin-left: 0; /* 移除左边距 */
 }
 
 /* 状态信息容器 */
@@ -537,6 +540,7 @@
   flex-direction: column;
   gap: var(--spacing-sm);
   flex: 1;
+  text-align: left; /* 确保文本左对齐 */
 }
 
 /* 状态标题行 */
@@ -632,7 +636,7 @@
 
 /* 设备信息卡片样式 */
 .device-info {
-  composes: card;
+  ime-mode: card;
   text-align: left;
   display: block;
 }
@@ -889,4 +893,41 @@
   .log-refresh-controls {
     margin-top: var(--spacing-sm);
   }
+}
+
+/* 设备信息网格布局 */
+.device-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.device-info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--md-sys-shape-corner-medium);
+}
+
+.device-info-icon .material-symbols-rounded {
+  font-size: 24px;
+  color: var(--md-primary);
+}
+
+.device-info-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.device-info-label {
+    font-size: var(--md-sys-typescale-body-small-size);
+    color: var(--md-onSurfaceVariant);
+}
+
+.device-info-value {
+    font-size: var(--md-sys-typescale-body-medium-size);
+    color: var(--md-onSurface);
+    font-weight: var(--md-sys-typescale-weight-medium);
 }

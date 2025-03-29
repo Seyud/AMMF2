@@ -46,7 +46,7 @@ const AboutPage = {
                 
                 <!-- 模块信息 -->
                 <div class="about-card shadow-sm">
-                    <h3 data-i18n="MODULE_INFO">模块信息</h3>
+                    <h3 data-i18n="MODULE_INFO">${I18n.translate('MODULE_INFO', '模块信息')}</h3>
                     <div class="info-grid">
                         ${this.renderModuleInfo()}
                     </div>
@@ -54,9 +54,9 @@ const AboutPage = {
                 
                 <!-- 开发者信息 -->
                 <div class="about-card shadow-sm">
-                    <h3 data-i18n="DEVELOPER_INFO">开发者信息</h3>
+                    <h3 data-i18n="DEVELOPER_INFO">${I18n.translate('DEVELOPER_INFO', '开发者信息')}</h3>
                     <div class="developer-content">
-                        <p><span data-i18n="DEVELOPER">开发者</span>: ${this.moduleInfo.action_author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</p>
+                        <p><span data-i18n="DEVELOPER">${I18n.translate('DEVELOPER', '开发者')}</span>: ${this.moduleInfo.action_author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</p>
                         <div class="social-links">
                             <a href="#" class="social-link" id="github-link">
                                 <span class="material-symbols-rounded">code</span>

@@ -26,7 +26,9 @@ const LogsPage = {
             const dirExists = await this.checkLogsDirectoryExists(logsDir);
             
             if (!dirExists) {
-                console.warn('日志目录不存在');
+                console.warn(I18n.translate('LOGS_DIR_NOT_FOUND', '日志目录不存在'));
+                this.logContent = I18n.translate('LOGS_DIR_NOT_FOUND', '日志目录不存在');
+                return false;
             }
             
             // 扫描可用的日志文件
@@ -42,7 +44,8 @@ const LogsPage = {
             
             return true;
         } catch (error) {
-            console.error('初始化日志页面失败:', error);
+            console.error(I18n.translate('LOGS_INIT_ERROR', '初始化日志页面失败:'), error);
+            this.logContent = I18n.translate('LOGS_INIT_ERROR', '初始化日志页面失败');
             return false;
         }
     },
@@ -53,7 +56,7 @@ const LogsPage = {
             const result = await Core.execCommand(`[ -d "${logsDir}" ] && echo "true" || echo "false"`);
             return result.trim() === "true";
         } catch (error) {
-            console.error('检查日志目录失败:', error);
+            console.error(I18n.translate('LOGS_DIR_CHECK_ERROR', '检查日志目录失败:'), error);
             return false;
         }
     },
@@ -66,7 +69,7 @@ const LogsPage = {
             // 检查目录是否存在
             const dirExists = await this.checkLogsDirectoryExists(logsDir);
             if (!dirExists) {
-                console.warn('日志目录不存在');
+                console.warn(I18n.translate('LOGS_DIR_NOT_FOUND', '日志目录不存在'));
                 this.logFiles = {};
                 return;
             }
@@ -78,7 +81,7 @@ const LogsPage = {
             this.logFiles = {};
             
             if (!result || result.trim() === '') {
-                console.warn('没有找到日志文件');
+                console.warn(I18n.translate('NO_LOGS_FILES', '没有找到日志文件'));
                 return;
             }
             
@@ -90,9 +93,9 @@ const LogsPage = {
                 this.logFiles[fileName] = file;
             });
             
-            console.log(`找到 ${Object.keys(this.logFiles).length} 个日志文件`);
+            console.log(I18n.translate('LOGS_FILES_FOUND', '找到 {count} 个日志文件').replace('{count}', Object.keys(this.logFiles).length));
         } catch (error) {
-            console.error('扫描日志文件失败:', error);
+            console.error(I18n.translate('LOGS_SCAN_ERROR', '扫描日志文件失败:'), error);
             this.logFiles = {};
         }
     },
@@ -100,47 +103,42 @@ const LogsPage = {
     // 加载日志内容
     async loadLogContent(showToast = false) {
         try {
+            if (!this.currentLogFile || !this.logFiles[this.currentLogFile]) {
+                this.logContent = I18n.translate('NO_LOG_SELECTED', '未选择日志文件');
+                return;
+            }
+            
             const logPath = this.logFiles[this.currentLogFile];
             
             // 检查文件是否存在
             const fileExistsResult = await Core.execCommand(`[ -f "${logPath}" ] && echo "true" || echo "false"`);
             if (fileExistsResult.trim() !== "true") {
-                this.logContent = '';
-                const logsDisplay = document.getElementById('logs-display');
-                if (logsDisplay) {
-                    logsDisplay.innerHTML = I18n.translate('LOG_FILE_NOT_FOUND', '日志文件不存在');
-                }
-                
+                this.logContent = I18n.translate('LOG_FILE_NOT_FOUND', '日志文件不存在');
                 if (showToast) {
-                    Core.showToast(I18n.translate('LOG_FILE_NOT_FOUND', '日志文件不存在'), 'warning');
+                    Core.showToast(this.logContent, 'warning');
                 }
                 return;
             }
             
             // 读取日志文件内容
             const content = await Core.execCommand(`cat "${logPath}"`);
-            this.logContent = content || '';
+            this.logContent = content || I18n.translate('NO_LOGS', '没有可用的日志');
             
             // 更新显示
             const logsDisplay = document.getElementById('logs-display');
             if (logsDisplay) {
-                logsDisplay.innerHTML = this.escapeHtml(this.logContent) || I18n.translate('NO_LOGS', '没有可用的日志');
+                logsDisplay.innerHTML = this.formatLogContent();
             }
             
             if (showToast) {
                 Core.showToast(I18n.translate('LOGS_REFRESHED', '日志已刷新'));
             }
         } catch (error) {
-            console.error('加载日志内容失败:', error);
-            this.logContent = '';
-            
-            const logsDisplay = document.getElementById('logs-display');
-            if (logsDisplay) {
-                logsDisplay.innerHTML = I18n.translate('LOGS_LOAD_ERROR', '加载日志失败');
-            }
+            console.error(I18n.translate('LOGS_LOAD_ERROR', '加载日志内容失败:'), error);
+            this.logContent = I18n.translate('LOGS_LOAD_ERROR', '加载日志失败');
             
             if (showToast) {
-                Core.showToast(I18n.translate('LOGS_LOAD_ERROR', '加载日志失败'), 'error');
+                Core.showToast(this.logContent, 'error');
             }
         }
     },
@@ -148,6 +146,11 @@ const LogsPage = {
     // 清除日志
     async clearLog() {
         try {
+            if (!this.currentLogFile || !this.logFiles[this.currentLogFile]) {
+                Core.showToast(I18n.translate('NO_LOG_SELECTED', '未选择日志文件'), 'warning');
+                return;
+            }
+            
             const logPath = this.logFiles[this.currentLogFile];
             
             // 检查文件是否存在
@@ -162,34 +165,15 @@ const LogsPage = {
                 return;
             }
             
-            // 清空日志文件 - 使用更可靠的方式
-            try {
-                // 先尝试直接清空
-                await Core.execCommand(`echo "" > "${logPath}"`);
-                
-                // 检查是否成功清空
-                const fileSize = await Core.execCommand(`stat -c %s "${logPath}"`);
-                
-                // 如果文件大小不为0或接近0，尝试使用cat /dev/null方式
-                if (parseInt(fileSize.trim()) > 10) {
-                    await Core.execCommand(`cat /dev/null > "${logPath}"`);
-                    console.log('使用cat /dev/null方式清空日志');
-                }
-                
-                // 确保文件权限正确
-                await Core.execCommand(`chmod 666 "${logPath}"`);
-            } catch (clearError) {
-                console.error('清空日志文件失败，尝试备用方法:', clearError);
-                // 备用方法：删除并重新创建
-                await Core.execCommand(`rm "${logPath}" && touch "${logPath}" && chmod 666 "${logPath}"`);
-            }
+            // 清空日志文件
+            await Core.execCommand(`cat /dev/null > "${logPath}" && chmod 666 "${logPath}"`);
             
             // 重新加载日志内容
             await this.loadLogContent();
             
             Core.showToast(I18n.translate('LOG_CLEARED', '日志已清除'));
         } catch (error) {
-            console.error('清除日志失败:', error);
+            console.error(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败:'), error);
             Core.showToast(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败'), 'error');
         }
     },
@@ -197,61 +181,45 @@ const LogsPage = {
     // 导出日志
     async exportLog() {
         try {
-            if (!this.logContent) {
-                Core.showToast(I18n.translate('NO_LOGS_TO_EXPORT', '没有可导出的日志'), 'warning');
+            if (!this.currentLogFile || !this.logFiles[this.currentLogFile]) {
+                Core.showToast(I18n.translate('NO_LOG_SELECTED', '未选择日志文件'), 'warning');
                 return;
             }
             
-            // 获取日志文件路径
             const logPath = this.logFiles[this.currentLogFile];
             
             // 使用cp命令复制到下载文件夹
             const downloadDir = '/sdcard/Download/';
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const exportFileName = `${this.currentLogFile}_${timestamp}`;
+            const exportFileName = `${this.currentLogFile}_${timestamp}.log`;
             
-            // 确保下载目录存在
-            Core.execCommand(`mkdir -p "${downloadDir}"`).then(() => {
-                // 复制文件到下载目录
-                Core.execCommand(`cp "${logPath}" "${downloadDir}${exportFileName}"`).then(() => {
-                    Core.showToast(I18n.translate('LOG_EXPORTED', `日志已导出到: ${downloadDir}${exportFileName}`));
-                }).catch(err => {
-                    console.error('复制日志文件失败:', err);
-                    Core.showToast(I18n.translate('LOG_EXPORT_ERROR', '导出日志失败'), 'error');
-                });
-            }).catch(err => {
-                console.error('创建下载目录失败:', err);
-                Core.showToast(I18n.translate('LOG_EXPORT_ERROR', '创建下载目录失败'), 'error');
-            });
+            // 确保下载目录存在并复制文件
+            await Core.execCommand(`mkdir -p "${downloadDir}" && cp "${logPath}" "${downloadDir}${exportFileName}"`);
+            
+            Core.showToast(I18n.translate('LOG_EXPORTED', '日志已导出到: {path}').replace('{path}', `${downloadDir}${exportFileName}`));
         } catch (error) {
-            console.error('导出日志失败:', error);
+            console.error(I18n.translate('LOG_EXPORT_ERROR', '导出日志失败:'), error);
             Core.showToast(I18n.translate('LOG_EXPORT_ERROR', '导出日志失败'), 'error');
         }
     },
     
-    // 启动自动刷新
-    startAutoRefresh() {
-        if (this.refreshTimer) {
-            clearInterval(this.refreshTimer);
+    // 启动/停止自动刷新
+    toggleAutoRefresh(enable) {
+        if (enable) {
+            if (this.refreshTimer) {
+                clearInterval(this.refreshTimer);
+            }
+            this.autoRefresh = true;
+            this.refreshTimer = setInterval(() => this.loadLogContent(), this.refreshInterval);
+            console.log(I18n.translate('AUTO_REFRESH_STARTED', '自动刷新已启动'));
+        } else {
+            if (this.refreshTimer) {
+                clearInterval(this.refreshTimer);
+                this.refreshTimer = null;
+            }
+            this.autoRefresh = false;
+            console.log(I18n.translate('AUTO_REFRESH_STOPPED', '自动刷新已停止'));
         }
-        
-        this.autoRefresh = true;
-        this.refreshTimer = setInterval(() => {
-            this.loadLogContent();
-        }, this.refreshInterval);
-        
-        console.log(`已启动自动刷新，间隔: ${this.refreshInterval}ms`);
-    },
-    
-    // 停止自动刷新
-    stopAutoRefresh() {
-        if (this.refreshTimer) {
-            clearInterval(this.refreshTimer);
-            this.refreshTimer = null;
-        }
-        
-        this.autoRefresh = false;
-        console.log('已停止自动刷新');
     },
     
     // HTML转义
@@ -265,18 +233,21 @@ const LogsPage = {
             .replace(/'/g, "&#039;");
     },
     
-    // 渲染日志文件选项
-    renderLogFileOptions() {
-        if (Object.keys(this.logFiles).length === 0) {
-            return '<option value="" disabled>没有可用的日志文件</option>';
+    // 格式化日志内容
+    formatLogContent() {
+        if (!this.logContent || this.logContent.trim() === '') {
+            return I18n.translate('NO_LOGS', '没有可用的日志');
         }
         
-        let options = '';
-        for (const fileName in this.logFiles) {
-            options += `<option value="${fileName}" ${this.currentLogFile === fileName ? 'selected' : ''}>${fileName}</option>`;
-        }
+        let formatted = this.escapeHtml(this.logContent);
         
-        return options;
+        // 为不同级别的日志添加颜色标识
+        formatted = formatted
+            .replace(/\[(ERROR|WARN|INFO|DEBUG)\]/g, (match, level) => {
+                return `<span class="log-level ${level.toLowerCase()}">${level}</span>`;
+            });
+            
+        return formatted;
     },
     
     // 渲染页面
@@ -284,7 +255,7 @@ const LogsPage = {
         // 设置页面标题
         document.getElementById('page-title').textContent = I18n.translate('NAV_LOGS', '日志');
         
-        // 添加刷新按钮到页面操作区
+        // 添加操作按钮
         const pageActions = document.getElementById('page-actions');
         pageActions.innerHTML = `
             <button id="refresh-logs" class="md-button icon-only" title="${I18n.translate('REFRESH_LOGS', '刷新日志')}">
@@ -298,10 +269,8 @@ const LogsPage = {
             </button>
         `;
         
-        // 检查是否有日志文件
         const hasLogFiles = Object.keys(this.logFiles).length > 0;
         
-        // 渲染页面内容，添加卡片样式和更好的布局
         return `
             <div class="logs-page">
                 <div class="card shadow-sm">
@@ -325,103 +294,61 @@ const LogsPage = {
                     </div>
                     
                     <div class="logs-content">
-                        <pre id="logs-display" class="logs-display">${this.formatLogContent(hasLogFiles)}</pre>
+                        <pre id="logs-display" class="logs-display">${this.formatLogContent()}</pre>
                     </div>
                 </div>
             </div>
         `;
     },
     
-    // 添加一个新方法来格式化日志内容，支持日志级别的颜色标识
-    formatLogContent(hasLogFiles) {
-        if (!hasLogFiles) {
-            return I18n.translate('NO_LOGS_FILES', '没有找到日志文件');
+    // 渲染日志文件选项
+    renderLogFileOptions() {
+        if (Object.keys(this.logFiles).length === 0) {
+            return `<option value="" disabled>${I18n.translate('NO_LOGS_FILES', '没有可用的日志文件')}</option>`;
         }
         
-        if (!this.logContent || this.logContent.trim() === '') {
-            return I18n.translate('NO_LOGS', '没有可用的日志');
-        }
-        
-        // 简单的日志格式化，为不同级别的日志添加颜色
-        let formattedContent = this.escapeHtml(this.logContent);
-        
-        // 为不同级别的日志添加颜色标识
-        formattedContent = formattedContent
-            .replace(/\[ERROR\]/g, '<span class="log-level error">ERROR</span>')
-            .replace(/\[WARN\]/g, '<span class="log-level warning">WARN</span>')
-            .replace(/\[INFO\]/g, '<span class="log-level info">INFO</span>')
-            .replace(/\[DEBUG\]/g, '<span class="log-level debug">DEBUG</span>');
-        
-        return formattedContent;
+        return Object.keys(this.logFiles).map(fileName => 
+            `<option value="${fileName}" ${this.currentLogFile === fileName ? 'selected' : ''}>${fileName}</option>`
+        ).join('');
     },
     
     // 渲染后的回调
     afterRender() {
-        // 添加日志文件选择器事件
-        const logSelector = document.getElementById('log-file-select');
-        if (logSelector) {
-            logSelector.addEventListener('change', (e) => {
-                this.currentLogFile = e.target.value;
-                this.loadLogContent(true);
-            });
-        }
+        // 日志文件选择器事件
+        document.getElementById('log-file-select')?.addEventListener('change', (e) => {
+            this.currentLogFile = e.target.value;
+            this.loadLogContent(true);
+        });
         
-        // 添加刷新按钮事件
-        const refreshButton = document.getElementById('refresh-logs');
-        if (refreshButton) {
-            refreshButton.addEventListener('click', () => {
-                this.loadLogContent(true);
-            });
-        }
+        // 刷新按钮事件
+        document.getElementById('refresh-logs')?.addEventListener('click', () => {
+            this.loadLogContent(true);
+        });
         
-        // 添加自动刷新切换事件
-        const autoRefreshCheckbox = document.getElementById('auto-refresh-checkbox');
-        if (autoRefreshCheckbox) {
-            autoRefreshCheckbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    this.startAutoRefresh();
-                } else {
-                    this.stopAutoRefresh();
-                }
-            });
-        }
+        // 自动刷新切换事件
+        document.getElementById('auto-refresh-checkbox')?.addEventListener('change', (e) => {
+            this.toggleAutoRefresh(e.target.checked);
+        });
         
-        // 添加清除日志按钮事件
-        const clearButton = document.getElementById('clear-logs');
-        if (clearButton) {
-            clearButton.addEventListener('click', () => {
-                this.clearLog();
-            });
-        }
+        // 清除日志按钮事件
+        document.getElementById('clear-logs')?.addEventListener('click', () => {
+            this.clearLog();
+        });
         
-        // 添加导出日志按钮事件
-        const exportButton = document.getElementById('export-logs');
-        if (exportButton) {
-            exportButton.addEventListener('click', () => {
-                this.exportLog();
-            });
-        }
+        // 导出日志按钮事件
+        document.getElementById('export-logs')?.addEventListener('click', () => {
+            this.exportLog();
+        });
         
         // 如果设置了自动刷新，启动自动刷新
         if (this.autoRefresh) {
-            this.startAutoRefresh();
+            this.toggleAutoRefresh(true);
         }
     },
     
-    // 页面激活时的回调
-    onActivate() {
-        // 如果设置了自动刷新，启动自动刷新
-        if (this.autoRefresh) {
-            this.startAutoRefresh();
-        }
-    },
-    
-    // 页面停用时的回调
-    onDeactivate() {
-        // 停止自动刷新
-        this.stopAutoRefresh();
-    }
+    // 页面激活/停用回调
+    onActivate() { this.autoRefresh && this.toggleAutoRefresh(true); },
+    onDeactivate() { this.toggleAutoRefresh(false); }
 };
 
-// 导出日志页面模块
 window.LogsPage = LogsPage;

@@ -20,6 +20,21 @@ const pageModules = {
     about: 'AboutPage'
 };
 
+// 动画配置
+const animations = {
+    duration: {
+        navItem: 200,
+        ripple: 400,
+        page: 400,
+        theme: 400
+    },
+    easing: {
+        standard: 'var(--md-sys-motion-easing-standard)',
+        emphasized: 'var(--md-sys-motion-easing-emphasized)',
+        emphasizedDecelerate: 'var(--md-sys-motion-easing-emphasized-decelerate)'
+    }
+};
+
 // DOM 元素缓存
 const elements = {
     app: document.getElementById('app'),
@@ -31,55 +46,71 @@ const elements = {
     navItems: document.querySelectorAll('.nav-item')
 };
 
-// 初始化应用
+/**
+ * 初始化应用
+ */
 async function initApp() {
-    // 添加 app-loaded 类以触发淡入动画
-    setTimeout(() => {
-        document.body.classList.add('app-loaded');
-    }, 100);
+    try {
+        // 添加 app-loaded 类以触发淡入动画
+        requestAnimationFrame(() => {
+            document.body.classList.add('app-loaded');
+        });
 
-    // 设置导航事件监听
-    setupNavigation();
-    
-    // 设置主题切换
-    setupThemeToggle();
-    
-    // 设置语言切换
-    setupLanguageToggle();
-    
-    // 加载初始页面
-    const initialPage = getCurrentPageFromUrl() || 'status';
-    await loadPage(initialPage);
-    
-    // 标记应用加载完成
-    appState.isLoading = false;
+        // 设置导航事件监听
+        setupNavigation();
+        
+        // 设置主题切换
+        setupThemeToggle();
+        
+        // 设置语言切换
+        setupLanguageToggle();
+        
+        // 添加语言切换事件监听
+        document.addEventListener('languageChanged', () => {
+            updatePageTitle(appState.currentPage);
+        });
+        
+        // 加载初始页面
+        const initialPage = getCurrentPageFromUrl() || 'status';
+        updateActiveNavItem(initialPage);
+        await loadPage(initialPage);
+        
+        // 标记应用加载完成
+        appState.isLoading = false;
+        
+        // 移除初始加载容器
+        const loadingContainer = document.querySelector('#main-content .loading-container');
+        if (loadingContainer) {
+            loadingContainer.style.opacity = '0';
+            setTimeout(() => {
+                loadingContainer.remove();
+            }, animations.duration.page);
+        }
+    } catch (error) {
+        console.error('应用初始化失败:', error);
+        showErrorMessage('应用初始化失败', error.message);
+    }
 }
 
-// 设置导航事件
+/**
+ * 设置导航事件
+ */
 function setupNavigation() {
     elements.navItems.forEach(item => {
         item.addEventListener('click', async (e) => {
             e.preventDefault();
             const pageName = item.getAttribute('data-page');
             
-            // 如果已经是当前页面，不做任何操作
-            if (pageName === appState.currentPage) return;
+            if (pageName === appState.currentPage || appState.pageChanging) return;
             
-            // 更新导航项状态
             updateActiveNavItem(pageName);
-            
-            // 加载新页面
             await loadPage(pageName);
-            
-            // 更新 URL
             history.pushState({ page: pageName }, '', `?page=${pageName}`);
         });
         
-        // 添加涟漪效果
-        item.addEventListener('mousedown', createRippleEffect);
+        // 删除这行：item.addEventListener('pointerdown', createRippleEffect);
     });
     
-    // 处理浏览器后退/前进
     window.addEventListener('popstate', async (e) => {
         const pageName = e.state?.page || 'status';
         updateActiveNavItem(pageName);
@@ -87,90 +118,106 @@ function setupNavigation() {
     });
 }
 
-// 创建涟漪效果
+/**
+ * 创建涟漪效果
+ */
 function createRippleEffect(e) {
     const button = e.currentTarget;
+    const isNavItem = button.classList.contains('nav-item');
+    const rect = button.getBoundingClientRect();
     
-    // 检查是否是导航项
-    if (button.classList.contains('nav-item')) {
-        // 如果是导航项，创建涟漪效果
-        const rect = button.getBoundingClientRect();
-        
-        // 计算相对于导航项的位置
+    // 创建涟漪元素
+    const ripple = document.createElement('span');
+    ripple.className = isNavItem ? 'nav-ripple' : 'ripple';
+    
+    if (isNavItem) {
+        // 导航项的涟漪效果
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        // 创建按钮涟漪
-        const ripple = document.createElement('span');
-        ripple.className = 'ripple';
-        ripple.style.left = `${x}px`;
-        ripple.style.top = `${y}px`;
-        ripple.style.width = '20px';
-        ripple.style.height = '20px';
+        ripple.style.cssText = `
+            left: ${x}px;
+            top: ${y}px;
+            width: 20px;
+            height: 20px;
+            background-color: var(--md-ripple-color);
+            opacity: 0.12;
+        `;
         
-        button.appendChild(ripple);
-        
-        setTimeout(() => {
-            ripple.remove();
-        }, 400); // 与CSS中的动画时间一致
-        
-        // 如果是激活状态的导航项，还需要在覆盖层上创建涟漪
+        // 如果是激活状态，添加强调涟漪
         if (button.classList.contains('active')) {
-            const overlayRipple = document.createElement('span');
-            overlayRipple.className = 'overlay-ripple';
-            
-            // 计算覆盖层中心位置
-            const overlayX = x - (button.querySelector('.nav-item.active::before') ? 30 : 30);
-            const overlayY = y - 26; // 覆盖层的top位置
-            
-            overlayRipple.style.left = `${overlayX}px`;
-            overlayRipple.style.top = `${overlayY}px`;
-            overlayRipple.style.width = '20px';
-            overlayRipple.style.height = '20px';
-            
-            button.appendChild(overlayRipple);
+            const emphasisRipple = document.createElement('span');
+            emphasisRipple.className = 'nav-ripple emphasis';
+            emphasisRipple.style.cssText = `
+                left: ${x}px;
+                top: ${y}px;
+                width: 20px;
+                height: 20px;
+                background-color: var(--md-primary);
+                opacity: 0.08;
+            `;
+            button.appendChild(emphasisRipple);
             
             setTimeout(() => {
-                overlayRipple.remove();
-            }, 400);
+                emphasisRipple.remove();
+            }, animations.duration.ripple);
         }
+    } else {
+        // 普通按钮的涟漪效果
+        const size = Math.max(rect.width, rect.height) * 2;
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
         
-        return;
+        ripple.style.cssText = `
+            left: ${x}px;
+            top: ${y}px;
+            width: ${size}px;
+            height: ${size}px;
+        `;
     }
-    
-    // 其他元素的涟漪效果保持不变
-    const ripple = document.createElement('span');
-    const rect = button.getBoundingClientRect();
-    
-    const size = Math.max(rect.width, rect.height);
-    const x = e.clientX - rect.left - size / 2;
-    const y = e.clientY - rect.top - size / 2;
-    
-    ripple.className = 'ripple';
-    ripple.style.width = ripple.style.height = `${size}px`;
-    ripple.style.left = `${x}px`;
-    ripple.style.top = `${y}px`;
     
     button.appendChild(ripple);
     
+    // 强制重排以确保动画正确触发
+    void ripple.offsetWidth;
+    ripple.classList.add('active');
+    
+    // 动画结束后移除涟漪
     setTimeout(() => {
         ripple.remove();
-    }, 600);
+    }, animations.duration.ripple);
+    
+    // 清理事件监听
+    const cleanup = () => {
+        button.removeEventListener('pointerup', cleanup);
+        button.removeEventListener('pointercancel', cleanup);
+    };
+    
+    button.addEventListener('pointerup', cleanup);
+    button.addEventListener('pointercancel', cleanup);
 }
 
-// 更新活动导航项
+/**
+ * 更新活动导航项
+ */
 function updateActiveNavItem(pageName) {
     elements.navItems.forEach(item => {
         const itemPage = item.getAttribute('data-page');
         if (itemPage === pageName) {
-            // 如果之前不是激活状态，添加激活类和动画类
             if (!item.classList.contains('active')) {
+                // 移除所有导航项的激活状态
+                elements.navItems.forEach(navItem => {
+                    navItem.classList.remove('active', 'animate');
+                });
+                
+                // 添加新的激活状态
                 item.classList.add('active');
-                // 添加动画类
-                item.classList.add('animate');
-                setTimeout(() => {
-                    item.classList.remove('animate');
-                }, 200); // 减少时间以匹配更快的动画
+                requestAnimationFrame(() => {
+                    item.classList.add('animate');
+                    setTimeout(() => {
+                        item.classList.remove('animate');
+                    }, animations.duration.navItem);
+                });
             }
         } else {
             item.classList.remove('active', 'animate');
@@ -178,206 +225,324 @@ function updateActiveNavItem(pageName) {
     });
 }
 
-// 从 URL 获取当前页面
+/**
+ * 从 URL 获取当前页面
+ */
 function getCurrentPageFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('page');
 }
 
-// 加载页面
+/**
+ * 加载页面
+ */
+// 添加页面预加载缓存
+const pageCache = new Map();
+
+// 添加防抖函数
+function debounce(fn, delay) {
+    let timer = null;
+    return function(...args) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+// 优化页面加载函数
 async function loadPage(pageName) {
     if (appState.pageChanging) return;
     appState.pageChanging = true;
     
     try {
-        // 1. 淡出页面标题和操作按钮
-        elements.pageTitle.classList.add('changing');
-        elements.pageActions.classList.add('changing');
+        // 添加固定高度过渡
+        const headerHeight = document.querySelector('.app-header').offsetHeight;
+        elements.mainContent.style.minHeight = `calc(100vh - ${headerHeight}px - var(--nav-height))`;
         
-        // 2. 等待短暂延迟以确保动画开始
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // 预加载下一个可能的页面
+        requestIdleCallback(() => {
+            Object.keys(pageModules).forEach(page => {
+                if (page !== pageName && !pageCache.has(page)) {
+                    const module = window[pageModules[page]];
+                    if (module) pageCache.set(page, module);
+                }
+            });
+        });
+
+        // 使用 transform 代替 opacity 并固定高度
+        elements.pageTitle.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        elements.pageTitle.style.opacity = '0';
+        elements.pageTitle.style.transform = 'translateY(-10px)';
         
-        // 3. 获取页面模块实例
+        elements.pageActions.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        elements.pageActions.style.opacity = '0';
+        elements.pageActions.style.transform = 'translateY(-10px)';
+        
+        // 获取页面实例
         const pageModuleName = pageModules[pageName];
-        const newPageInstance = window[pageModuleName];
+        const newPageInstance = pageCache.get(pageName) || window[pageModuleName];
         
         if (!newPageInstance) {
-            throw new Error(`页面模块 ${pageName} 未找到，请确保已加载相应的JS文件`);
+            throw new Error(`页面模块 ${pageName} 未找到`);
         }
         
-        // 4. 准备新页面内容
+        // 创建新页面容器
         const pageContainer = document.createElement('div');
         pageContainer.className = 'page-container page-enter';
         pageContainer.id = `page-${pageName}`;
         
-        // 5. 渲染新页面内容
+        // 使用 DocumentFragment 优化 DOM 操作
+        const fragment = document.createDocumentFragment();
+        fragment.appendChild(pageContainer);
         pageContainer.innerHTML = newPageInstance.render();
         
-        // 6. 如果存在旧页面，准备淡出
+        // 优化页面切换动画
         const oldPageContainer = elements.mainContent.querySelector('.page-container');
         if (oldPageContainer) {
+            oldPageContainer.style.willChange = 'transform, opacity';
             oldPageContainer.classList.add('page-exit');
         }
         
-        // 7. 添加新页面到 DOM
-        elements.mainContent.appendChild(pageContainer);
-        
-        // 8. 强制重排以确保动画生效
-        pageContainer.offsetWidth; // 触发重排
-        
-        // 9. 触发动画
+        // 使用 RAF 优化动画帧
         requestAnimationFrame(() => {
-            pageContainer.classList.add('page-active');
+            elements.mainContent.appendChild(fragment);
             
-            if (oldPageContainer) {
-                oldPageContainer.classList.add('page-active');
-            }
+            // 强制重排
+            void pageContainer.offsetWidth;
+            
+            requestAnimationFrame(() => {
+                pageContainer.classList.add('page-active');
+                if (oldPageContainer) {
+                    oldPageContainer.classList.add('page-active');
+                }
+                
+                // 恢复标题和按钮的显示
+                elements.pageTitle.style.opacity = '1';
+                elements.pageTitle.style.transform = 'translateY(0)';
+                elements.pageActions.style.opacity = '1';
+                elements.pageActions.style.transform = 'translateY(0)';
+                
+                // 更新页面标题
+                updatePageTitle(pageName);
+                updatePageActions(pageName);
+            });
+        });
+
+        // 等待动画完成
+        await new Promise(resolve => {
+            const onTransitionEnd = () => {
+                pageContainer.removeEventListener('transitionend', onTransitionEnd);
+                resolve();
+            };
+            pageContainer.addEventListener('transitionend', onTransitionEnd);
         });
         
-        // 10. 等待动画完成后移除旧页面
-        await new Promise(resolve => setTimeout(resolve, 300)); // 与CSS中的动画时长一致
-        
+        // 清理旧页面
         if (oldPageContainer) {
             oldPageContainer.remove();
         }
         
-        // 11. 淡入页面标题和操作按钮
-        elements.pageTitle.classList.remove('changing');
-        elements.pageActions.classList.remove('changing');
-        
-        // 12. 更新应用状态
+        // 更新应用状态
         appState.currentPage = pageName;
         
-        // 13. 如果页面有初始化方法，调用它
-        if (newPageInstance.init) {
-            await newPageInstance.init();
+        // 优化生命周期调用
+        if (appState.pageInstance) {
+            Promise.resolve()
+                .then(() => appState.pageInstance.onDeactivate?.())
+                .then(() => appState.pageInstance.destroy?.())
+                .catch(console.error);
         }
         
-        // 14. 如果页面有afterRender方法，调用它
-        if (newPageInstance.afterRender) {
-            newPageInstance.afterRender();
-        }
-        
-        // 15. 保存页面实例以便后续使用
-        if (appState.pageInstance && appState.pageInstance.destroy) {
-            appState.pageInstance.destroy();
-        }
         appState.pageInstance = newPageInstance;
         
-        // 16. 触发页面切换事件
-        document.dispatchEvent(new CustomEvent('pageChanged', { 
-            detail: { page: pageName }
-        }));
+        // 并行执行生命周期方法
+        await Promise.all([
+            newPageInstance.init?.(),
+            newPageInstance.afterRender?.(),
+            newPageInstance.onActivate?.()
+        ].filter(Boolean));
         
-        // 17. 调用页面的onActivate方法（如果存在）
-        if (newPageInstance.onActivate) {
-            newPageInstance.onActivate();
-        }
+        // 触发页面切换事件
+        window.requestIdleCallback(() => {
+            document.dispatchEvent(new CustomEvent('pageChanged', { 
+                detail: { page: pageName }
+            }));
+        });
         
     } catch (error) {
         console.error('加载页面失败:', error);
-        elements.mainContent.innerHTML = `
-            <div class="page-container">
-                <div class="error-container">
-                    <h2>${I18n.translate('PAGE_LOAD_ERROR', '页面加载失败')}</h2>
-                    <p>${error.message}</p>
-                </div>
-            </div>
-        `;
+        showErrorMessage(I18n.translate('PAGE_LOAD_ERROR', '页面加载失败'), error.message);
     } finally {
-        // 延迟重置pageChanging状态，确保所有动画都已完成
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             appState.pageChanging = false;
-        }, 350);
+        });
     }
 }
 
-// 设置主题切换
+// 优化导航事件处理
+function setupNavigation() {
+    const navHandler = debounce(async (e, item) => {
+        e.preventDefault();
+        const pageName = item.getAttribute('data-page');
+        
+        if (pageName === appState.currentPage || appState.pageChanging) return;
+        
+        updateActiveNavItem(pageName);
+        await loadPage(pageName);
+        history.pushState({ page: pageName }, '', `?page=${pageName}`);
+    }, 100);
+
+    elements.navItems.forEach(item => {
+        item.addEventListener('click', e => navHandler(e, item));
+        item.addEventListener('pointerdown', createRippleEffect, { passive: true });
+    });
+    
+    // 优化 popstate 处理
+    window.addEventListener('popstate', debounce(async (e) => {
+        const pageName = e.state?.page || 'status';
+        updateActiveNavItem(pageName);
+        await loadPage(pageName);
+    }, 100));
+}
+
+/**
+ * 显示错误消息
+ */
+function showErrorMessage(title, message) {
+    elements.mainContent.innerHTML = `
+        <div class="page-container">
+            <div class="error-container">
+                <h2>${title}</h2>
+                <p>${message}</p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * 设置主题切换
+ */
 function setupThemeToggle() {
     elements.themeToggle.addEventListener('click', (e) => {
         e.preventDefault();
         toggleTheme(e);
     });
     
-    // 更新主题图标
     updateThemeIcon();
 }
 
-// 设置语言切换
+/**
+ * 设置语言切换
+ */
 function setupLanguageToggle() {
-    // 确保I18n模块已初始化
-    if (window.I18n && typeof I18n.initLanguageSelector === 'function') {
-        // 调用I18n模块的语言选择器初始化方法
+    if (window.I18n?.initLanguageSelector) {
         I18n.initLanguageSelector();
     } else {
-        // 如果I18n模块尚未准备好，等待它加载完成
         document.addEventListener('i18nReady', () => {
             I18n.initLanguageSelector();
         });
     }
 }
 
-
-// 更新主题图标
+/**
+ * 更新主题图标
+ */
 function updateThemeIcon() {
-    const isDarkTheme = document.body.classList.contains('dark-theme');
-    elements.themeToggle.querySelector('.material-symbols-rounded').textContent = 
-        isDarkTheme ? 'dark_mode' : 'light_mode';
+    const isDarkTheme = document.documentElement.classList.contains('dark-theme');
+    const iconElement = elements.themeToggle.querySelector('.material-symbols-rounded');
+    if (iconElement) {
+        iconElement.textContent = isDarkTheme ? 'dark_mode' : 'light_mode';
+    }
 }
 
-// 切换主题
+/**
+ * 切换主题
+ */
 function toggleTheme(event) {
     if (appState.themeChanging) return;
     appState.themeChanging = true;
     
-    // 创建涟漪效果
     const ripple = document.createElement('div');
     ripple.className = 'theme-ripple';
     
-    // 设置涟漪颜色
-    const isDarkTheme = document.body.classList.contains('dark-theme');
+    const isDarkTheme = document.documentElement.classList.contains('dark-theme');
     ripple.style.setProperty('--ripple-color', isDarkTheme ? '#FFFBFF' : '#1C1B1E');
     
-    // 设置涟漪位置
-    const x = event.clientX;
-    const y = event.clientY;
-    ripple.style.left = `${x}px`;
-    ripple.style.top = `${y}px`;
+    ripple.style.cssText = `
+        left: ${event.clientX}px;
+        top: ${event.clientY}px;
+        transition: transform ${animations.duration.theme}ms ${animations.easing.emphasized};
+    `;
     
-    // 添加到 DOM
     document.body.appendChild(ripple);
     
-    // 触发动画
-    setTimeout(() => {
+    requestAnimationFrame(() => {
         ripple.classList.add('active');
-    }, 10);
-    
-    // 等待动画开始后切换主题
-    setTimeout(() => {
-        // 切换主题类
-        document.body.classList.toggle('dark-theme');
-        document.body.classList.toggle('light-theme');
         
-        // 更新主题图标
-        updateThemeIcon();
+        setTimeout(() => {
+            document.documentElement.classList.toggle('dark-theme');
+            document.documentElement.classList.toggle('light-theme');
+            
+            updateThemeIcon();
+            
+            const newTheme = document.documentElement.classList.contains('dark-theme') ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', newTheme === 'dark' ? '#1C1B1E' : '#6750A4');
+            }
+            
+            document.dispatchEvent(new CustomEvent('themeChanged', { 
+                detail: { theme: newTheme }
+            }));
+        }, animations.duration.theme / 2);
         
-        // 保存主题设置
-        const newTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
-        localStorage.setItem('theme', newTheme);
-        
-        // 更新 meta theme-color
-        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) {
-            metaThemeColor.setAttribute('content', newTheme === 'dark' ? '#1C1B1E' : '#FFFBFF');
-        }
-    }, 400);
-    
-    // 动画结束后移除涟漪元素
-    setTimeout(() => {
-        ripple.remove();
-        appState.themeChanging = false;
-    }, 1000);
+        setTimeout(() => {
+            ripple.remove();
+            appState.themeChanging = false;
+        }, animations.duration.theme);
+    });
+}
+
+/**
+ * 打开终端并执行命令
+ */
+async function openTerminal(command) {
+    try {
+        return await Core.execCommand(command);
+    } catch (error) {
+        console.error('执行终端命令失败:', error);
+        return false;
+    }
 }
 
 // 当 DOM 加载完成后初始化应用
-document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded', async () => {
+    await I18n.init();
+    initApp();
+});
+
+// 导出公共方法
+window.App = {
+    loadPage,
+    updateActiveNavItem,
+    openTerminal,
+    createRippleEffect
+};
+
+
+function updatePageTitle(pageName) {
+    const titles = {
+        status: I18n.translate('NAV_STATUS', '状态'),
+        logs: I18n.translate('NAV_LOGS', '日志'),
+        settings: I18n.translate('NAV_SETTINGS', '设置'),
+        about: I18n.translate('NAV_ABOUT', '关于')
+    };
+    
+    // 强制重绘以确保文本更新
+    elements.pageTitle.style.display = 'none';
+    elements.pageTitle.offsetHeight; // 触发重排
+    elements.pageTitle.style.display = '';
+    
+    elements.pageTitle.textContent = titles[pageName] || 'AMMF WebUI';
+}

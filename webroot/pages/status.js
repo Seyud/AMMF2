@@ -303,24 +303,25 @@ const StatusPage = {
             { key: 'ksu', label: 'KSU_VERSION', icon: 'new_releases' }
         ];
         
-        let html = '';
+        let html = '<div class="device-info-grid">';
         
         infoItems.forEach(item => {
             if (this.deviceInfo[item.key]) {
                 html += `
-                    <div class="info-item">
-                        <div class="info-icon">
+                    <div class="device-info-item">
+                        <div class="device-info-icon">
                             <span class="material-symbols-rounded">${item.icon}</span>
                         </div>
-                        <div class="info-content">
-                            <div class="info-label" data-i18n="${item.label}">${I18n.translate(item.label, item.key)}</div>
-                            <div class="info-value">${this.deviceInfo[item.key]}</div>
+                        <div class="device-info-content">
+                            <div class="device-info-label" data-i18n="${item.label}">${I18n.translate(item.label, item.key)}</div>
+                            <div class="device-info-value">${this.deviceInfo[item.key]}</div>
                         </div>
                     </div>
                 `;
             }
         });
         
+        html += '</div>';
         return html || `<div class="no-info" data-i18n="NO_DEVICE_INFO">无设备信息</div>`;
     },
     

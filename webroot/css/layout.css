@@ -5,6 +5,8 @@
 
 /* 主内容区域 */
 #main-content {
+  will-change: transform;
+  transform: translateZ(0);
   padding-top: calc(var(--header-height) + var(--spacing-sm));
   padding-bottom: calc(var(--nav-height) + var(--spacing-md));
   min-height: calc(100vh - var(--header-height) - var(--nav-height));
@@ -15,6 +17,9 @@
 
 /* 页面容器 */
 .page-container {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
   padding: var(--spacing-md);
   max-width: 1200px;
   margin: 0 auto;
@@ -79,6 +84,68 @@
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
+}
+
+/* Toast 通知样式 */
+#toast-container {
+  position: fixed;
+  bottom: calc(var(--nav-height) + var(--spacing-md));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  z-index: 1000;
+  pointer-events: none;
+  padding: 0 var(--spacing-md);
+}
+
+.toast {
+  background-color: var(--md-surfaceContainer);
+  color: var(--md-onSurface);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--button-border-radius);
+  box-shadow: var(--md-sys-elevation-level2);
+  margin-bottom: var(--spacing-sm);
+  width: 100%;
+  max-width: 400px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard),
+              transform var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+  text-align: center;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-weight-medium);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-info {
+  background-color: var(--md-secondaryContainer);
+  color: var(--md-onSecondaryContainer);
+}
+
+.toast-success {
+  background-color: var(--md-successContainer);
+  color: var(--md-onSuccessContainer);
+}
+
+.toast-warning {
+  background-color: var(--md-warningContainer);
+  color: var(--md-onWarningContainer);
+}
+
+.toast-error {
+  background-color: var(--md-errorContainer);
+  color: var(--md-onErrorContainer);
 }
 
 .header-actions {

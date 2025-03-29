@@ -25,349 +25,43 @@
   --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1.0);
 }
 
-/* 页面切换动画 - 简化为淡入淡出 */
+/* 页面切换动画 */
 .page-enter {
-  opacity: 0;
-  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
-  position: relative;
-  width: 100%;
-  left: 0;
-  top: 0;
-  max-width: 100%;
-  overflow-x: hidden;
-  box-sizing: border-box; /* 确保盒模型一致 */
+    opacity: 0;
+    transform: translateY(20px);
+    transition: 
+        transform var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard),
+        opacity var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard);
 }
 
 .page-enter.page-active {
-  opacity: 1;
-  position: relative;
-  pointer-events: auto;
-  box-sizing: border-box; /* 确保盒模型一致 */
-}
-
-.page-exit {
-  opacity: 1;
-  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard-accelerate);
-  position: absolute;
-  width: 100%;
-  left: 0;
-  top: 0;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-.page-exit.page-active {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* 淡入淡出效果 */
-.fade-in {
-  animation: fadeIn var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard) forwards;
-}
-
-.fade-out {
-  animation: fadeOut var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard-accelerate) forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-/* 移除滑动效果，保留淡入淡出 */
-.slide-in {
-  animation: slideIn var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized-decelerate) forwards;
-}
-
-.slide-out {
-  animation: slideOut var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-emphasized-accelerate) forwards;
-}
-
-@keyframes slideIn {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slideOut {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(-20px); opacity: 0; }
-}
-
-/* 旋转动画 */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* 主题切换涟漪效果 */
-.theme-ripple {
-  position: fixed;
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background-color: var(--ripple-color); /* 使用涟漪颜色变量 */
-  transform: translate(-50%, -50%) scale(0);
-  z-index: 9999;
-  pointer-events: none;
-  transition: transform 0.8s var(--md-sys-motion-easing-emphasized);
-}
-
-.theme-ripple.active {
-  transform: translate(-50%, -50%) scale(20);
-}
-
-/* 可以添加动画效果 */
-@keyframes theme-ripple-effect {
-  0% {
-    transform: scale(0);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(50);
-    opacity: 0;
-  }
-}
-
-/* 加载动画 */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 200px;
-  gap: var(--spacing-md);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(var(--md-primary-rgb), 0.2);
-  border-top-color: var(--md-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(var(--md-primary-rgb), 0.2);
-  border-top-color: var(--md-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-/* 设置加载覆盖层 */
-.settings-loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(var(--md-background-rgb), 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-/* Toast 通知样式 */
-.toast-container {
-  position: fixed;
-  bottom: calc(var(--nav-height) + var(--spacing-md));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-sm);
-  pointer-events: none;
-}
-
-.toast {
-  background-color: var(--card-background);
-  color: var(--md-onSurface);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--md-sys-shape-corner-medium);
-  box-shadow: var(--md-sys-elevation-level2);
-  max-width: 80vw;
-  min-width: 200px;
-  text-align: center;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  pointer-events: auto;
-}
-
-.toast.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Toast 类型样式 */
-.toast-info {
-  border-left: 4px solid var(--md-primary);
-}
-
-.toast-success {
-  border-left: 4px solid #4CAF50;
-}
-
-.toast-warning {
-  border-left: 4px solid #FF9800;
-}
-
-.toast-error {
-  border-left: 4px solid var(--md-error);
-}
-
-/* 确保在小屏幕上 toast 不会被导航栏遮挡 */
-@media (max-width: 600px) {
-  .toast-container {
-    bottom: calc(var(--nav-height) + var(--spacing-xs));
-  }
-  
-  .toast {
-    max-width: 90vw;
-    padding: var(--spacing-xs) var(--spacing-md);
-  }
-}
-
-/* 底栏导航动画效果 */
-/* 导航项点击涟漪效果 - 修改为分别应用在按钮和覆盖层上 */
-.nav-item {
-  position: relative;
-  overflow: visible; /* 确保涟漪效果可见 */
-}
-
-/* 导航项按钮涟漪效果 */
-.nav-item .ripple {
-  position: absolute;
-  background-color: rgba(var(--md-onSurfaceVariant-rgb), 0.2);
-  border-radius: 50%;
-  transform: scale(0);
-  animation: nav-ripple 0.4s var(--md-sys-motion-easing-standard);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* 导航项覆盖层涟漪效果 */
-.nav-item.active::before {
-  overflow: hidden; /* 添加溢出隐藏，使涟漪效果被限制在覆盖层内 */
-}
-
-.nav-item.active .overlay-ripple {
-  position: absolute;
-  background-color: rgba(var(--md-onPrimaryContainer-rgb), 0.3);
-  border-radius: 50%;
-  transform: scale(0);
-  animation: nav-ripple 0.4s var(--md-sys-motion-easing-standard);
-  pointer-events: none;
-  z-index: -1; /* 确保在覆盖层内 */
-}
-
-@keyframes nav-ripple {
-  to {
-    transform: scale(2.5);
-    opacity: 0;
-  }
-}
-
-.nav-item.active {
-  position: relative;
-  color: var(--md-primary);
-}
-
-/* 导航项选中背景动画 - 修复覆盖层动画 */
-.nav-item.active::before {
-  content: "";
-  position: absolute;
-  top: 26px;  /* 保持与layout.css一致 */
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 60px;
-  height: 28px;
-  background-color: var(--md-primaryContainer);
-  border-radius: 14px;
-  z-index: -1;
-  /* 添加动画效果 */
-  animation: nav-expand 0.3s var(--md-sys-motion-easing-emphasized) forwards;
-}
-
-@keyframes nav-expand {
-  0% {
-    width: 0;
-    border-radius: 50%;
-    opacity: 0;
-  }
-  100% {
-    width: 60px;  /* 保持与上面定义的宽度一致 */
-    border-radius: 14px;
+    transform: translateY(0);
     opacity: 1;
-  }
-}
-
-/* 页面切换动画 - 简化为淡入淡出 */
-.page-enter {
-  opacity: 0;
-  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
-  position: relative;
-  width: 100%;
-  left: 0;
-  top: 0;
-  max-width: 100%;
-  overflow-x: hidden;
-  box-sizing: border-box; /* 确保盒模型一致 */
-}
-
-.page-enter.page-active {
-  opacity: 1;
-  position: relative;
-  pointer-events: auto;
 }
 
 .page-exit {
-  opacity: 1;
-  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard-accelerate);
-  position: absolute;
-  width: 100%;
-  left: 0;
-  top: 0;
-  max-width: 100%;
-  overflow-x: hidden;
-  pointer-events: none; /* 防止退出页面接收点击事件 */
+    opacity: 1;
+    transition: opacity var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-standard-accelerate);
+    position: absolute;
+    width: 100%;
+    left: 0;
+    top: 0;
 }
 
 .page-exit.page-active {
-  opacity: 0;
+    opacity: 0;
 }
 
 /* 顶栏标题切换动画 */
-#page-title {
-  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard);
-}
-
 #page-title.changing {
-  opacity: 0;
+    opacity: 0;
+    transition: opacity var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-standard);
 }
 
 /* 页面操作按钮切换动画 */
-#page-actions {
-  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard);
-}
-
 #page-actions.changing {
-  opacity: 0;
+    opacity: 0;
+    transition: opacity var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-standard);
 }
 
 /* 按钮动画效果 */
@@ -420,22 +114,4 @@
 
 .md-button#save-settings:hover .material-symbols-rounded {
   animation: save-pulse 0.4s ease-in-out;
-}
-/* 覆盖层涟漪效果 */
-.nav-item.active .background-ripple {
-  position: absolute;
-  background-color: rgba(var(--md-onPrimaryContainer-rgb), 0.3);
-  border-radius: 50%;
-  width: 100px;
-  height: 100px;
-  transform: scale(0);
-  animation: ripple-effect 0.6s var(--md-sys-motion-easing-standard);
-  pointer-events: none;
-}
-
-@keyframes ripple-effect {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
 }

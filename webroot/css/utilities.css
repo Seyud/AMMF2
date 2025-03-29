@@ -166,3 +166,16 @@
 .shadow-sm { box-shadow: none !important; } /* 原为 var(--md-sys-elevation-level1) */
 .shadow-md { box-shadow: none !important; } /* 原为 var(--md-sys-elevation-level2) */
 .shadow-lg { box-shadow: none !important; } /* 原为 var(--md-sys-elevation-level3) */
+
+/* 添加性能优化工具类 */
+.will-change {
+  will-change: transform, opacity;
+}
+
+.no-pointer-events {
+  pointer-events: none;
+}
+
+.hardware-accel {
+  transform: translateZ(0);
+}
