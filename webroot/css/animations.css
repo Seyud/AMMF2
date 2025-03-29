@@ -270,9 +270,9 @@
 .nav-item.active::before {
   content: "";
   position: absolute;
-  top: 6px;
+  top: 50%;  /* 修改：从6px改为50% */
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);  /* 修改：添加Y轴居中 */
   width: 56px;
   height: 32px;
   background-color: var(--md-primaryContainer);
@@ -289,14 +289,13 @@
 @keyframes nav-expand {
   0% {
     width: 0;
+    border-radius: 50%;  /* 修改：开始时为圆形 */
     opacity: 0;
-  }
-  50% {
-    width: 80px;
-    opacity: 1;
   }
   100% {
     width: 56px;
+    border-radius: 16px;  /* 修改：结束时为圆角矩形 */
     opacity: 1;
   }
+  /* 移除了回弹效果的50%关键帧 */
 }

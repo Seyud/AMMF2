@@ -399,3 +399,30 @@ input:disabled + .slider {
   color: var(--md-outline);
   cursor: not-allowed;
 }
+
+/* 为非底栏图标设置莫奈取色调色盘中偏向白色的颜色 */
+.fa:not(.nav-item .fa) {
+/* 浅色主题下使用浅紫色 */
+color: var(--md-primary);
+}
+
+/* 图标按钮中的图标颜色 */
+.icon-button .fa {
+color: var(--md-onSurfaceVariant);
+}
+
+.icon-button:hover .fa {
+color: var(--md-onSurface);
+}
+
+.icon-button.active .fa {
+color: var(--md-primary);
+}
+
+/* 保持禁用状态的图标样式 */
+button:disabled .fa,
+.icon-button:disabled .fa,
+.md-button:disabled .fa {
+opacity: 0.5;
+color: var(--md-outline);
+}

@@ -96,11 +96,11 @@ const ThemeManager = {
         // 直接设置指定主题
         document.documentElement.classList.add(`${theme}-theme`);
         
-        // 更新浏览器主题色
+        // 更新浏览器主题色为紫色系
         if (theme === 'dark') {
-            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#191c1e');
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#1C1B1E');
         } else {
-            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0288d1');
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#6750A4');
         }
     },
     
@@ -109,15 +109,21 @@ const ThemeManager = {
         const themeToggle = document.getElementById('theme-toggle');
         if (!themeToggle) return;
         
-        const iconElement = themeToggle.querySelector('.material-symbols-rounded');
+        const iconElement = themeToggle.querySelector('i');
         if (!iconElement) return;
         
         // 根据当前主题设置图标
         if (this.currentTheme === 'light') {
-            iconElement.textContent = 'light_mode';
+            // 移除所有可能的类
+            iconElement.className = '';
+            // 添加新的 Font Awesome 类
+            iconElement.className = 'fa-solid fa-sun';
             themeToggle.setAttribute('title', '浅色主题 (点击切换)');
         } else {
-            iconElement.textContent = 'dark_mode';
+            // 移除所有可能的类
+            iconElement.className = '';
+            // 添加新的 Font Awesome 类
+            iconElement.className = 'fa-solid fa-moon';
             themeToggle.setAttribute('title', '深色主题 (点击切换)');
         }
     },

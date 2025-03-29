@@ -190,6 +190,9 @@ class App {
         // 更新当前页面
         this.currentPage = pageName;
         
+        // 清空页面操作区 - 确保在每次页面切换时清除所有按钮
+        document.getElementById('page-actions').innerHTML = '';
+        
         // 加载页面内容
         await this.loadPage(pageName);
         
@@ -197,6 +200,9 @@ class App {
         if (this.pageModules[pageName] && typeof this.pageModules[pageName].onActivate === 'function') {
             this.pageModules[pageName].onActivate();
         }
+        
+        // 更新导航栏活动状态
+        this.updateNavActiveState();
     }
 
     // 加载页面

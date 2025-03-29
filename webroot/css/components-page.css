@@ -412,7 +412,42 @@
 }
 
 .settings-section {
-  margin-bottom: var(--spacing-lg);
+  /* 添加组件之间的通用间距 */
+  .section-container {
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .section-container:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* 调整列表容器和列表项统一样式的边距 */
+  .list-container,
+  .settings-list-container {
+    background-color: var(--card-background);
+    border-radius: var(--card-border-radius);
+    overflow: hidden;
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--md-sys-elevation-level1);
+    /* 确保列表容器不会超出页面容器 */
+    max-width: 100%;
+  }
+  
+  .list-item-row,
+  .settings-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--md-outlineVariant);
+    margin-bottom: var(--spacing-xs); /* 添加列表项之间的边距 */
+  }
+  
+  .list-item-row:last-child,
+  .settings-list-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0; /* 最后一项不需要底部边距 */
+  }
 }
 
 .settings-section:last-child {
@@ -615,6 +650,8 @@
   overflow: hidden;
   margin-bottom: var(--spacing-lg);
   box-shadow: var(--md-sys-elevation-level1);
+  /* 确保列表容器不会超出页面容器 */
+  max-width: 100%;
 }
 
 .list-item-row,

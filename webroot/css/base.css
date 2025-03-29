@@ -59,51 +59,48 @@
 
 /* 浅色主题 */
 .light-theme {
-  /* 主色 */
-  --md-primary: #006495;
-  --md-primary-rgb: 0, 100, 149;
+  /* 主色 - 更改为紫色系 */
+  --md-primary: #6750A4;
+  --md-primary-rgb: 103, 80, 164;
   --md-onPrimary: #ffffff;
-  --md-primaryContainer: #cbe6ff;
-  --md-onPrimaryContainer: #001e30;
+  --md-primaryContainer: #E9DDFF;
+  --md-onPrimaryContainer: #22005D;
   
-  /* 次要色 */
-  --md-secondary: #4f616e;
+  /* 次要色 - 调整为配合紫色主题 */
+  --md-secondary: #625B71;
   --md-onSecondary: #ffffff;
-  --md-secondaryContainer: #d2e5f5;
-  --md-onSecondaryContainer: #0b1d29;
+  --md-secondaryContainer: #E8DEF8;
+  --md-onSecondaryContainer: #1E192B;
   
-  /* 错误色 */
+  /* 错误色保持不变 */
   --md-error: #ba1a1a;
   --md-error-rgb: 186, 26, 26;
   --md-onError: #ffffff;
   --md-errorContainer: #ffdad6;
   --md-onErrorContainer: #410002;
   
-  /* 背景色 */
-  --md-background: #f8f9ff;
-  --md-background-rgb: 248, 249, 255;
-  --md-onBackground: #191c1e;
+  /* 背景色微调 */
+  --md-background: #FFFBFF;
+  --md-background-rgb: 255, 251, 255;
+  --md-onBackground: #1C1B1E;
   
   /* 表面色 */
-  --md-surface: #f8f9ff;
-  --md-onSurface: #191c1e;
-  --md-onSurface-rgb: 25, 28, 30;
-  --md-surfaceVariant: #dde3ea;
-  --md-onSurfaceVariant: #41484d;
+  --md-surface: #FFFBFF;
+  --md-onSurface: #1C1B1E;
+  --md-onSurface-rgb: 28, 27, 30;
+  --md-surfaceVariant: #E7E0EB;
+  --md-onSurfaceVariant: #49454E;
   
   /* 轮廓色 */
-  --md-outline: #71787e;
-  --md-outlineVariant: #c1c7ce;
+  --md-outline: #79747E;
+  --md-outlineVariant: #CAC4CF;
   
-  /* 反色 - 添加 */
-  --md-inverseSurface: #2e3133;
-  --md-inverseOnSurface: #eff1f3;
+  /* 反色 */
+  --md-inverseSurface: #313033;
+  --md-inverseOnSurface: #F4EFF4;
   
-  /* 阴影色 - 添加 */
-  --md-shadow: #000000;
-  
-  /* 涟漪颜色 - 添加 */
-  --ripple-color: #006495;
+  /* 涟漪颜色 */
+  --md-ripple-color: #6750A4;
   
   /* 卡片背景 */
   --card-background: #ffffff;
@@ -111,54 +108,51 @@
 
 /* 深色主题优化 */
 .dark-theme {
-  /* 主色 */
-  --md-primary: #8fcdff;
-  --md-primary-rgb: 143, 205, 255;
-  --md-onPrimary: #00344f;
-  --md-primaryContainer: #004b71;
-  --md-onPrimaryContainer: #cbe6ff;
+  /* 主色 - 更改为紫色系 */
+  --md-primary: #D0BCFF;
+  --md-primary-rgb: 208, 188, 255;
+  --md-onPrimary: #381E72;
+  --md-primaryContainer: #4F378B;
+  --md-onPrimaryContainer: #E9DDFF;
   
-  /* 次要色 */
-  --md-secondary: #b6c9d8;
-  --md-onSecondary: #21323f;
-  --md-secondaryContainer: #384956;
-  --md-onSecondaryContainer: #d2e5f5;
+  /* 次要色 - 调整为配合紫色主题 */
+  --md-secondary: #CCC2DC;
+  --md-onSecondary: #332D41;
+  --md-secondaryContainer: #4A4458;
+  --md-onSecondaryContainer: #E8DEF8;
   
-  /* 错误色 */
+  /* 错误色保持不变 */
   --md-error: #ffb4ab;
   --md-error-rgb: 255, 180, 171;
   --md-onError: #690005;
   --md-errorContainer: #93000a;
   --md-onErrorContainer: #ffdad6;
   
-  /* 背景色 */
-  --md-background: #191c1e;
-  --md-background-rgb: 25, 28, 30;
-  --md-onBackground: #e1e2e5;
+  /* 背景色微调 */
+  --md-background: #1C1B1E;
+  --md-background-rgb: 28, 27, 30;
+  --md-onBackground: #E6E1E6;
   
   /* 表面色 */
-  --md-surface: #191c1e;
-  --md-onSurface: #e1e2e5;
-  --md-onSurface-rgb: 225, 226, 229;
-  --md-surfaceVariant: #41484d;
-  --md-onSurfaceVariant: #c1c7ce;
+  --md-surface: #1C1B1E;
+  --md-onSurface: #E6E1E6;
+  --md-onSurface-rgb: 230, 225, 230;
+  --md-surfaceVariant: #49454E;
+  --md-onSurfaceVariant: #CAC4CF;
   
   /* 轮廓色 */
-  --md-outline: #8b9198;
-  --md-outlineVariant: #41484d;
+  --md-outline: #948F99;
+  --md-outlineVariant: #49454E;
   
   /* 反色 */
-  --md-inverseSurface: #e1e2e5;
-  --md-inverseOnSurface: #2e3133;
-  
-  /* 阴影色 */
-  --md-shadow: #000000;
+  --md-inverseSurface: #E6E1E6;
+  --md-inverseOnSurface: #313033;
   
   /* 涟漪颜色 */
-  --ripple-color: #8fcdff;
+  --md-ripple-color: #D0BCFF;
   
   /* 卡片背景 */
-  --card-background: #252a2e;
+  --card-background: #2D2A30;
 }
 
 /* 基础元素样式 */
@@ -222,14 +216,16 @@ input, select, textarea {
 }
 
 /* 添加Material Symbols图标配置 */
+/* 将原来的 Material Symbols 样式修改为 Font Awesome 样式 */
+/* 替换这部分 */
 .material-symbols-rounded {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* 禁用状态的图标样式 */
-button:disabled .material-symbols-rounded,
-.icon-button:disabled .material-symbols-rounded,
-.md-button:disabled .material-symbols-rounded {
+button:disabled .fa,
+.icon-button:disabled .fa,
+.md-button:disabled .fa {
   opacity: 0.5;
   color: var(--md-outline);
 }
