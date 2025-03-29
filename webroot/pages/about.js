@@ -56,7 +56,7 @@ const AboutPage = {
                 <div class="about-card shadow-sm">
                     <h3 data-i18n="DEVELOPER_INFO">${I18n.translate('DEVELOPER_INFO', '开发者信息')}</h3>
                     <div class="developer-content">
-                        <p><span data-i18n="DEVELOPER">${I18n.translate('DEVELOPER', '开发者')}</span>: ${this.moduleInfo.action_author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</p>
+                        <p><span data-i18n="DEVELOPER">${I18n.translate('DEVELOPER', '开发者')}</span>: ${this.moduleInfo.author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</p>
                         <div class="social-links">
                             <a href="#" class="social-link" id="github-link">
                                 <span class="material-symbols-rounded">code</span>
@@ -73,12 +73,13 @@ const AboutPage = {
         `;
     },
 
-    // 修改模块信息渲染方法，只保留模块ID和版本信息
+    // 修改模块信息渲染方法，只保留模块名称和版本信息
     renderModuleInfo() {
         const infoItems = [
-            { key: 'action_id', label: 'MODULE_ID', icon: 'tag' },
-            { key: 'action_version', label: 'MODULE_VERSION', icon: 'new_releases' },
-            { key: 'version', label: 'VERSION', icon: 'update' }
+            { key: 'module_name', label: 'MODULE_NAME', icon: 'tag' },
+            { key: 'version', label: 'MODULE_VERSION', icon: 'new_releases' },
+            { key: 'versionCode', label: 'VERSION_DATE', icon: 'update' },
+            { key: 'author', label: 'DEVELOPER', icon: 'person' }  // 添加开发者信息显示
         ];
         
         let html = '';

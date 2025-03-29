@@ -61,18 +61,25 @@
 
 /* 头部样式 */
 .app-header {
-  background-color: rgba(var(--md-background-rgb), 0.85);
+  background-color: rgba(var(--md-background-rgb), 0.7); /* 降低透明度到70% */
   color: var(--md-onSurface);
   height: var(--header-height);
-  /* 移除阴影 */
   box-shadow: none;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  /* 降低模糊程度,提升性能 */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  /* 添加底部圆角 */
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  /* 性能优化 */
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .header-content {
@@ -207,14 +214,37 @@
   align-items: center;
   justify-content: center;
   padding: 16px 0;  /* 增加上下内边距，从12px改为16px */
-  color: var(--md-onSurfaceVariant);
+  color: var(--md-onSurfaceVariant); /* 保持颜色不变 */
   text-decoration: none;
   width: 80px;
   position: relative;
-  transition: color 0.2s, background-color 0.2s;
-  /* 添加这一行，确保内容有足够的空间 */
+  transition: all 0.2s ease;
   height: 100%;
-  gap: 6px; /* 从8px减少到4px，进一步降低图标与文字的间距 */
+  gap: 6px;
+}
+
+/* 未选中状态文本样式 */
+.nav-item .nav-label {
+  font-weight: var(--md-sys-typescale-weight-regular); /* 常规字重 */
+  opacity: 0.9; /* 降低亮度 */
+}
+
+/* 选中状态文本样式 */
+.nav-item.active .nav-label {
+  font-weight: var(--md-sys-typescale-weight-medium); /* 加粗字重 */
+  opacity: 1; /* 恢复亮度 */
+  color: var(--md-onSurfaceVariant); /* 确保颜色不变 */
+}
+
+/* 图标样式保持不变 */
+.nav-item .material-symbols-rounded {
+  color: var(--md-onSurfaceVariant);
+  transition: color 0.2s;
+}
+
+.nav-item.active .material-symbols-rounded {
+  color: var(--md-primary);
+  font-variation-settings: 'FILL' 1;
 }
 
 .nav-item.active {
@@ -226,14 +256,42 @@
 .nav-item.active::before {
   content: "";
   position: absolute;
-  top: 26px;  /* 修改：从22px调整为28px，使覆盖层与图标正确对齐 */
+  top: 26px;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 60px;
   height: 30px;
-  background-color: var(--md-primaryContainer);
+  background-color: rgba(174, 186, 230, 0.16); /* 深色模式：带蓝调的半透明灰色 */
   border-radius: 16px;
   z-index: -1;
+  animation: nav-overlay-expand 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.light-theme .nav-item.active::before {
+  background-color: rgba(103, 80, 164, 0.08); /* 浅色模式：主色调淡紫色 */
+}
+
+/* 添加消失动画样式 */
+.nav-item::before {
+  content: "";
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 30px;
+  border-radius: 16px;
+  z-index: -1;
+  animation: nav-overlay-shrink 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 为收缩动画添加主题颜色 */
+.dark-theme .nav-item::before {
+  background-color: rgba(174, 186, 230, 0.16);
+}
+
+.light-theme .nav-item::before {
+  background-color: rgba(103, 80, 164, 0.08);
 }
 
 .nav-icon {

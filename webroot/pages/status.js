@@ -78,35 +78,69 @@ const StatusPage = {
 
     // 渲染后的回调
     afterRender() {
-        // 绑定刷新按钮事件
-        const refreshButton = document.getElementById('refresh-status');
-        if (refreshButton) {
-            refreshButton.addEventListener('click', () => {
+        // 确保只绑定一次事件
+        const refreshBtn = document.getElementById('refresh-status');
+        const actionBtn = document.getElementById('run-action');
+        
+        if (refreshBtn && !refreshBtn.dataset.bound) {
+            refreshBtn.addEventListener('click', () => {
                 this.refreshStatus(true);
             });
+            refreshBtn.dataset.bound = 'true';
         }
         
-        // 绑定运行Action按钮事件
-        const runActionButton = document.getElementById('run-action');
-        if (runActionButton) {
-            runActionButton.addEventListener('click', () => {
+        if (actionBtn && !actionBtn.dataset.bound) {
+            actionBtn.addEventListener('click', () => {
                 this.runAction();
             });
+            actionBtn.dataset.bound = 'true';
         }
     },
     
     // 运行Action脚本
     async runAction() {
         try {
+            // 创建输出容器
+            const outputContainer = document.createElement('div');
+            outputContainer.className = 'action-output-container';
+            outputContainer.innerHTML = `
+                <div class="action-output-header">
+                    <h3>${I18n.translate('ACTION_OUTPUT', 'Action输出')}</h3>
+                    <button class="md-button icon-only close-output">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+                <div class="action-output-content"></div>
+            `;
+            
+            // 添加到页面
+            document.querySelector('.status-page').appendChild(outputContainer);
+            const outputContent = outputContainer.querySelector('.action-output-content');
+            
+            // 显示加载状态
             Core.showToast(I18n.translate('RUNNING_ACTION', '正在运行Action...'));
+            outputContent.textContent = I18n.translate('ACTION_STARTING', '正在启动Action...');
             
-            // 打开终端并运行action.sh
-            await Core.openTerminal(`cd "${Core.MODULE_PATH}" && busybox sh action.sh`);
-            
-            // 刷新状态
-            setTimeout(() => {
-                this.refreshStatus(true);
-            }, 2000);
+            // 绑定关闭按钮事件
+            outputContainer.querySelector('.close-output').addEventListener('click', () => {
+                outputContainer.remove();
+            });
+    
+            // 运行Action并实时显示输出
+            await Core.execCommand(`sh ${Core.MODULE_PATH}action.sh`, {
+                onStdout: (data) => {
+                    outputContent.textContent += data + '\n';
+                    outputContent.scrollTop = outputContent.scrollHeight;
+                },
+                onStderr: (data) => {
+                    outputContent.textContent += '[ERROR] ' + data + '\n';
+                    outputContent.scrollTop = outputContent.scrollHeight;
+                }
+            });
+    
+            // 运行完成提示
+            outputContent.textContent += '\n' + I18n.translate('ACTION_COMPLETED', 'Action运行完成');
+            Core.showToast(I18n.translate('ACTION_COMPLETED', 'Action运行完成'));
         } catch (error) {
             console.error('运行Action失败:', error);
             Core.showToast(I18n.translate('ACTION_ERROR', '运行Action失败'), 'error');

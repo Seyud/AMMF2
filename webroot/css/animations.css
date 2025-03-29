@@ -115,3 +115,26 @@
 .md-button#save-settings:hover .material-symbols-rounded {
   animation: save-pulse 0.4s ease-in-out;
 }
+
+/* 添加新的关键帧动画 */
+@keyframes nav-overlay-expand {
+  0% {
+    width: 0;
+    opacity: 0;
+  }
+  100% {
+    width: 60px;
+    opacity: 1;
+  }
+}
+
+@keyframes nav-overlay-shrink {
+  0% {
+    width: 60px;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    opacity: 0;
+  }
+}

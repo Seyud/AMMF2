@@ -197,6 +197,8 @@
   --md-hover-opacity: 0.15;
   --md-focus-opacity: 0.2;
   --md-pressed-opacity: 0.25;
+  /* 新增导航覆盖层基础色 */
+  --md-nav-overlay: rgba(174, 186, 230, 0.16);
 }
 
 /* 通用颜色 (两种主题共用) */

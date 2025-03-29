@@ -108,7 +108,8 @@ const I18n = {
             EXPORT_LOGS: '导出日志',
             CLEAR_LOGS: '清除日志',
             LOGS_REFRESHED: '日志已刷新',
-            LOGS_FILES_FOUND: '找到 {count} 个日志文件'
+            LOGS_FILES_FOUND: '找到 {count} 个日志文件',
+            DEVELOPER_INFO: '开发者信息'
         };
         this.translations.en = {
             NAV_STATUS: 'Status',
@@ -187,7 +188,8 @@ const I18n = {
             EXPORT_LOGS: 'Export logs',
             CLEAR_LOGS: 'Clear logs',
             LOGS_REFRESHED: 'Logs refreshed',
-            LOGS_FILES_FOUND: 'Found {count} log files'
+            LOGS_FILES_FOUND: 'Found {count} log files',
+            DEVELOPER_INFO: 'Developer Info'
         };
         this.translations.ru = {
             NAV_STATUS: 'Статус',
@@ -266,7 +268,8 @@ const I18n = {
             EXPORT_LOGS: 'Экспортировать журналы',
             CLEAR_LOGS: 'Очистить журналы',
             LOGS_REFRESHED: 'Журналы обновлены',
-            LOGS_FILES_FOUND: 'Найдено {count} файлов журналов'
+            LOGS_FILES_FOUND: 'Найдено {count} файлов журналов',
+            DEVELOPER_INFO: 'Информация о разработчике'
         };
         console.log('默认翻译已加载');
     },

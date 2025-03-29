@@ -56,20 +56,31 @@
 
 /* 通用卡片样式 */
 .card {
-  background-color: var(--card-background);
+  background-color: var(--md-surface-1);
   border-radius: var(--card-border-radius);
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-md);
-  box-shadow: var(--card-shadow);
+  /* 删除阴影属性 */
 }
 
-/* 列表容器和列表项统一样式 */
+/* 增强列表容器颜色 */
 .list-container {
-  background-color: var(--card-background);
+  background-color: var(--md-surface-2);
   border-radius: var(--card-border-radius);
   overflow: hidden;
   margin-bottom: var(--spacing-lg);
-  box-shadow: var(--md-sys-elevation-level1);
+  /* 删除阴影属性 */
+}
+
+/* 增强状态卡片颜色 */
+.status-card {
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  min-height: 120px;
+  /* 删除阴影属性 */
+  transition: box-shadow 0.3s ease;
 }
 
 .list-item-row {
@@ -502,36 +513,47 @@
   display: flex;
   flex-direction: column;
   padding: var(--spacing-xl);
-  background-color: var(--md-primaryContainer);
-  color: var(--md-onPrimaryContainer);
+  background-color: var(--md-surface);
+  color: var(--md-onSurface);
   border-radius: var(--card-border-radius);
   margin-bottom: var(--spacing-lg);
   min-height: 120px;
-  box-shadow: var(--md-sys-elevation-level1);
-  transition: box-shadow 0.3s ease;
+  border: 1px solid var(--md-outlineVariant);
+  transition: background-color 0.3s ease;
 }
 
 .status-card:hover {
-  box-shadow: var(--md-sys-elevation-level2);
+  background-color: var(--md-surface-1);
 }
 
-/* 修改状态卡片内容为水平布局 */
+/* 状态卡片内容布局 */
 .status-card-content {
   display: flex;
-  align-items: flex-start; /* 改为顶部对齐 */
+  align-items: flex-start;
   width: 100%;
   height: 100%;
-  justify-content: flex-start; /* 改为左对齐 */
-  text-align: left; /* 确保文本左对齐 */
+  justify-content: flex-start;
+  text-align: left;
+  gap: var(--spacing-lg);
 }
 
 /* 状态图标容器 */
 .status-icon-container {
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* 图标靠左 */
-  margin-right: var(--spacing-lg);
-  margin-left: 0; /* 移除左边距 */
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background-color: var(--md-surface-2); /* 改为表面2级颜色 */
+  color: var(--md-primary); /* 使用主色作为图标颜色 */
+  flex-shrink: 0;
+  border: 1px solid var(--md-outlineVariant); /* 添加细边框 */
+}
+
+.status-icon-container .material-symbols-rounded {
+  font-size: 28px;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* 状态信息容器 */
@@ -540,25 +562,24 @@
   flex-direction: column;
   gap: var(--spacing-sm);
   flex: 1;
-  text-align: left; /* 确保文本左对齐 */
 }
 
 /* 状态标题行 */
 .status-title-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--spacing-sm);
 }
 
 .status-title {
   font-size: var(--md-sys-typescale-title-medium-size);
   font-weight: var(--md-sys-typescale-weight-medium);
-  color: var(--md-onPrimaryContainer);
 }
 
 .status-value {
   font-size: var(--md-sys-typescale-body-large-size);
   font-weight: var(--md-sys-typescale-weight-medium);
+  color: var(--md-primary);
 }
 
 /* 更新时间行 */
@@ -668,6 +689,8 @@
   height: 40px;
   border-radius: 50%;
   flex-shrink: 0;
+  background-color: var(--md-surface-2); /* 统一使用表面2级颜色 */
+  border: 1px solid var(--md-outlineVariant); /* 添加细边框 */
 }
 
 .info-icon .material-symbols-rounded {
@@ -899,15 +922,15 @@
 .device-info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-md);
+    gap: var(--spacing-sm); /* 从md改为sm，减小间距 */
+    margin-top: var(--spacing-sm); /* 减小顶部间距 */
 }
 
 .device-info-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
+  gap: var(--spacing-md); /* 从md改为sm，减小间距 */
+  padding: var(--spacing-sm); /* 从md改为sm，减小内边距 */
   border-radius: var(--md-sys-shape-corner-medium);
 }
 
@@ -922,12 +945,47 @@
 }
 
 .device-info-label {
-    font-size: var(--md-sys-typescale-body-small-size);
-    color: var(--md-onSurfaceVariant);
+    font-size: var(--md-sys-typescale-title-small-size); /* 从body-medium升级为title-small */
+    font-weight: var(--md-sys-typescale-weight-medium); /* 添加中等字重 */
+    color: var(--md-onSurface); /* 使用主文本颜色 */
 }
 
 .device-info-value {
-    font-size: var(--md-sys-typescale-body-medium-size);
-    color: var(--md-onSurface);
-    font-weight: var(--md-sys-typescale-weight-medium);
+    font-size: var(--md-sys-typescale-body-small-size);
+    font-weight: var(--md-sys-typescale-weight-regular);
+    color: var(--md-onSurfaceVariant); /* 使用次文本颜色 */
+    opacity: 0.9; /* 添加透明度降低亮度 */
+}
+.action-output-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 80%;
+  max-width: 600px;
+  max-height: 60vh;
+  background: var(--md-background);
+  border: 1px solid var(--md-outline);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.action-output-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--md-outline);
+}
+
+.action-output-content {
+  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--md-on-background);
 }
