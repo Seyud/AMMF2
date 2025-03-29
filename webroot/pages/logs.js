@@ -301,28 +301,57 @@ const LogsPage = {
         // 检查是否有日志文件
         const hasLogFiles = Object.keys(this.logFiles).length > 0;
         
-        // 渲染页面内容，移除标题卡片
+        // 渲染页面内容，添加卡片样式和更好的布局
         return `
             <div class="logs-page">
-                <div class="logs-controls">
-                    <div class="log-file-selector">
-                        <select id="log-file-select" class="md-select styled-select" ${!hasLogFiles ? 'disabled' : ''}>
-                            ${this.renderLogFileOptions()}
-                        </select>
-                    </div>
-                    <div class="log-refresh-controls">
-                        <div class="auto-refresh-toggle">
-                            <input type="checkbox" id="auto-refresh-checkbox" class="md-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
-                            <label for="auto-refresh-checkbox">${I18n.translate('AUTO_REFRESH', '自动刷新')}</label>
+                <div class="card shadow-sm">
+                    <div class="logs-controls">
+                        <div class="logs-controls-left">
+                            <div class="log-file-selector">
+                                <select id="log-file-select" class="styled-select" ${!hasLogFiles ? 'disabled' : ''}>
+                                    ${this.renderLogFileOptions()}
+                                </select>
+                            </div>
+                            <div class="log-refresh-controls">
+                                <label class="md-switch auto-refresh-toggle">
+                                    <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
+                                    <span class="md-switch-track"></span>
+                                    <span class="md-switch-thumb"></span>
+                                    <span class="md-switch-label">${I18n.translate('AUTO_REFRESH', '自动刷新')}</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="logs-content shadow-sm">
-                    <pre id="logs-display">${hasLogFiles ? this.escapeHtml(this.logContent) || I18n.translate('NO_LOGS', '没有可用的日志') : I18n.translate('NO_LOGS_FILES', '没有找到日志文件')}</pre>
+                    
+                    <div class="logs-content">
+                        <pre id="logs-display" class="logs-display">${this.formatLogContent(hasLogFiles)}</pre>
+                    </div>
                 </div>
             </div>
         `;
+    },
+    
+    // 添加一个新方法来格式化日志内容，支持日志级别的颜色标识
+    formatLogContent(hasLogFiles) {
+        if (!hasLogFiles) {
+            return I18n.translate('NO_LOGS_FILES', '没有找到日志文件');
+        }
+        
+        if (!this.logContent || this.logContent.trim() === '') {
+            return I18n.translate('NO_LOGS', '没有可用的日志');
+        }
+        
+        // 简单的日志格式化，为不同级别的日志添加颜色
+        let formattedContent = this.escapeHtml(this.logContent);
+        
+        // 为不同级别的日志添加颜色标识
+        formattedContent = formattedContent
+            .replace(/\[ERROR\]/g, '<span class="log-level error">ERROR</span>')
+            .replace(/\[WARN\]/g, '<span class="log-level warning">WARN</span>')
+            .replace(/\[INFO\]/g, '<span class="log-level info">INFO</span>')
+            .replace(/\[DEBUG\]/g, '<span class="log-level debug">DEBUG</span>');
+        
+        return formattedContent;
     },
     
     // 渲染后的回调

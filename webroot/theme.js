@@ -21,7 +21,8 @@
     }
 })();
 
-const ThemeManager = {
+// 检查 ThemeManager 是否已存在，如果不存在则创建
+window.ThemeManager = window.ThemeManager || {
     // 当前主题
     currentTheme: 'light',
     
@@ -171,5 +172,4 @@ const ThemeManager = {
     }
 };
 
-// 导出主题管理模块
-window.ThemeManager = ThemeManager;
+// 不需要再次导出 ThemeManager，因为已经直接赋值给 window.ThemeManager

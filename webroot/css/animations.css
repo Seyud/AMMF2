@@ -363,3 +363,55 @@
 #page-actions.changing {
   opacity: 0;
 }
+
+/* 按钮动画效果 */
+.icon-button .material-symbols-rounded,
+.md-button .material-symbols-rounded {
+  transition: transform 0.2s ease-in-out, font-variation-settings 0.3s ease;
+}
+
+/* 刷新按钮动画 */
+@keyframes refresh-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.icon-button#refresh-logs.spinning .material-symbols-rounded,
+.icon-button#refresh-settings.spinning .material-symbols-rounded {
+  animation: refresh-spin 1s linear infinite;
+}
+
+/* 删除按钮动画 */
+@keyframes delete-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
+.icon-button#clear-logs:hover .material-symbols-rounded {
+  animation: delete-shake 0.4s ease-in-out;
+}
+
+/* 下载按钮动画 */
+@keyframes download-bounce {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+  100% { transform: translateY(0); }
+}
+
+.icon-button#export-logs:hover .material-symbols-rounded {
+  animation: download-bounce 0.4s ease-in-out;
+}
+
+/* 保存按钮动画 */
+@keyframes save-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.md-button#save-settings:hover .material-symbols-rounded {
+  animation: save-pulse 0.4s ease-in-out;
+}

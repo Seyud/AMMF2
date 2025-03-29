@@ -282,7 +282,6 @@ function setupLanguageToggle() {
 }
 
 
-
 // 更新主题图标
 function updateThemeIcon() {
     const isDarkTheme = document.body.classList.contains('dark-theme');

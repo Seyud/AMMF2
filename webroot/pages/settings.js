@@ -57,7 +57,7 @@ const SettingsPage = {
                 </div>
                 
                 <div class="settings-footer">
-                    <button id="save-settings" class="md-button primary">
+                    <button id="save-settings" class="md-button primary-button">
                         <span class="material-symbols-rounded">save</span>
                         <span data-i18n="SAVE_SETTINGS">保存设置</span>
                     </button>

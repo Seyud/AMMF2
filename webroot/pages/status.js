@@ -84,15 +84,31 @@ const StatusPage = {
 
     // 渲染后的回调
     afterRender() {
-        // 绑定刷新按钮
-        document.getElementById('refresh-status')?.addEventListener('click', () => {
-            this.refreshStatus(true);
-        });
+        // 获取按钮元素
+        const refreshButton = document.getElementById('refresh-status');
+        const runActionButton = document.getElementById('run-action');
         
-        // 绑定运行Action按钮
-        document.getElementById('run-action')?.addEventListener('click', () => {
-            this.runAction();
-        });
+        // 移除旧的事件监听器（如果存在）
+        if (refreshButton) {
+            refreshButton.replaceWith(refreshButton.cloneNode(true));
+            // 重新获取新的元素引用
+            const newRefreshButton = document.getElementById('refresh-status');
+            // 绑定新的事件监听器
+            newRefreshButton.addEventListener('click', () => {
+                this.refreshStatus(true);
+            });
+        }
+        
+        // 对运行Action按钮执行相同操作
+        if (runActionButton) {
+            runActionButton.replaceWith(runActionButton.cloneNode(true));
+            // 重新获取新的元素引用
+            const newRunActionButton = document.getElementById('run-action');
+            // 绑定新的事件监听器
+            newRunActionButton.addEventListener('click', () => {
+                this.runAction();
+            });
+        }
     },
     
     // 运行Action脚本

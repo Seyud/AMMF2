@@ -147,8 +147,8 @@
 .overflow-x-hidden { overflow-x: hidden !important; }
 .overflow-y-hidden { overflow-y: hidden !important; }
 
-/* 阴影工具类 */
+/* 阴影工具类 - 修改为符合无阴影设计 */
 .shadow-none { box-shadow: none !important; }
-.shadow-sm { box-shadow: var(--md-sys-elevation-level1) !important; }
-.shadow-md { box-shadow: var(--md-sys-elevation-level2) !important; }
-.shadow-lg { box-shadow: var(--md-sys-elevation-level3) !important; }
+.shadow-sm { box-shadow: none !important; } /* 原为 var(--md-sys-elevation-level1) */
+.shadow-md { box-shadow: none !important; } /* 原为 var(--md-sys-elevation-level2) */
+.shadow-lg { box-shadow: none !important; } /* 原为 var(--md-sys-elevation-level3) */
