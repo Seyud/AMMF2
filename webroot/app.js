@@ -93,26 +93,24 @@ function createRippleEffect(e) {
     
     // 检查是否是导航项
     if (button.classList.contains('nav-item')) {
-        // 如果是导航项，且是激活状态，则在覆盖层上创建涟漪
-        if (button.classList.contains('active')) {
-            const overlay = button.querySelector('::before') || button;
-            const rect = button.getBoundingClientRect();
-            
-            // 计算相对于导航项的位置
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const ripple = document.createElement('span');
-            ripple.className = 'ripple';
-            ripple.style.left = `${x}px`;
-            ripple.style.top = `${y}px`;
-            
-            button.appendChild(ripple);
-            
-            setTimeout(() => {
-                ripple.remove();
-            }, 400); // 与CSS中的动画时间一致
-        }
+        // 如果是导航项，创建涟漪效果
+        const rect = button.getBoundingClientRect();
+        
+        // 计算相对于导航项的位置
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+        
+        button.appendChild(ripple);
+        
+        setTimeout(() => {
+            ripple.remove();
+        }, 400); // 与CSS中的动画时间一致
+        
         return;
     }
     
@@ -175,25 +173,12 @@ async function loadPage(pageName) {
         // 2. 等待短暂延迟以确保动画开始
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // 3. 加载新页面模块
-        const pageModule = await import(pageModules[pageName]);
+        // 3. 获取页面模块实例 - 修改为使用全局变量
+        const pageModuleName = pageModules[pageName];
+        const newPageInstance = window[pageModuleName];
         
-        // 检查模块导出类型并创建实例
-        let newPageInstance;
-        if (typeof pageModule.default === 'function') {
-            // 如果是构造函数或类
-            if (/^\s*class\s+/.test(pageModule.default.toString()) || 
-                (pageModule.default.prototype && pageModule.default.prototype.constructor === pageModule.default)) {
-                newPageInstance = new pageModule.default();
-            } else {
-                // 如果是普通函数
-                newPageInstance = pageModule.default();
-            }
-        } else if (typeof pageModule.default === 'object') {
-            // 如果直接导出对象
-            newPageInstance = pageModule.default;
-        } else {
-            throw new Error(`页面模块 ${pageName} 导出格式不正确`);
+        if (!newPageInstance) {
+            throw new Error(`页面模块 ${pageName} 未找到，请确保已加载相应的JS文件`);
         }
         
         // 4. 准备新页面内容
@@ -201,8 +186,8 @@ async function loadPage(pageName) {
         pageContainer.className = 'page-container page-enter';
         pageContainer.id = `page-${pageName}`;
         
-        // 5. 渲染新页面内容
-        await newPageInstance.render(pageContainer);
+        // 5. 渲染新页面内容 - 使用模块的render方法
+        pageContainer.innerHTML = newPageInstance.render();
         
         // 6. 如果存在旧页面，准备淡出
         const oldPageContainer = elements.mainContent.querySelector('.page-container');
@@ -213,20 +198,7 @@ async function loadPage(pageName) {
         // 7. 添加新页面到 DOM
         elements.mainContent.appendChild(pageContainer);
         
-        // 8. 更新页面标题和操作按钮
-        elements.pageTitle.textContent = await newPageInstance.getTitle();
-        
-        // 清空并添加新的页面操作按钮
-        elements.pageActions.innerHTML = '';
-        const actions = await newPageInstance.getActions();
-        if (actions) {
-            elements.pageActions.innerHTML = actions;
-            // 为新添加的按钮绑定事件
-            const actionButtons = elements.pageActions.querySelectorAll('button');
-            actionButtons.forEach(button => {
-                button.addEventListener('mousedown', createRippleEffect);
-            });
-        }
+        // 8. 更新页面标题 - 直接使用页面标题，因为render方法已经设置了标题
         
         // 9. 触发动画
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -255,7 +227,12 @@ async function loadPage(pageName) {
             await newPageInstance.init();
         }
         
-        // 14. 保存页面实例以便后续使用
+        // 14. 如果页面有afterRender方法，调用它
+        if (newPageInstance.afterRender) {
+            newPageInstance.afterRender();
+        }
+        
+        // 15. 保存页面实例以便后续使用
         if (appState.pageInstance && appState.pageInstance.destroy) {
             appState.pageInstance.destroy();
         }
