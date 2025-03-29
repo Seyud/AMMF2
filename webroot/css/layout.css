@@ -135,13 +135,13 @@
 .nav-item.active::before {
   content: "";
   position: absolute;
-  top: 50%;  /* 修改：从6px改为50% */
+  top: 24px;  /* 修改：从50%改为固定值，使其只覆盖图标 */
   left: 50%;
-  transform: translate(-50%, -50%);  /* 修改：添加Y轴居中 */
-  width: 56px;
-  height: 32px;
+  transform: translate(-50%, -50%);  /* 修改：保留X轴居中，Y轴根据top值定位 */
+  width: 48px;  /* 稍微调小宽度 */
+  height: 28px;  /* 缩小高度，使其只覆盖图标部分 */
   background-color: var(--md-primaryContainer);
-  border-radius: 16px;
+  border-radius: 14px;  /* 保持圆角比例 */
   z-index: -1;
 }
 
@@ -153,7 +153,7 @@
 .nav-icon {
   font-size: 24px;
   /* 调整图标与文字间距 */
-  margin-bottom: 8px;
+  margin-bottom: 12px;  /* 增加间距，从8px改为12px */
   /* 确保图标居中 */
   display: flex;
   justify-content: center;
@@ -171,8 +171,8 @@
 }
 
 .nav-label {
-  font-size: 12px;
-  font-weight: var(--md-sys-typescale-weight-medium);
+  font-size: 14px;  /* 增大字号，从12px改为14px */
+  font-weight: var(--md-sys-typescale-weight-regular); /* 从medium改为regular */
   text-align: center;
   line-height: 1;
 }

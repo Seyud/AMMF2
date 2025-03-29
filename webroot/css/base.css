@@ -20,6 +20,13 @@
   --md-sys-state-pressed-opacity: 0.12;
   --md-sys-state-dragged-opacity: 0.16;
   
+  /* 间距变量 - 添加额外大间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px; /* 新增 */
+  
   /* 字体大小 */
   --md-sys-typescale-display-large-size: 57px; /* 添加 */
   --md-sys-typescale-display-medium-size: 45px; /* 添加 */
@@ -38,9 +45,9 @@
   --md-sys-typescale-label-small-size: 11px;
   
   /* 字体粗细 */
-  --md-sys-typescale-weight-regular: 400;
-  --md-sys-typescale-weight-medium: 500;
-  --md-sys-typescale-weight-bold: 700;
+  --md-sys-typescale-weight-regular: 300; /* 从400减小到300 */
+  --md-sys-typescale-weight-medium: 400; /* 从500减小到400 */
+  --md-sys-typescale-weight-bold: 500; /* 从700减小到500 */
   
   /* 形状 - 添加 */
   --md-sys-shape-corner-extra-small: 4px;

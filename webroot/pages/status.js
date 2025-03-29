@@ -45,16 +45,30 @@ const StatusPage = {
             </button>
         `;
         
-        // 渲染页面内容，移除标题卡片
+        // 渲染页面内容
         return `
             <div class="status-page">
                 <!-- 状态卡片 -->
-                <div class="status-card shadow-sm">
-                    <!-- 状态内容 -->
-                    <div class="status-info">
+                <div class="status-card">
+                    <div class="status-card-header">
+                        <h3 class="status-card-title" data-i18n="MODULE_STATUS">模块状态</h3>
                         <div class="status-indicator ${this.getStatusClass()}">
                             <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
-                            <span>${this.getStatusText()}</span>
+                            <span data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
+                        </div>
+                    </div>
+                    <div class="status-card-content">
+                        <div class="status-card-row">
+                            <span class="status-card-label" data-i18n="LAST_UPDATE">最后更新</span>
+                            <span>${new Date().toLocaleString()}</span>
+                        </div>
+                        <div class="status-card-row">
+                            <span class="status-card-label" data-i18n="MODULE_PATH">模块路径</span>
+                            <span>${Core.MODULE_PATH}</span>
+                        </div>
+                        <div class="status-card-row">
+                            <span class="status-card-label" data-i18n="MODULE_VERSION">模块版本</span>
+                            <span>1.0.0</span>
                         </div>
                     </div>
                 </div>

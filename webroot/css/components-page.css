@@ -319,6 +319,62 @@
   gap: var(--spacing-sm);
 }
 
+/* 优化状态卡片样式 */
+.status-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: var(--spacing-xl);
+  background-color: var(--md-primaryContainer);
+  color: var(--md-onPrimaryContainer);
+  border-radius: var(--card-border-radius);
+  margin-bottom: var(--spacing-lg);
+  min-height: 180px;
+  box-shadow: none;
+}
+
+.status-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: var(--spacing-lg);
+}
+
+.status-card-title {
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-weight-medium);
+  margin: 0;
+}
+
+.status-card-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.status-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid rgba(var(--md-onPrimaryContainer-rgb), 0.1);
+}
+
+.status-card-row:last-child {
+  border-bottom: none;
+}
+
+.status-card-label {
+  font-weight: var(--md-sys-typescale-weight-medium);
+}
+
+.status-card .status-indicator {
+  background-color: rgba(var(--md-onPrimaryContainer-rgb), 0.1);
+}
+
 .status-card {
   display: flex;
   justify-content: space-between;
@@ -349,7 +405,7 @@
 
 .info-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center; /* 改为center使图标与文本垂直居中对齐 */
   margin-bottom: var(--spacing-md);
 }
 
@@ -360,6 +416,13 @@
 .info-icon {
   margin-right: var(--spacing-md);
   color: var(--md-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; /* 固定宽度 */
+  height: 40px; /* 固定高度 */
+  border-radius: 50%; /* 圆形背景 */
+  flex-shrink: 0; /* 防止图标区域被压缩 */
 }
 
 .info-icon .material-symbols-rounded {
@@ -488,7 +551,7 @@
 }
 
 .setting-key {
-  font-weight: var(--md-sys-typescale-weight-medium);
+  font-weight: var(--md-sys-typescale-weight-regular); /* 从medium改为regular */
   margin-bottom: var(--spacing-xs);
   color: var(--md-onSurface);
 }
@@ -508,7 +571,7 @@
 .setting-label {
   display: block;
   margin-bottom: var(--spacing-xs);
-  font-weight: var(--md-sys-typescale-weight-medium);
+  font-weight: var(--md-sys-typescale-weight-regular); /* 从medium改为regular */
   color: var(--md-onSurface);
 }
 
@@ -681,6 +744,7 @@
 .list-item-title,
 .settings-list-item-title {
   font-size: var(--md-sys-typescale-body-large-size);
+  font-weight: var(--md-sys-typescale-weight-regular); /* 添加这一行 */
   color: var(--md-onSurface);
   margin-bottom: 4px;
 }
