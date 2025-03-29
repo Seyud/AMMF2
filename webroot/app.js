@@ -14,10 +14,10 @@ const appState = {
 
 // 页面模块映射
 const pageModules = {
-    status: './pages/status.js',
-    logs: './pages/logs.js',
-    settings: './pages/settings.js',
-    about: './pages/about.js'
+    status: 'StatusPage',
+    logs: 'LogsPage',
+    settings: 'SettingsPage',
+    about: 'AboutPage'
 };
 
 // DOM 元素缓存
@@ -87,7 +87,7 @@ function setupNavigation() {
     });
 }
 
-// 创建涟漪效果 - 修改为只在覆盖层上显示
+// 创建涟漪效果
 function createRippleEffect(e) {
     const button = e.currentTarget;
     
@@ -134,7 +134,7 @@ function createRippleEffect(e) {
     }, 600);
 }
 
-// 更新活动导航项 - 修改为支持新的动画效果
+// 更新活动导航项
 function updateActiveNavItem(pageName) {
     elements.navItems.forEach(item => {
         const itemPage = item.getAttribute('data-page');
@@ -173,7 +173,7 @@ async function loadPage(pageName) {
         // 2. 等待短暂延迟以确保动画开始
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // 3. 获取页面模块实例 - 修改为使用全局变量
+        // 3. 获取页面模块实例
         const pageModuleName = pageModules[pageName];
         const newPageInstance = window[pageModuleName];
         
@@ -186,7 +186,7 @@ async function loadPage(pageName) {
         pageContainer.className = 'page-container page-enter';
         pageContainer.id = `page-${pageName}`;
         
-        // 5. 渲染新页面内容 - 使用模块的render方法
+        // 5. 渲染新页面内容
         pageContainer.innerHTML = newPageInstance.render();
         
         // 6. 如果存在旧页面，准备淡出
@@ -198,52 +198,55 @@ async function loadPage(pageName) {
         // 7. 添加新页面到 DOM
         elements.mainContent.appendChild(pageContainer);
         
-        // 8. 更新页面标题 - 直接使用页面标题，因为render方法已经设置了标题
-        
-        // 9. 触发动画
+        // 8. 触发动画
         await new Promise(resolve => setTimeout(resolve, 50));
         pageContainer.classList.add('page-active');
         
         if (oldPageContainer) {
             oldPageContainer.classList.add('page-active');
             
-            // 10. 等待动画完成后移除旧页面
+            // 9. 等待动画完成后移除旧页面
             setTimeout(() => {
                 oldPageContainer.remove();
             }, 300);
         }
         
-        // 11. 淡入页面标题和操作按钮
+        // 10. 淡入页面标题和操作按钮
         setTimeout(() => {
             elements.pageTitle.classList.remove('changing');
             elements.pageActions.classList.remove('changing');
         }, 150);
         
-        // 12. 更新应用状态
+        // 11. 更新应用状态
         appState.currentPage = pageName;
         
-        // 13. 如果页面有初始化方法，调用它
+        // 12. 如果页面有初始化方法，调用它
         if (newPageInstance.init) {
             await newPageInstance.init();
         }
         
-        // 14. 如果页面有afterRender方法，调用它
+        // 13. 如果页面有afterRender方法，调用它
         if (newPageInstance.afterRender) {
             newPageInstance.afterRender();
         }
         
-        // 15. 保存页面实例以便后续使用
+        // 14. 保存页面实例以便后续使用
         if (appState.pageInstance && appState.pageInstance.destroy) {
             appState.pageInstance.destroy();
         }
         appState.pageInstance = newPageInstance;
+        
+        // 15. 触发页面切换事件
+        document.dispatchEvent(new CustomEvent('pageChanged', { 
+            detail: { page: pageName }
+        }));
         
     } catch (error) {
         console.error('加载页面失败:', error);
         elements.mainContent.innerHTML = `
             <div class="page-container">
                 <div class="error-container">
-                    <h2>页面加载失败</h2>
+                    <h2>${I18n.translate('PAGE_LOAD_ERROR', '页面加载失败')}</h2>
                     <p>${error.message}</p>
                 </div>
             </div>
@@ -268,8 +271,82 @@ function setupThemeToggle() {
 function setupLanguageToggle() {
     elements.languageButton.addEventListener('click', (e) => {
         e.preventDefault();
-        toggleLanguage();
+        showLanguageSelector();
     });
+    
+    // 绑定语言选择器的取消按钮
+    document.getElementById('cancel-language')?.addEventListener('click', () => {
+        hideLanguageSelector();
+    });
+    
+    // 加载语言选项
+    loadLanguageOptions();
+}
+
+// 显示语言选择器
+function showLanguageSelector() {
+    const selector = document.getElementById('language-selector');
+    if (selector) {
+        selector.classList.add('show');
+    }
+}
+
+// 隐藏语言选择器
+function hideLanguageSelector() {
+    const selector = document.getElementById('language-selector');
+    if (selector) {
+        selector.classList.remove('show');
+    }
+}
+
+// 加载语言选项
+function loadLanguageOptions() {
+    const optionsContainer = document.getElementById('language-options');
+    if (!optionsContainer) return;
+    
+    const currentLang = localStorage.getItem('language') || 'zh';
+    
+    // 支持的语言列表
+    const languages = [
+        { code: 'zh', name: '简体中文' },
+        { code: 'en', name: 'English' }
+    ];
+    
+    let html = '';
+    languages.forEach(lang => {
+        html += `
+            <div class="language-option ${lang.code === currentLang ? 'active' : ''}" data-lang="${lang.code}">
+                ${lang.name}
+            </div>
+        `;
+    });
+    
+    optionsContainer.innerHTML = html;
+    
+    // 绑定语言选项点击事件
+    const options = optionsContainer.querySelectorAll('.language-option');
+    options.forEach(option => {
+        option.addEventListener('click', () => {
+            const langCode = option.getAttribute('data-lang');
+            setLanguage(langCode);
+        });
+    });
+}
+
+// 设置语言
+function setLanguage(langCode) {
+    const currentLang = localStorage.getItem('language') || 'zh';
+    
+    if (langCode === currentLang) {
+        hideLanguageSelector();
+        return;
+    }
+    
+    // 保存新语言设置
+    localStorage.setItem('language', langCode);
+    
+    // 重新加载页面以应用新语言
+    window.location.reload();
 }
 
 // 更新主题图标
@@ -331,18 +408,6 @@ function toggleTheme(event) {
         ripple.remove();
         appState.themeChanging = false;
     }, 1000);
-}
-
-// 切换语言
-function toggleLanguage() {
-    const currentLang = localStorage.getItem('language') || 'zh';
-    const newLang = currentLang === 'zh' ? 'en' : 'zh';
-    
-    // 保存新语言设置
-    localStorage.setItem('language', newLang);
-    
-    // 重新加载页面以应用新语言
-    window.location.reload();
 }
 
 // 当 DOM 加载完成后初始化应用
