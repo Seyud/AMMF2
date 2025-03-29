@@ -87,9 +87,36 @@ function setupNavigation() {
     });
 }
 
-// 创建涟漪效果
+// 创建涟漪效果 - 修改为只在覆盖层上显示
 function createRippleEffect(e) {
     const button = e.currentTarget;
+    
+    // 检查是否是导航项
+    if (button.classList.contains('nav-item')) {
+        // 如果是导航项，且是激活状态，则在覆盖层上创建涟漪
+        if (button.classList.contains('active')) {
+            const overlay = button.querySelector('::before') || button;
+            const rect = button.getBoundingClientRect();
+            
+            // 计算相对于导航项的位置
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            
+            button.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 400); // 与CSS中的动画时间一致
+        }
+        return;
+    }
+    
+    // 其他元素的涟漪效果保持不变
     const ripple = document.createElement('span');
     const rect = button.getBoundingClientRect();
     
@@ -109,19 +136,22 @@ function createRippleEffect(e) {
     }, 600);
 }
 
-// 更新活动导航项
+// 更新活动导航项 - 修改为支持新的动画效果
 function updateActiveNavItem(pageName) {
     elements.navItems.forEach(item => {
         const itemPage = item.getAttribute('data-page');
         if (itemPage === pageName) {
-            item.classList.add('active');
-            // 添加动画类
-            item.classList.add('animate');
-            setTimeout(() => {
-                item.classList.remove('animate');
-            }, 300);
+            // 如果之前不是激活状态，添加激活类和动画类
+            if (!item.classList.contains('active')) {
+                item.classList.add('active');
+                // 添加动画类
+                item.classList.add('animate');
+                setTimeout(() => {
+                    item.classList.remove('animate');
+                }, 200); // 减少时间以匹配更快的动画
+            }
         } else {
-            item.classList.remove('active');
+            item.classList.remove('active', 'animate');
         }
     });
 }
@@ -147,7 +177,24 @@ async function loadPage(pageName) {
         
         // 3. 加载新页面模块
         const pageModule = await import(pageModules[pageName]);
-        const newPageInstance = new pageModule.default();
+        
+        // 检查模块导出类型并创建实例
+        let newPageInstance;
+        if (typeof pageModule.default === 'function') {
+            // 如果是构造函数或类
+            if (/^\s*class\s+/.test(pageModule.default.toString()) || 
+                (pageModule.default.prototype && pageModule.default.prototype.constructor === pageModule.default)) {
+                newPageInstance = new pageModule.default();
+            } else {
+                // 如果是普通函数
+                newPageInstance = pageModule.default();
+            }
+        } else if (typeof pageModule.default === 'object') {
+            // 如果直接导出对象
+            newPageInstance = pageModule.default;
+        } else {
+            throw new Error(`页面模块 ${pageName} 导出格式不正确`);
+        }
         
         // 4. 准备新页面内容
         const pageContainer = document.createElement('div');
