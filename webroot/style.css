@@ -23,7 +23,7 @@
 :root {
   /* 尺寸变量 */
   --header-height: 64px;
-  --nav-height: 80px; /* 调整为更合适的高度 */
+  --nav-height: 72px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;

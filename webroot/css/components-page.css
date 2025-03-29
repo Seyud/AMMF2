@@ -157,39 +157,23 @@
 
 .info-grid {
   display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-md);
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .info-item {
   display: flex;
-  align-items: center;
-}
-
-.info-icon {
-  width: 40px;
-  height: 40px;
-  background-color: var(--md-surface-1);
-  color: var(--md-primary);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: var(--spacing-md);
-  flex-shrink: 0;
-}
-
-.info-content {
-  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .info-label {
   color: var(--md-onSurfaceVariant);
   font-size: var(--md-sys-typescale-body-small-size);
-  margin-bottom: 4px;
 }
 
 .info-value {
+  color: var(--md-onSurface);
   font-weight: var(--md-sys-typescale-weight-medium);
 }
 
@@ -272,13 +256,18 @@
 
 .status-indicator .material-symbols-rounded {
   font-size: 20px;
-  /* 调整图标大小 */
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 .status-indicator.active,
 .status-indicator.status-running {
   background-color: rgba(76, 175, 80, 0.1);
   color: #4caf50;
+}
+
+.status-indicator.active .material-symbols-rounded,
+.status-indicator.status-running .material-symbols-rounded {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 .status-indicator.inactive,
@@ -319,7 +308,6 @@
   flex-wrap: wrap;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  /* 增加底部间距 */
 }
 
 .status-header h2 {
@@ -337,28 +325,61 @@
   align-items: center;
   padding: var(--spacing-lg);
   background-color: var(--card-background);
-  /* 确保背景色一致 */
   border-radius: var(--card-border-radius);
-  /* 确保圆角一致 */
   margin-bottom: var(--spacing-md);
-  /* 增加卡片间距 */
+  /* 移除阴影 */
+  box-shadow: none;
 }
 
-/* 设备信息卡片样式 */
+/* 设备信息卡片样式优化 */
 .device-info {
   padding: var(--spacing-lg);
   background-color: var(--card-background);
-  /* 确保背景色一致 */
   border-radius: var(--card-border-radius);
-  /* 确保圆角一致 */
   margin-bottom: var(--spacing-md);
-  /* 增加卡片间距 */
+  /* 移除阴影 */
+  box-shadow: none;
 }
 
 .device-info h3 {
   margin-top: 0;
   margin-bottom: var(--spacing-md);
   color: var(--md-onSurface);
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-icon {
+  margin-right: var(--spacing-md);
+  color: var(--md-primary);
+}
+
+.info-icon .material-symbols-rounded {
+  font-size: 24px;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-label {
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-weight-medium);
+  color: var(--md-onSurface);
+  margin-bottom: 4px;
+}
+
+.info-value {
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-onSurfaceVariant);
 }
 
 .no-info {
@@ -652,56 +673,82 @@
   flex: 1;
 }
 
+/* 日志控件样式优化 */
+.logs-controls {
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.logs-controls-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.log-file-selector {
+  min-width: 220px;
+}
+
+/* 美化选择框样式 */
+.styled-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-sys-shape-corner-small);
+  background-color: var(--md-surface);
+  color: var(--md-onSurface);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2371787e'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 24px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.styled-select:hover {
+  border-color: var(--md-primary);
+}
+
+.styled-select:focus {
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
+  outline: none;
+}
+
+.styled-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--md-surfaceVariant);
+}
+
+.log-refresh-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.auto-refresh-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  white-space: nowrap;
+}
+
 /* 响应式调整 */
 @media (max-width: 600px) {
-  .logs-controls {
+  .logs-controls-left {
     flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
   }
-
-  .app-nav {
-    border-top-left-radius: 16px;
-    /* 在小屏幕上稍微减小圆角 */
-    border-top-right-radius: 16px;
-  }
-
+  
   .log-file-selector {
     width: 100%;
   }
-
+  
   .log-refresh-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .status-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-
-  .status-actions,
-  .settings-actions,
-  .logs-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .setting-item {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .setting-info {
-    margin-right: 0;
-    margin-bottom: var(--spacing-md);
-  }
-
-  .setting-control {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
+    margin-top: var(--spacing-sm);
   }
 }

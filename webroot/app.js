@@ -124,19 +124,54 @@ class App {
         const navItems = document.querySelectorAll('.nav-item');
         
         navItems.forEach(item => {
-            const pageName = item.getAttribute('data-page');
-            
-            item.addEventListener('click', () => {
-                if (this.currentPage === pageName) return;
-                
-                // 更新导航项的活动状态
-                navItems.forEach(navItem => navItem.classList.remove('active'));
-                item.classList.add('active');
-                
-                // 导航到选定的页面
-                this.navigateTo(pageName);
+            item.addEventListener('click', (e) => {
+                const pageName = item.getAttribute('data-page');
+                if (pageName && pageName !== this.currentPage) {
+                    this.navigateTo(pageName);
+                    
+                    // 更新导航项状态
+                    navItems.forEach(navItem => {
+                        navItem.classList.remove('active');
+                    });
+                    item.classList.add('active');
+                    
+                    // 添加点击涟漪效果
+                    const ripple = document.createElement('span');
+                    ripple.classList.add('ripple');
+                    
+                    // 设置涟漪位置
+                    const rect = item.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = `${size}px`;
+                    ripple.style.left = `${x}px`;
+                    ripple.style.top = `${y}px`;
+                    
+                    item.appendChild(ripple);
+                    
+                    // 移除之前的动画类
+                    navItems.forEach(nav => nav.classList.remove('animate'));
+                    
+                    // 添加展开动画
+                    setTimeout(() => {
+                        item.classList.add('animate');
+                    }, 50);
+                    
+                    // 清除涟漪元素
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                }
             });
         });
+        
+        // 设置初始激活项
+        const activeItem = document.querySelector(`.nav-item[data-page="${this.currentPage}"]`);
+        if (activeItem) {
+            activeItem.classList.add('active');
+        }
     }
 
     // 导航到指定页面

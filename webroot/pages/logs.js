@@ -1,10 +1,10 @@
 /**
  * AMMF WebUI 日志页面模块
- * 查看和管理模块日志
+ * 提供日志查看和管理功能
  */
 
 const LogsPage = {
-    // 日志文件路径
+    // 日志文件列表
     logFiles: {},
     
     // 当前选中的日志文件
@@ -15,8 +15,8 @@ const LogsPage = {
     
     // 自动刷新设置
     autoRefresh: false,
-    refreshInterval: 5000,
     refreshTimer: null,
+    refreshInterval: 5000, // 5秒刷新一次
     
     // 初始化
     async init() {
@@ -195,7 +195,7 @@ const LogsPage = {
     },
     
     // 导出日志
-    exportLog() {
+    async exportLog() {
         try {
             if (!this.logContent) {
                 Core.showToast(I18n.translate('NO_LOGS_TO_EXPORT', '没有可导出的日志'), 'warning');
@@ -229,7 +229,7 @@ const LogsPage = {
         }
     },
     
-    // 开始自动刷新
+    // 启动自动刷新
     startAutoRefresh() {
         if (this.refreshTimer) {
             clearInterval(this.refreshTimer);
@@ -258,11 +258,11 @@ const LogsPage = {
     escapeHtml(text) {
         if (!text) return '';
         return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     },
     
     // 渲染日志文件选项
@@ -281,52 +281,45 @@ const LogsPage = {
     
     // 渲染页面
     render() {
+        // 设置页面标题
+        document.getElementById('page-title').textContent = I18n.translate('NAV_LOGS', '日志');
+        
+        // 添加刷新按钮到页面操作区
+        const pageActions = document.getElementById('page-actions');
+        pageActions.innerHTML = `
+            <button id="refresh-logs" class="icon-button" title="${I18n.translate('REFRESH_LOGS', '刷新日志')}">
+                <span class="material-symbols-rounded">refresh</span>
+            </button>
+            <button id="export-logs" class="icon-button" title="${I18n.translate('EXPORT_LOGS', '导出日志')}">
+                <span class="material-symbols-rounded">download</span>
+            </button>
+            <button id="clear-logs" class="icon-button" title="${I18n.translate('CLEAR_LOGS', '清除日志')}">
+                <span class="material-symbols-rounded">delete</span>
+            </button>
+        `;
+        
         // 检查是否有日志文件
         const hasLogFiles = Object.keys(this.logFiles).length > 0;
         
+        // 渲染页面内容，移除标题卡片
         return `
-            <div class="page-container logs-page">
-                <div class="logs-header card">
-                    <div class="logs-selector">
-                        <label for="log-file-select" data-i18n="SELECT_LOG_FILE">选择日志文件</label>
-                        <select id="log-file-select" ${!hasLogFiles ? 'disabled' : ''}>
+            <div class="logs-page">
+                <div class="logs-controls">
+                    <div class="log-file-selector">
+                        <select id="log-file-select" class="md-select styled-select" ${!hasLogFiles ? 'disabled' : ''}>
                             ${this.renderLogFileOptions()}
                         </select>
                     </div>
-                    <div class="logs-actions">
-                        <button id="refresh-logs" class="md-button" ${!hasLogFiles ? 'disabled' : ''}>
-                            <span class="material-symbols-rounded">refresh</span>
-                            <span data-i18n="REFRESH_LOGS">刷新日志</span>
-                        </button>
+                    <div class="log-refresh-controls">
                         <div class="auto-refresh-toggle">
-                            <label for="auto-refresh-checkbox" data-i18n="AUTO_REFRESH">
-                                自动刷新
-                            </label>
-                            <label class="switch">
-                                <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
-                                <span class="slider round"></span>
-                            </label>
+                            <input type="checkbox" id="auto-refresh-checkbox" class="md-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
+                            <label for="auto-refresh-checkbox">${I18n.translate('AUTO_REFRESH', '自动刷新')}</label>
                         </div>
                     </div>
                 </div>
                 
-                <div class="logs-note card">
-                    <p><small data-i18n="LOGS_READ_ONLY_NOTE">注意：日志查看功能默认为只读模式，不会自动修改日志文件。</small></p>
-                </div>
-                
-                <div class="logs-content card">
+                <div class="logs-content shadow-sm">
                     <pre id="logs-display">${hasLogFiles ? this.escapeHtml(this.logContent) || I18n.translate('NO_LOGS', '没有可用的日志') : I18n.translate('NO_LOGS_FILES', '没有找到日志文件')}</pre>
-                </div>
-                
-                <div class="logs-actions-bottom">
-                    <button id="clear-logs" class="md-button warning" ${!hasLogFiles ? 'disabled' : ''}>
-                        <span class="material-symbols-rounded">delete</span>
-                        <span data-i18n="CLEAR_LOGS">清除日志</span>
-                    </button>
-                    <button id="export-logs" class="md-button secondary" ${!hasLogFiles || !this.logContent ? 'disabled' : ''}>
-                        <span class="material-symbols-rounded">download</span>
-                        <span data-i18n="EXPORT_LOGS">导出日志</span>
-                    </button>
                 </div>
             </div>
         `;

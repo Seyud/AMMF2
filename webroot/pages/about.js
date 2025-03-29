@@ -6,6 +6,7 @@
 const AboutPage = {
     // 模块信息
     moduleInfo: {},
+    version: '4.3.0',
     
     // 初始化
     async init() {
@@ -21,53 +22,52 @@ const AboutPage = {
     
     // 渲染页面
     render() {
+        // 设置页面标题
+        document.getElementById('page-title').textContent = I18n.translate('NAV_ABOUT', '关于');
+        
+        // 清空页面操作区
+        document.getElementById('page-actions').innerHTML = '';
+        
         return `
-            <div class="page-container about-page">
-                <div class="about-header">
-                    <div class="module-logo">
-                        <span class="material-symbols-rounded">extension</span>
+            <div class="about-page">
+                <!-- WebUI信息 -->
+                <div class="about-card shadow-sm">
+                    <div class="webui-content">
+                        <div class="webui-logo">
+                            <span class="material-symbols-rounded">dashboard</span>
+                        </div>
+                        <h3>AMMF WebUI</h3>
+                        <div class="version-info">
+                            <span>${I18n.translate('VERSION', '版本')}: </span>
+                            <span class="version-number">${this.version}</span>
+                        </div>
                     </div>
-                    <h2>${this.moduleInfo.action_name || 'AMMF 模块'}</h2>
-                    <p class="module-description">${this.moduleInfo.description || this.moduleInfo.action_description || I18n.translate('MODULE_DESCRIPTION_DEFAULT', '模块描述未提供')}</p>
                 </div>
                 
-                <div class="about-content">
-                    <div class="about-card module-info-card">
-                        <h3 data-i18n="MODULE_INFO">模块信息</h3>
-                        <div class="info-grid">
-                            ${this.renderModuleInfo()}
-                        </div>
+                <!-- 模块信息 -->
+                <div class="about-card shadow-sm">
+                    <h3 data-i18n="MODULE_INFO">模块信息</h3>
+                    <div class="info-grid">
+                        ${this.renderModuleInfo()}
                     </div>
-                    
-                    <div class="about-card webui-info-card">
-                        <h3 data-i18n="ABOUT_WEBUI">关于 WebUI</h3>
-                        <div class="webui-content">
-                            <div class="webui-logo">
-                                <span class="material-symbols-rounded">web</span>
-                            </div>
-                            <p data-i18n="WEBUI_DESCRIPTION">AMMF WebUI 是一个用于管理和配置 AMMF 模块的网页界面。</p>
-                            <div class="version-info">
-                                <span data-i18n="VERSION">版本</span>: <span class="version-number">4.1.2</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="about-card developer-card">
-                        <h3 data-i18n="DEVELOPER_INFO">开发者信息</h3>
-                        <div class="developer-content">
-                            <p><span data-i18n="DEVELOPER">开发者</span>: ${this.moduleInfo.action_author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</p>
-                            <div class="social-links">
-                                <a href="#" class="social-link" id="github-link">
-                                    <span class="material-symbols-rounded">code</span>
-                                    <span>GitHub</span>
-                                </a>
-                            </div>
+                </div>
+                
+                <!-- 开发者信息 -->
+                <div class="about-card shadow-sm">
+                    <h3 data-i18n="DEVELOPER_INFO">开发者信息</h3>
+                    <div class="developer-content">
+                        <p><span data-i18n="DEVELOPER">开发者</span>: ${this.moduleInfo.action_author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</p>
+                        <div class="social-links">
+                            <a href="#" class="social-link" id="github-link">
+                                <span class="material-symbols-rounded">code</span>
+                                <span>GitHub</span>
+                            </a>
                         </div>
                     </div>
                 </div>
                 
                 <div class="about-footer">
-                    <p data-i18n="COPYRIGHT_INFO">© 2025 Aurora星空. All rights reserved.</p>
+                    <p data-i18n="COPYRIGHT_INFO">© ${new Date().getFullYear()} Aurora星空. All rights reserved.</p>
                 </div>
             </div>
         `;
@@ -98,21 +98,6 @@ const AboutPage = {
                 `;
             }
         });
-        
-        // 添加从module.prop读取的版本信息
-        if (this.moduleInfo.version) {
-            html += `
-                <div class="info-item">
-                    <div class="info-icon">
-                        <span class="material-symbols-rounded">update</span>
-                    </div>
-                    <div class="info-content">
-                        <div class="info-label" data-i18n="VERSION">版本</div>
-                        <div class="info-value">${this.moduleInfo.version}</div>
-                    </div>
-                </div>
-            `;
-        }
         
         return html || `<div class="no-info" data-i18n="NO_INFO">无可用信息</div>`;
     },

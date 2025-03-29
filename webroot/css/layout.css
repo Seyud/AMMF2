@@ -20,6 +20,7 @@
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  transition: none; /* 防止边距有过渡效果 */
 }
 
 /* 头部样式 */
@@ -27,7 +28,8 @@
   background-color: rgba(var(--md-background-rgb), 0.85);
   color: var(--md-onSurface);
   height: var(--header-height);
-  box-shadow: var(--md-sys-elevation-level2);
+  /* 移除阴影 */
+  box-shadow: none;
   position: fixed;
   top: 0;
   left: 0;
@@ -51,6 +53,27 @@
 .header-actions {
   display: flex;
   gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.page-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-right: var(--spacing-sm);
+}
+
+/* 当没有页面操作按钮时隐藏分隔符 */
+.page-actions:empty {
+  margin-right: 0;
+}
+
+/* 当有页面操作按钮时显示分隔符 */
+.page-actions:not(:empty)::after {
+  content: "";
+  height: 24px;
+  width: 1px;
+  background-color: var(--md-outlineVariant);
+  margin-left: var(--spacing-sm);
 }
 
 /* 导航栏样式 */
@@ -63,10 +86,11 @@
   background-color: var(--card-background);
   display: flex;
   justify-content: space-around;
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
   z-index: 100;
-  border-top-left-radius: 20px;  /* 增加圆角 */
-  border-top-right-radius: 20px;  /* 增加圆角 */
+  /* 移除阴影 */
+  box-shadow: none;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
 }
 
 .nav-content {
@@ -82,31 +106,59 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px 0;  /* 增加内边距 */
+  padding: 12px 0;
   color: var(--md-onSurfaceVariant);
   text-decoration: none;
   width: 80px;
   position: relative;
-  transition: color 0.2s;
+  transition: color 0.2s, background-color 0.2s;
 }
 
 .nav-item.active {
   color: var(--md-primary);
 }
 
-.nav-item.active::after {
+/* 修改选中状态样式 */
+.nav-item.active {
+  position: relative;
+}
+
+.nav-item.active::before {
   content: "";
   position: absolute;
-  bottom: 0;
-  width: 32px;
-  height: 3px;
-  background-color: var(--md-primary);
-  border-radius: 1.5px;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 32px;
+  background-color: var(--md-primaryContainer);
+  border-radius: 16px;
+  z-index: -1;
+}
+
+/* 移除底部指示条 */
+.nav-item.active::after {
+  display: none;
 }
 
 .nav-icon {
   font-size: 24px;
-  margin-bottom: 4px;
+  /* 调整图标与文字间距 */
+  margin-bottom: 8px;
+  /* 确保图标居中 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 添加图标填充样式 */
+.nav-item .material-symbols-rounded {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  transition: font-variation-settings 0.2s;
+}
+
+.nav-item.active .material-symbols-rounded {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 .nav-label {
@@ -120,15 +172,17 @@
 .card {
   background-color: var(--card-background);
   border-radius: var(--card-border-radius);
-  padding: 20px;  /* 增加内边距 */
-  box-shadow: var(--md-sys-elevation-level1);
+  padding: 20px;
+  /* 移除阴影 */
+  box-shadow: none;
   margin-bottom: 16px;
   border: none;
-  transition: box-shadow 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
 .card:hover {
-  box-shadow: var(--md-sys-elevation-level2);
+  /* 移除悬停阴影 */
+  box-shadow: none;
 }
 
 /* 列表项容器 */
@@ -137,6 +191,8 @@
   border-radius: var(--card-border-radius);
   overflow: hidden;
   margin-bottom: 16px;
+  /* 移除阴影 */
+  box-shadow: none;
 }
 
 .list-item-row {
@@ -165,6 +221,7 @@
 @media (max-width: 600px) {
   .page-container {
     padding: var(--spacing-sm);
+    transition: none; /* 防止边距有过渡效果 */
   }
   
   .module-actions {
@@ -182,8 +239,4 @@
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
   }
-}
-.material-symbols-rounded {
-  font-size: 24px;
-  margin-bottom: 4px;
 }

@@ -29,38 +29,40 @@ const StatusPage = {
         }
     },
     
+    // 在 StatusPage 类的 render 方法中修改
     render() {
+        // 设置页面标题
+        document.getElementById('page-title').textContent = I18n.translate('NAV_STATUS', '状态');
+        
+        // 添加刷新按钮到页面操作区
+        const pageActions = document.getElementById('page-actions');
+        pageActions.innerHTML = `
+            <button id="refresh-status" class="icon-button" title="${I18n.translate('REFRESH', '刷新')}">
+                <span class="material-symbols-rounded">refresh</span>
+            </button>
+            <button id="run-action" class="icon-button" title="${I18n.translate('RUN_ACTION', '运行Action')}">
+                <span class="material-symbols-rounded">play_arrow</span>
+            </button>
+        `;
+        
+        // 渲染页面内容，移除标题卡片
         return `
-            <div class="page-container status-page">
-                <div class="status-header card">
-                    <h2 data-i18n="MODULE_STATUS">模块状态</h2>
-                    <div class="status-actions">
-                        <button id="refresh-status" class="md-button">
-                            <span class="material-symbols-rounded">refresh</span>
-                            <span data-i18n="REFRESH_STATUS">刷新状态</span>
-                        </button>
+            <div class="status-page">
+                <!-- 状态卡片 -->
+                <div class="status-card shadow-sm">
+                    <!-- 状态内容 -->
+                    <div class="status-info">
+                        <div class="status-indicator ${this.getStatusClass()}">
+                            <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
+                            <span>${this.getStatusText()}</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="status-card card">
-                    <div class="status-indicator ${this.getStatusClass()}">
-                        <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
-                        <span data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
-                    </div>
-                    
-                    <div class="status-actions">
-                        <button id="run-action" class="md-button">
-                            <span class="material-symbols-rounded">terminal</span>
-                            <span data-i18n="RUN_ACTION">运行Action</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="device-info card">
-                    <h3 data-i18n="DEVICE_INFO">设备信息</h3>
-                    <div class="info-grid">
-                        ${this.renderDeviceInfo()}
-                    </div>
+                <!-- 设备信息 -->
+                <div class="device-info shadow-sm">
+                    <h3>${I18n.translate('DEVICE_INFO', '设备信息')}</h3>
+                    ${this.renderDeviceInfo()}
                 </div>
             </div>
         `;

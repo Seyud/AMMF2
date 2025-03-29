@@ -25,35 +25,29 @@
   --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1.0);
 }
 
-/* 页面切换动画 */
+/* 页面切换动画 - 简化为淡入淡出 */
 .page-enter {
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard),
-              transform var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
-  will-change: opacity, transform;
-  position: absolute; 
+  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+  position: relative;
   width: 100%;
   left: 0;
   top: 0;
-  pointer-events: none;
   max-width: 100%;
   overflow-x: hidden;
+  box-sizing: border-box; /* 确保盒模型一致 */
 }
 
 .page-enter.page-active {
   opacity: 1;
-  transform: translateY(0);
   position: relative;
   pointer-events: auto;
+  box-sizing: border-box; /* 确保盒模型一致 */
 }
 
 .page-exit {
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard-accelerate),
-              transform var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard-accelerate);
-  will-change: opacity, transform;
+  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard-accelerate);
   position: absolute;
   width: 100%;
   left: 0;
@@ -64,7 +58,6 @@
 
 .page-exit.page-active {
   opacity: 0;
-  transform: translateY(-20px);
   pointer-events: none;
 }
 
@@ -87,7 +80,7 @@
   to { opacity: 0; }
 }
 
-/* 滑动效果 */
+/* 移除滑动效果，保留淡入淡出 */
 .slide-in {
   animation: slideIn var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized-decelerate) forwards;
 }
@@ -185,4 +178,125 @@
   z-index: 1000;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+/* Toast 通知样式 */
+.toast-container {
+  position: fixed;
+  bottom: calc(var(--nav-height) + var(--spacing-md));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  pointer-events: none;
+}
+
+.toast {
+  background-color: var(--card-background);
+  color: var(--md-onSurface);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--md-sys-shape-corner-medium);
+  box-shadow: var(--md-sys-elevation-level2);
+  max-width: 80vw;
+  min-width: 200px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: auto;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Toast 类型样式 */
+.toast-info {
+  border-left: 4px solid var(--md-primary);
+}
+
+.toast-success {
+  border-left: 4px solid #4CAF50;
+}
+
+.toast-warning {
+  border-left: 4px solid #FF9800;
+}
+
+.toast-error {
+  border-left: 4px solid var(--md-error);
+}
+
+/* 确保在小屏幕上 toast 不会被导航栏遮挡 */
+@media (max-width: 600px) {
+  .toast-container {
+    bottom: calc(var(--nav-height) + var(--spacing-xs));
+  }
+  
+  .toast {
+    max-width: 90vw;
+    padding: var(--spacing-xs) var(--spacing-md);
+  }
+}
+
+/* 底栏导航动画效果 */
+/* 导航项点击涟漪效果 */
+.nav-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item .ripple {
+  position: absolute;
+  background-color: rgba(var(--md-primary-rgb), 0.2);
+  border-radius: 50%;
+  transform: scale(0);
+  animation: nav-ripple 0.6s var(--md-sys-motion-easing-standard);
+  pointer-events: none;
+}
+
+@keyframes nav-ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* 导航项选中背景动画 */
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 32px;
+  background-color: var(--md-primaryContainer);
+  border-radius: 16px;
+  z-index: -1;
+  transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized);
+}
+
+/* 导航项选中时背景展开动画 */
+.nav-item.active.animate::before {
+  animation: nav-expand var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-emphasized) forwards;
+}
+
+@keyframes nav-expand {
+  0% {
+    width: 0;
+    opacity: 0;
+  }
+  50% {
+    width: 80px;
+    opacity: 1;
+  }
+  100% {
+    width: 56px;
+    opacity: 1;
+  }
 }

@@ -47,9 +47,12 @@
         <header class="app-header">
             <div class="header-content">
                 <div class="header-title">
-                    <h1>AMMF WebUI</h1>
+                    <h1 id="page-title">AMMF WebUI</h1>
                 </div>
                 <div class="header-actions">
+                    <!-- 页面特定操作按钮容器 -->
+                    <div id="page-actions" class="page-actions"></div>
+                    
                     <!-- 语言切换按钮 -->
                     <button id="language-button" class="icon-button" title="语言">
                         <span class="material-symbols-rounded">language</span>
@@ -124,5 +127,21 @@
     
     <!-- 主应用脚本 -->
     <script src="app.js"></script>
-</body>
-</html>
+    <script>
+      // 防止布局偏移
+      document.addEventListener('DOMContentLoaded', function() {
+        // 强制重新计算布局
+        document.body.offsetHeight;
+        
+        // 监听页面切换事件
+        document.addEventListener('pageChanged', function() {
+          // 确保页面容器样式一致
+          const containers = document.querySelectorAll('.page-container');
+          containers.forEach(container => {
+            container.style.transition = 'none';
+          });
+        });
+      });
+    </script>
+    </body>
+    </html>

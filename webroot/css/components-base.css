@@ -386,3 +386,16 @@ input:disabled + .slider {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.md-button:disabled {
+  background-color: var(--md-surfaceVariant);
+  color: var(--md-outline);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.icon-button:disabled {
+  background-color: rgba(var(--md-onSurface-rgb), 0.03);
+  color: var(--md-outline);
+  cursor: not-allowed;
+}

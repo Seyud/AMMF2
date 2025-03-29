@@ -36,36 +36,27 @@ const SettingsPage = {
     },
     
     // 渲染页面
+    // 在 SettingsPage 类的 render 方法中修改
     render() {
+        // 设置页面标题
+        document.getElementById('page-title').textContent = I18n.translate('NAV_SETTINGS', '设置');
+        
+        // 添加刷新按钮到页面操作区
+        const pageActions = document.getElementById('page-actions');
+        pageActions.innerHTML = `
+            <button id="refresh-settings" class="icon-button" title="${I18n.translate('REFRESH_SETTINGS', '刷新设置')}">
+                <span class="material-symbols-rounded">refresh</span>
+            </button>
+        `;
+        
+        // 绑定刷新按钮事件
+        document.getElementById('refresh-settings').addEventListener('click', () => this.refreshSettings());
+        
+        // 渲染页面内容，移除标题卡片
         return `
-            <div class="page-container settings-page">
-                <div class="settings-header card">
-                    <h2 data-i18n="MODULE_SETTINGS">模块设置</h2>
-                    <div class="settings-actions">
-                        <button id="refresh-settings" class="md-button">
-                            <span class="material-symbols-rounded">refresh</span>
-                            <span data-i18n="REFRESH_SETTINGS">刷新设置</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="settings-content card">
-                    <div id="settings-container">
-                        ${this.renderSettings()}
-                    </div>
-                    
-                    <div class="settings-footer">
-                        <button id="save-settings" class="md-button primary-button">
-                            <span class="material-symbols-rounded">save</span>
-                            <span data-i18n="SAVE_SETTINGS">保存设置</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- 加载覆盖层 -->
-                <div id="settings-loading" class="settings-loading-overlay" style="display: none;">
-                    <div class="loading-spinner"></div>
-                    <p data-i18n="LOADING">加载中...</p>
+            <div class="settings-page">
+                <div id="settings-container" class="settings-container">
+                    ${this.renderSettings()}
                 </div>
             </div>
         `;
