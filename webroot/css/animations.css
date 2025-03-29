@@ -244,24 +244,32 @@
 }
 
 /* 底栏导航动画效果 */
-/* 导航项点击涟漪效果 */
+/* 导航项点击涟漪效果 - 修改为只应用在覆盖层上 */
 .nav-item {
   position: relative;
-  overflow: hidden;
+  /* 移除 overflow: hidden; 使涟漪可以在覆盖层上显示 */
+}
+
+/* 修改涟漪效果，使其只应用在覆盖层上 */
+.nav-item.active::before {
+  overflow: hidden; /* 添加溢出隐藏，使涟漪效果被限制在覆盖层内 */
 }
 
 .nav-item .ripple {
   position: absolute;
-  background-color: rgba(var(--md-primary-rgb), 0.2);
+  background-color: rgba(var(--md-primary-rgb), 0.3); /* 增加透明度使效果更明显 */
   border-radius: 50%;
   transform: scale(0);
-  animation: nav-ripple 0.6s var(--md-sys-motion-easing-standard);
+  /* 修改：使用更快的动画时间 */
+  animation: nav-ripple 0.4s var(--md-sys-motion-easing-standard);
   pointer-events: none;
+  /* 确保涟漪在覆盖层上方 */
+  z-index: 1;
 }
 
 @keyframes nav-ripple {
   to {
-    transform: scale(4);
+    transform: scale(3); /* 减小涟漪范围 */
     opacity: 0;
   }
 }
@@ -270,32 +278,88 @@
 .nav-item.active::before {
   content: "";
   position: absolute;
-  top: 50%;  /* 修改：从6px改为50% */
+  top: 24px;  /* 保持原有定位 */
   left: 50%;
-  transform: translate(-50%, -50%);  /* 修改：添加Y轴居中 */
-  width: 56px;
-  height: 32px;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 28px;
   background-color: var(--md-primaryContainer);
-  border-radius: 16px;
+  border-radius: 14px;
   z-index: -1;
-  transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized);
+  /* 修改：减少过渡时间，使动画更快 */
+  transition: width var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized);
 }
 
 /* 导航项选中时背景展开动画 */
 .nav-item.active.animate::before {
-  animation: nav-expand var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-emphasized) forwards;
+  /* 修改：使用更短的动画时间 */
+  animation: nav-expand var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized) forwards;
 }
 
 @keyframes nav-expand {
   0% {
     width: 0;
-    border-radius: 50%;  /* 修改：开始时为圆形 */
+    border-radius: 50%;
     opacity: 0;
   }
   100% {
-    width: 56px;
-    border-radius: 16px;  /* 修改：结束时为圆角矩形 */
+    width: 48px;
+    border-radius: 14px;
     opacity: 1;
   }
-  /* 移除了回弹效果的50%关键帧 */
+}
+
+/* 页面切换动画 - 优化为更平滑的淡入淡出 */
+.page-enter {
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+  position: relative;
+  width: 100%;
+  left: 0;
+  top: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box; /* 确保盒模型一致 */
+}
+
+.page-enter.page-active {
+  opacity: 1;
+  position: relative;
+  pointer-events: auto;
+  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+}
+
+.page-exit {
+  opacity: 1;
+  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard-accelerate);
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  pointer-events: none; /* 防止退出页面接收点击事件 */
+}
+
+.page-exit.page-active {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 顶栏标题切换动画 */
+#page-title {
+  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard);
+}
+
+#page-title.changing {
+  opacity: 0;
+}
+
+/* 页面操作按钮切换动画 */
+#page-actions {
+  transition: opacity var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard);
+}
+
+#page-actions.changing {
+  opacity: 0;
 }

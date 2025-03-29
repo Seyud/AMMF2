@@ -17,7 +17,8 @@
     <!-- 预加载样式，防止主题闪烁 -->
     <style>
         .app-header, .app-nav, #main-content {
-            opacity: 1; /* 修改为默认可见 */
+            opacity: 1;
+            transition: opacity 0.3s ease;
         }
         .app-loaded .app-header, .app-loaded .app-nav, .app-loaded #main-content {
             opacity: 1;
