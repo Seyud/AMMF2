@@ -10,6 +10,7 @@
   min-height: calc(100vh - var(--header-height) - var(--nav-height));
   width: 100%;
   overflow-x: hidden;
+  background-color: var(--md-background);
 }
 
 /* 页面容器 */
@@ -64,6 +65,8 @@
   justify-content: space-around;
   box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
   z-index: 100;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
 }
 
 .nav-content {
@@ -89,6 +92,16 @@
 
 .nav-item.active {
   color: var(--md-primary);
+}
+
+.nav-item.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 32px;
+  height: 3px;
+  background-color: var(--md-primary);
+  border-radius: 1.5px;
 }
 
 .nav-icon {
@@ -118,10 +131,34 @@
   box-shadow: var(--md-sys-elevation-level2);
 }
 
+/* 列表项容器 */
+.list-container {
+  background-color: var(--card-background);
+  border-radius: var(--card-border-radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.list-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--md-outlineVariant);
+}
+
+.list-item-row:last-child {
+  border-bottom: none;
+}
+
 /* 响应式布局调整 */
 @media (min-width: 600px) {
   .card {
     padding: 24px;
+  }
+  
+  .list-item-row {
+    padding: 20px 24px;
   }
 }
 
@@ -139,5 +176,10 @@
   .settings-actions,
   .logs-actions {
     width: 100%;
+  }
+  
+  .app-nav {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
   }
 }

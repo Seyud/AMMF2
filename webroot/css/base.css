@@ -109,7 +109,7 @@
   --card-background: #ffffff;
 }
 
-/* 深色主题 */
+/* 深色主题优化 */
 .dark-theme {
   /* 主色 */
   --md-primary: #8fcdff;
@@ -147,14 +147,14 @@
   --md-outline: #8b9198;
   --md-outlineVariant: #41484d;
   
-  /* 反色 - 添加 */
+  /* 反色 */
   --md-inverseSurface: #e1e2e5;
   --md-inverseOnSurface: #2e3133;
   
-  /* 阴影色 - 添加 */
+  /* 阴影色 */
   --md-shadow: #000000;
   
-  /* 涟漪颜色 - 添加 */
+  /* 涟漪颜色 */
   --ripple-color: #8fcdff;
   
   /* 卡片背景 */

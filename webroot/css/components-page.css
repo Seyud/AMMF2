@@ -681,3 +681,98 @@
     justify-content: flex-start;
   }
 }
+/* 设置列表项样式优化 */
+.settings-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--md-outlineVariant);
+  background-color: var(--card-background);
+}
+
+.settings-list-item:last-child {
+  border-bottom: none;
+}
+
+.settings-list-item-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.settings-list-item-icon {
+  margin-right: var(--spacing-md);
+  color: var(--md-onSurfaceVariant);
+  font-size: 24px;
+}
+
+.settings-list-item-text {
+  flex: 1;
+}
+
+.settings-list-item-title {
+  font-size: var(--md-sys-typescale-body-large-size);
+  color: var(--md-onSurface);
+  margin-bottom: 4px;
+}
+
+.settings-list-item-subtitle {
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-onSurfaceVariant);
+}
+
+.settings-list-item-action {
+  display: flex;
+  align-items: center;
+}
+
+/* 设置容器样式 */
+.settings-list-container {
+  background-color: var(--card-background);
+  border-radius: var(--card-border-radius);
+  overflow: hidden;
+  margin-bottom: var(--spacing-lg);
+}
+/* 列表项间距和布局优化 */
+.list-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px var(--spacing-lg);
+  border-bottom: 1px solid var(--md-outlineVariant);
+}
+
+.list-item-row:last-child {
+  border-bottom: none;
+}
+
+.list-item-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.list-item-title {
+  font-size: var(--md-sys-typescale-body-large-size);
+  color: var(--md-onSurface);
+  margin-bottom: 4px;
+}
+
+.list-item-subtitle {
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-onSurfaceVariant);
+}
+
+.list-item-action {
+  margin-left: var(--spacing-md);
+}
+
+/* 添加列表容器样式 */
+.list-container {
+  background-color: var(--card-background);
+  border-radius: var(--card-border-radius);
+  overflow: hidden;
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--md-sys-elevation-level1);
+}
