@@ -109,21 +109,15 @@ const ThemeManager = {
         const themeToggle = document.getElementById('theme-toggle');
         if (!themeToggle) return;
         
-        const iconElement = themeToggle.querySelector('i');
+        const iconElement = themeToggle.querySelector('.material-symbols-rounded');
         if (!iconElement) return;
         
         // 根据当前主题设置图标
         if (this.currentTheme === 'light') {
-            // 移除所有可能的类
-            iconElement.className = '';
-            // 添加新的 Font Awesome 类
-            iconElement.className = 'fa-solid fa-sun';
+            iconElement.textContent = 'light_mode';
             themeToggle.setAttribute('title', '浅色主题 (点击切换)');
         } else {
-            // 移除所有可能的类
-            iconElement.className = '';
-            // 添加新的 Font Awesome 类
-            iconElement.className = 'fa-solid fa-moon';
+            iconElement.textContent = 'dark_mode';
             themeToggle.setAttribute('title', '深色主题 (点击切换)');
         }
     },

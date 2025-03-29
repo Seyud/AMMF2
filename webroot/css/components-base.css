@@ -401,28 +401,28 @@ input:disabled + .slider {
 }
 
 /* 为非底栏图标设置莫奈取色调色盘中偏向白色的颜色 */
-.fa:not(.nav-item .fa) {
+.material-symbols-rounded:not(.nav-item .material-symbols-rounded) {
 /* 浅色主题下使用浅紫色 */
 color: var(--md-primary);
 }
 
 /* 图标按钮中的图标颜色 */
-.icon-button .fa {
+.icon-button .material-symbols-rounded {
 color: var(--md-onSurfaceVariant);
 }
 
-.icon-button:hover .fa {
+.icon-button:hover .material-symbols-rounded {
 color: var(--md-onSurface);
 }
 
-.icon-button.active .fa {
+.icon-button.active .material-symbols-rounded {
 color: var(--md-primary);
 }
 
 /* 保持禁用状态的图标样式 */
-button:disabled .fa,
-.icon-button:disabled .fa,
-.md-button:disabled .fa {
+button:disabled .material-symbols-rounded,
+.icon-button:disabled .material-symbols-rounded,
+.md-button:disabled .material-symbols-rounded {
 opacity: 0.5;
 color: var(--md-outline);
 }

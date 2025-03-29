@@ -216,16 +216,14 @@ input, select, textarea {
 }
 
 /* 添加Material Symbols图标配置 */
-/* 将原来的 Material Symbols 样式修改为 Font Awesome 样式 */
-/* 替换这部分 */
 .material-symbols-rounded {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* 禁用状态的图标样式 */
-button:disabled .fa,
-.icon-button:disabled .fa,
-.md-button:disabled .fa {
+button:disabled .material-symbols-rounded,
+.icon-button:disabled .material-symbols-rounded,
+.md-button:disabled .material-symbols-rounded {
   opacity: 0.5;
   color: var(--md-outline);
 }
