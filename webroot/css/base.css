@@ -6,7 +6,7 @@
 /* 基础变量 */
 :root {
   /* 卡片和元素圆角 */
-  --card-border-radius: 12px;
+  --card-border-radius: 16px;  /* 调整为更大的圆角 */
   --button-border-radius: 20px;
   
   /* 阴影 */
