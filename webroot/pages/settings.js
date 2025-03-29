@@ -187,7 +187,9 @@ const SettingsPage = {
         try {
             this.showLoading();
             
-            // 从配置文件加载设置
+            // 使用setTimeout让UI有机会更新
+            await new Promise(resolve => setTimeout(resolve, 0));
+            
             const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
             const configContent = await Core.execCommand(`cat "${configPath}"`);
             
@@ -197,9 +199,13 @@ const SettingsPage = {
                 return;
             }
             
-            // 解析配置文件
-            this.settings = this.parseConfigFile(configContent);
-            console.log('设置加载完成:', this.settings);
+            // 使用requestIdleCallback处理大数据
+            await new Promise(resolve => {
+                requestIdleCallback(() => {
+                    this.settings = this.parseConfigFile(configContent);
+                    resolve();
+                });
+            });
         } catch (error) {
             console.error('加载设置数据失败:', error);
             this.settings = {};
@@ -408,21 +414,16 @@ const SettingsPage = {
     
     // 绑定设置项事件
     bindSettingEvents() {
-        // 为每个设置项绑定事件
-        for (const key in this.settings) {
-            if (this.excludedSettings.includes(key)) {
-                continue;
-            }
-            
-            const element = document.getElementById(`setting-${key}`);
-            if (!element) continue;
-            
-            // 为选择框添加变更事件
-            if (element.tagName === 'SELECT') {
-                element.addEventListener('change', () => {
-                    console.log(`设置 ${key} 已更改为: ${element.value}`);
-                });
-            }
+        // 使用事件委托替代单独绑定
+        const container = document.getElementById('settings-container');
+        if (container) {
+            container.addEventListener('change', (e) => {
+                const target = e.target;
+                if (target.tagName === 'SELECT') {
+                    const key = target.id.replace('setting-', '');
+                    console.log(`设置 ${key} 已更改为: ${target.value}`);
+                }
+            });
         }
     },
     

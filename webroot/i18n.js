@@ -112,6 +112,7 @@ const I18n = {
             DEVELOPER_INFO: '开发者信息',
             FRAMEWORK_DEVELOPER: '框架开发者',
             MODULE_DEVELOPER: '模块开发者',
+            COPYRIGHT_INFO: 'Copyright (c) 2025 Aurora星空',
         };
         this.translations.en = {
             NAV_STATUS: 'Status',
@@ -194,6 +195,7 @@ const I18n = {
             DEVELOPER_INFO: 'Developer Info',
             FRAMEWORK_DEVELOPER: 'Framework Developer',
             MODULE_DEVELOPER: 'Module Developer',
+            COPYRIGHT_INFO: 'Copyright (c) 2025 AuroraNasa',
         };
         this.translations.ru = {
             NAV_STATUS: 'Статус',
@@ -276,6 +278,7 @@ const I18n = {
             DEVELOPER_INFO: 'Информация о разработчике',
             FRAMEWORK_DEVELOPER: 'Разработчик AMMF',
             MODULE_DEVELOPER: 'Разработчик модуля',
+            COPYRIGHT_INFO: 'Copyright (c) 2025 AuroraNasa',
         };
         console.log('默认翻译已加载');
     },

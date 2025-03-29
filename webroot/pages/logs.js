@@ -108,38 +108,39 @@ const LogsPage = {
                 return;
             }
             
+            // 使用setTimeout让UI有机会更新
+            await new Promise(resolve => setTimeout(resolve, 0));
+            
             const logPath = this.logFiles[this.currentLogFile];
             
             // 检查文件是否存在
             const fileExistsResult = await Core.execCommand(`[ -f "${logPath}" ] && echo "true" || echo "false"`);
             if (fileExistsResult.trim() !== "true") {
                 this.logContent = I18n.translate('LOG_FILE_NOT_FOUND', '日志文件不存在');
-                if (showToast) {
-                    Core.showToast(this.logContent, 'warning');
-                }
+                if (showToast) Core.showToast(this.logContent, 'warning');
                 return;
             }
             
-            // 读取日志文件内容
-            const content = await Core.execCommand(`cat "${logPath}"`);
-            this.logContent = content || I18n.translate('NO_LOGS', '没有可用的日志');
-            
-            // 更新显示
-            const logsDisplay = document.getElementById('logs-display');
-            if (logsDisplay) {
-                logsDisplay.innerHTML = this.formatLogContent();
-            }
-            
-            if (showToast) {
-                Core.showToast(I18n.translate('LOGS_REFRESHED', '日志已刷新'));
-            }
+            // 使用requestIdleCallback处理大数据
+            await new Promise(resolve => {
+                requestIdleCallback(async () => {
+                    const content = await Core.execCommand(`cat "${logPath}"`);
+                    this.logContent = content || I18n.translate('NO_LOGS', '没有可用的日志');
+                    
+                    // 更新显示
+                    const logsDisplay = document.getElementById('logs-display');
+                    if (logsDisplay) {
+                        logsDisplay.innerHTML = this.formatLogContent();
+                    }
+                    
+                    if (showToast) Core.showToast(I18n.translate('LOGS_REFRESHED', '日志已刷新'));
+                    resolve();
+                });
+            });
         } catch (error) {
             console.error(I18n.translate('LOGS_LOAD_ERROR', '加载日志内容失败:'), error);
-            this.logContent = I18n.translate('LOGS_LOAD_ERROR', '加载日志失败');
-            
-            if (showToast) {
-                Core.showToast(this.logContent, 'error');
-            }
+            this.logContent = I18n.translate('LOGS_LOAD_ERROR', '加载失败');
+            if (showToast) Core.showToast(this.logContent, 'error');
         }
     },
     
