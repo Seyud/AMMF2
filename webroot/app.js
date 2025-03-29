@@ -42,7 +42,7 @@ class App {
         try {
             // 显示加载指示器
             this.showLoading();
-
+    
             // 初始化语言模块
             await I18n.init();
             
@@ -66,24 +66,24 @@ class App {
             } else {
                 console.warn('无法确保配置文件可访问，将使用默认配置');
             }
-
+    
             // 初始化主题模块
             ThemeManager.init();
-
+    
             // 初始化导航
             this.initNavigation();
-
+    
             // 渲染初始页面
             await this.navigateTo(this.currentPage);
-
+    
             // 隐藏加载指示器
             clearTimeout(loadingTimeout);
             this.hideLoading();
-
+    
             // 标记初始化完成
             this.initialized = true;
             document.dispatchEvent(new CustomEvent('appInitialized'));
-
+    
             document.body.classList.add('app-loaded');
             
             console.log('应用初始化完成');
@@ -100,7 +100,7 @@ class App {
         }
     }
     
-    // 添加强制加载初始页面的方法
+    // 修改forceLoadInitialPage方法，确保事件绑定
     forceLoadInitialPage() {
         try {
             // 确保页面模块存在
@@ -111,9 +111,19 @@ class App {
                 if (typeof this.pageModules[this.currentPage].render === 'function') {
                     mainContent.innerHTML = this.pageModules[this.currentPage].render();
                     
+                    // 渲染页面操作按钮
+                    if (typeof this.pageModules[this.currentPage].renderPageActions === 'function') {
+                        this.pageModules[this.currentPage].renderPageActions();
+                    }
+                    
                     // 调用afterRender方法
                     if (typeof this.pageModules[this.currentPage].afterRender === 'function') {
                         this.pageModules[this.currentPage].afterRender();
+                    }
+                    
+                    // 绑定事件
+                    if (typeof this.pageModules[this.currentPage].bindEvents === 'function') {
+                        this.pageModules[this.currentPage].bindEvents();
                     }
                     
                     // 应用翻译
@@ -365,15 +375,26 @@ class App {
             // 应用翻译
             I18n.applyTranslations();
             
-            // 重新添加页面操作按钮 - 添加这段代码
-            if (typeof this.pageModules[pageName].render === 'function') {
-                // 重新调用render方法来获取页面操作按钮
+            // 修改：不再重新调用render方法，而是直接设置页面操作按钮并绑定事件
+            // 清空页面操作区
+            const pageActions = document.getElementById('page-actions');
+            pageActions.innerHTML = '';
+            
+            // 如果页面模块有renderPageActions方法，则调用它来渲染页面操作按钮
+            if (typeof this.pageModules[pageName].renderPageActions === 'function') {
                 try {
-                    // 这里只是为了触发render方法中设置页面操作按钮的代码
-                    // 实际上我们不需要使用返回的HTML内容
-                    this.pageModules[pageName].render();
+                    this.pageModules[pageName].renderPageActions();
                 } catch (error) {
-                    console.error(`重新添加页面操作按钮失败: ${pageName}`, error);
+                    console.error(`渲染页面操作按钮失败: ${pageName}`, error);
+                }
+            }
+            
+            // 确保事件绑定
+            if (typeof this.pageModules[pageName].bindEvents === 'function') {
+                try {
+                    this.pageModules[pageName].bindEvents();
+                } catch (error) {
+                    console.error(`绑定页面事件失败: ${pageName}`, error);
                 }
             }
             
