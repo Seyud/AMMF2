@@ -62,6 +62,10 @@
   --md-surface-3: rgba(var(--md-primary-rgb), 0.11);
   --md-surface-4: rgba(var(--md-primary-rgb), 0.12); /* 添加 */
   --md-surface-5: rgba(var(--md-primary-rgb), 0.14); /* 添加 */
+  
+  /* 布局变量 */
+  --header-height: 64px;
+  --nav-height: 72px;  /* 增加底栏高度，从原来的值增加 */
 }
 
 /* 浅色主题 */
