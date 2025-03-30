@@ -402,7 +402,10 @@
     position: relative;  /* 确保相对定位 */
   }
 
-
+  .nav-item::before {
+    top: 26px; /* 横屏模式下的位置 */
+  }
+  
   .nav-item .nav-label {
     font-size: 12px;
     margin-top: 4px;
