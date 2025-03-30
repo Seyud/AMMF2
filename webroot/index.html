@@ -20,6 +20,7 @@
     <link rel="apple-touch-icon" href="icon-192.png">
     
     <!-- 预加载样式，防止主题闪烁 -->
+    <!-- 在head标签内的style部分添加或修改以下样式 -->
     <style>
         .app-header, .app-nav, #main-content {
             opacity: 1;
@@ -30,12 +31,20 @@
         }
         html, body {
             overscroll-behavior: none;
-            background-color: var(--md-background); /* 添加背景色 */
+            background-color: var(--md-background);
             /* 添加移动端滚动条隐藏 */
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            height: 100%; /* 确保高度为100% */
+            position: relative; /* 添加相对定位 */
         }
+        
+        /* 确保主内容区域可以滚动到底部 */
+        #main-content {
+            padding-bottom: 120px !important; /* 强制添加足够的底部内边距 */
+        }
+        
         /* 隐藏滚动条 */
         html::-webkit-scrollbar, body::-webkit-scrollbar {
             display: none;

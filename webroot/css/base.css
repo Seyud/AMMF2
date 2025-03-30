@@ -85,7 +85,10 @@
   --nav-height: 80px;
   --nav-width: 80px;  /* 新增侧栏宽度变量 */
   --header-with-spacing: calc(var(--header-height) + var(--spacing-sm));
-  --nav-bottom-position: calc(var(--nav-height) + var(--spacing-md));
+  --nav-bottom-position: calc(var(--nav-height) + var(--spacing-xl));
+  
+  /* 间距变量，确保有更大的值用于底部 */
+  --spacing-xl: 32px;
 }
 
 /* 浅色主题 */
