@@ -1,15 +1,15 @@
-# AMMF - Aurora Modular Magisk Framework
+# AMMF2 - Aurora Modular Magisk Framework
 
 [简体中文](README.md) | [English](README_EN.md)
 
 <div align="center">
-    <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF" alt="GitHub Commit Activity">
-    <img src="https://img.shields.io/github/license/Aurora-Nasa-1/AMMF" alt="GitHub License">
+    <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
+    <img src="https://img.shields.io/github/license/Aurora-Nasa-1/AMMF2" alt="GitHub License">
 </div>
 
 ## 📋 Project Overview
 
-AMMF (Aurora Magisk Module Framework) is a powerful Magisk module development framework designed to simplify the module development process, providing a standardized structure and rich functional components. The framework supports features such as multi-language, WebUI configuration interface, custom scripts, and more, suitable for various types of Magisk module development.
+AMMF2 (Aurora Modular Magisk Framework 2) is a powerful Magisk module development framework designed to simplify the module development process, providing a standardized structure and rich functional components. The framework supports features such as multi-language, WebUI configuration interface, custom scripts, and more, suitable for various types of Magisk module development.
 
 ## ✨ Key Features
 
@@ -17,6 +17,7 @@ AMMF (Aurora Magisk Module Framework) is a powerful Magisk module development fr
 - **WebUI Configuration Interface**: Beautiful Material Design style web configuration interface
 - **Custom Script System**: Flexible script system supporting installation-time and runtime scripts
 - **File Monitoring Service**: Built-in filewatch tool, supporting file change triggered operations
+- **Logging Tools**: Complete logging system supporting log recording and error handling
 - **User Interaction Functions**: Various user interaction methods such as menu selection and key detection
 - **GitHub Action Support**: Built-in GitHub Action workflows for automatic building and publishing
 - **Comprehensive Error Handling**: Provides comprehensive error handling and logging mechanisms
@@ -27,10 +28,10 @@ AMMF (Aurora Magisk Module Framework) is a powerful Magisk module development fr
 
 ```bash
 # Method 1: Clone the repository using Git
-git clone https://github.com/Aurora-Nasa-1/AMMF.git
+git clone https://github.com/Aurora-Nasa-1/AMMF2.git
 
 # Method 2: Download ZIP archive directly
-# Visit https://github.com/Aurora-Nasa-1/AMMF/archive/refs/heads/main.zip
+# Visit https://github.com/Aurora-Nasa-1/AMMF2/archive/refs/heads/main.zip
 ```
 
 ### Basic Configuration
@@ -62,16 +63,6 @@ git clone https://github.com/Aurora-Nasa-1/AMMF.git
 
 2. **Service Script**:
    Write service scripts for module runtime in `files/scripts/service_script.sh`.
-
-### WebUI Configuration
-
-1. **Enable WebUI**:
-   WebUI is enabled by default and can be accessed via browser at `http://localhost:8080` (port configurable).
-
-2. **Customize WebUI**:
-   - Modify `webroot/index.html` to customize the interface layout
-   - Edit `webroot/settings.js` to configure available options
-   - Adjust `webroot/styles.css` to customize the interface style
 
 ## 📚 More Documentation
 

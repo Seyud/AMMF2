@@ -20,12 +20,15 @@ webroot/
 ├── app.js             # 主应用逻辑
 ├── core.js            # 核心功能模块
 ├── i18n.js            # 多语言支持
-├── logger.js          # 日志记录
-├── style.css          # 主样式表
-├── animations.css     # 动画样式
-├── layout.css         # 布局样式
-├── theme.css          # 主题样式
+├── style.css          # 主样式表（导入其他CSS模块）
 ├── theme.js           # 主题处理
+└── css/               # 样式模块目录
+    ├── base.css       # 基础样式和变量
+    ├── animations.css # 动画效果
+    ├── layout.css     # 布局样式
+    ├── components-base.css # 基础组件样式
+    ├── components-page.css # 页面组件样式
+    └── utilities.css  # 工具类样式
 └── pages/             # 页面模块
     ├── status.js      # 状态页面
     ├── logs.js        # 日志页面
@@ -43,35 +46,89 @@ webroot/
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#006495">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="AMMF WebUI - 模块管理界面">
+    <meta name="color-scheme" content="light dark">
     <title>AMMF WebUI</title>
+    
+    <!-- 字体和图标 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <!-- 主题脚本 - 在样式表之前加载，防止闪烁 -->
+    <script src="theme.js"></script>
     
     <!-- 样式表 -->
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="animations.css">
-    <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="layout.css">
 </head>
 <body>
     <div id="app">
         <!-- 头部 -->
-        <header class="app-header">...</header>
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1 id="page-title">AMMF WebUI</h1>
+                </div>
+                <div class="header-actions">
+                    <!-- 页面特定操作按钮容器 -->
+                    <div id="page-actions" class="page-actions"></div>
+                    
+                    <!-- 语言切换按钮 -->
+                    <button id="language-button" class="icon-button" title="语言">
+                        <span class="material-symbols-rounded">translate</span>
+                    </button>
+                    
+                    <!-- 主题切换按钮 -->
+                    <button id="theme-toggle" class="icon-button" title="主题">
+                        <span class="material-symbols-rounded">light_mode</span>
+                    </button>
+                </div>
+            </div>
+        </header>
         
         <!-- 主内容区域 -->
-        <main id="main-content">...</main>
+        <main id="main-content">
+            <!-- 内容将由JavaScript动态加载 -->
+        </main>
         
         <!-- 底部导航 -->
-        <nav class="app-nav">...</nav>
+        <nav class="app-nav">
+            <div class="nav-content">
+                <div class="nav-item active" data-page="status">
+                    <span class="material-symbols-rounded">dashboard</span>
+                    <span class="nav-label" data-i18n="NAV_STATUS">状态</span>
+                </div>
+                <div class="nav-item" data-page="logs">
+                    <span class="material-symbols-rounded">article</span>
+                    <span class="nav-label" data-i18n="NAV_LOGS">日志</span>
+                </div>
+                <div class="nav-item" data-page="settings">
+                    <span class="material-symbols-rounded">settings</span>
+                    <span class="nav-label" data-i18n="NAV_SETTINGS">设置</span>
+                </div>
+                <div class="nav-item" data-page="about">
+                    <span class="material-symbols-rounded">info</span>
+                    <span class="nav-label" data-i18n="NAV_ABOUT">关于</span>
+                </div>
+            </div>
+        </nav>
     </div>
     
-    <!-- 脚本引用 -->
-    <script src="theme.js"></script>
-    <script src="i18n.js"></script>
+    <!-- 核心脚本 -->
     <script src="core.js"></script>
-    <script src="logger.js"></script>
+    <script src="i18n.js"></script>
+    
+    <!-- 页面模块 -->
     <script src="pages/status.js"></script>
     <script src="pages/logs.js"></script>
     <script src="pages/settings.js"></script>
     <script src="pages/about.js"></script>
+    
+    <!-- 主应用脚本 -->
     <script src="app.js"></script>
 </body>
 </html>
@@ -79,29 +136,82 @@ webroot/
 
 ### 自定义样式
 
-要修改WebUI的样式，编辑 `webroot/style.css` 文件。该文件包含了WebUI的CSS样式定义。
+WebUI的样式现在采用模块化结构，主样式文件 `webroot/style.css` 通过导入其他CSS模块来组织样式：
 
 ```css
-/* 示例：修改主题颜色 */
+/**
+ * AMMF WebUI 主样式文件
+ * 导入所有模块化的CSS文件
+ */
+
+/* 导入基础样式和变量 */
+@import url('css/base.css');
+
+/* 导入布局样式 */
+@import url('css/layout.css');
+
+/* 导入组件样式 - 拆分为基础组件和页面组件 */
+@import url('css/components-base.css');
+@import url('css/components-page.css');
+
+/* 导入动画效果 */
+@import url('css/animations.css');
+
+/* 导入工具类样式 */
+@import url('css/utilities.css');
+```
+
+要修改样式，可以编辑相应的CSS模块文件：
+
+- `css/base.css` - 包含基础变量和样式定义
+- `css/layout.css` - 包含页面布局相关样式
+- `css/components-base.css` - 包含通用UI组件样式
+- `css/components-page.css` - 包含页面特定组件样式
+- `css/animations.css` - 包含动画和过渡效果
+- `css/utilities.css` - 包含工具类样式
+
+基础变量定义示例（`css/base.css`）：
+
+```css
+/* 基础变量 */
 :root {
-    --md-primary: #006495; /* 主色调 */
-    --md-onPrimary: #ffffff;
-    --md-primaryContainer: #cde5ff;
-    --md-onPrimaryContainer: #001d31;
-    --md-secondary: #50606e;
-    --md-onSecondary: #ffffff;
-    --md-secondaryContainer: #d3e5f5;
-    --md-onSecondaryContainer: #0c1d29;
-    /* 更多颜色变量 */
+  /* 卡片和元素圆角 */
+  --card-border-radius: 16px;
+  --button-border-radius: 20px;
+
+  /* 阴影 */
+  --md-sys-elevation-level1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-level2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-level3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* 状态层不透明度 */
+  --md-sys-state-hover-opacity: 0.08;
+  --md-sys-state-focus-opacity: 0.12;
+  --md-sys-state-pressed-opacity: 0.12;
+  --md-sys-state-dragged-opacity: 0.16;
+
+  /* 间距变量 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* 颜色变量 */
+  --md-primary: #006495;
+  --md-onPrimary: #ffffff;
+  --md-primaryContainer: #cde5ff;
+  --md-onPrimaryContainer: #001d31;
+  /* 更多颜色变量 */
 }
 
 /* 深色主题 */
-.dark-theme {
-    --md-primary: #91cbff;
-    --md-onPrimary: #003355;
-    --md-primaryContainer: #004a78;
-    --md-onPrimaryContainer: #cde5ff;
-    /* 更多深色主题变量 */
+[data-theme="dark"] {
+  --md-primary: #91cbff;
+  --md-onPrimary: #003355;
+  --md-primaryContainer: #004a78;
+  --md-onPrimaryContainer: #cde5ff;
+  /* 更多深色主题变量 */
 }
 ```
 
@@ -174,7 +284,7 @@ this.pageModules = {
 4. 在导航栏中添加新页面的入口：
 
 ```html
-<!-- 在app-nav中添加 -->
+<!-- 在nav-content中添加 -->
 <div class="nav-item" data-page="newpage">
     <span class="material-symbols-rounded">extension</span>
     <span class="nav-label" data-i18n="NAV_NEW_PAGE">新页面</span>
@@ -391,7 +501,7 @@ setTheme(theme) {
 
 ## 📱 响应式设计
 
-WebUI采用响应式设计，适应不同屏幕尺寸的设备。响应式设计主要通过CSS媒体查询实现。
+WebUI采用响应式设计，适应不同屏幕尺寸的设备。响应式设计主要通过CSS媒体查询实现，位于 `css/layout.css` 文件中。
 
 ```css
 /* 桌面设备 */
@@ -441,13 +551,14 @@ WebUI采用响应式设计，适应不同屏幕尺寸的设备。响应式设计
 
 2. **添加调试日志**：在JavaScript代码中添加`console.log()`语句输出调试信息。
 
-3. **使用logger.js模块**：使用内置的日志模块记录信息。
+3. **使用Core.showToast方法**：使用内置的提示功能显示调试信息。
 
 ```javascript
-// 记录日志
-Logger.log('信息', 'info');
-Logger.log('警告', 'warning');
-Logger.log('错误', 'error');
+// 显示提示信息
+Core.showToast('调试信息', 'info');
+Core.showToast('警告信息', 'warning');
+Core.showToast('错误信息', 'error');
+Core.showToast('成功信息', 'success');
 ```
 
 ## 🔄 版本兼容性
@@ -457,5 +568,6 @@ Logger.log('错误', 'error');
 1. `webroot/app.js` - 主应用逻辑可能会改变
 2. `webroot/core.js` - 核心功能可能会更新
 3. `webroot/i18n.js` - 语言字符串可能会更新
+4. `webroot/css/` - 样式文件可能会更新
 
 建议在升级前备份自定义的WebUI文件，然后仔细合并任何更改。

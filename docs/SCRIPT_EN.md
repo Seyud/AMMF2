@@ -4,7 +4,7 @@
 
 ## 📋 Overview
 
-This document provides detailed instructions for developing custom scripts within the AMMF framework. It covers the available functions, variables, and best practices for creating installation scripts, service scripts, and user scripts.
+This document provides detailed instructions for developing custom scripts within the AMMF framework. It covers the available functions, variables, and best practices for creating installation scripts, service scripts, and user scripts. The AMMF2 version has completely updated the scripting system, enhancing the logging system and file monitoring capabilities.
 
 ## 🛠️ Script Types
 
@@ -13,10 +13,12 @@ AMMF supports two main types of scripts (you can add more as needed):
 1. **Installation Scripts** (`files/scripts/install_custom_script.sh`)
    - Executed during module installation
    - Used for setup tasks, file extraction, and initial configuration
+   - Can access all AMMF core functions
 
 2. **Service Scripts** (`files/scripts/service_script.sh`)
    - Executed when the device boots
    - Used for background services, monitoring, and runtime operations
+   - Supports file monitoring and status management
 
 ## 📚 Available Functions
 
@@ -110,6 +112,7 @@ Downloads a file from the specified URL.
 **Behavior:**
 - Downloads the file to the directory specified by `$download_destination` in `settings.sh`
 - Creates the directory if it doesn't exist
+- Supports download retry and user interaction on failure
 
 **Compatibility:**
 - Can be used in installation scripts and user scripts
@@ -135,7 +138,7 @@ Enters pause mode and monitors a file for changes using the `filewatch` tool.
 
 **Behavior:**
 - Updates status to "PAUSED"
-- Monitors the specified file for changes
+- Uses efficient inotify mechanism to monitor the specified file for changes
 - Executes the specified script when changes are detected
 
 **Compatibility:**
@@ -147,11 +150,87 @@ Enters pause mode and monitors a file for changes using the `filewatch` tool.
 enter_pause_mode "$MODPATH/module_settings/config.sh" "$MODPATH/scripts/reload_config.sh"
 ```
 
+### Logging System
+
+#### `set_log_file [log_name]`
+
+Sets the log file name for the current script.
+
+**Parameters:**
+- `log_name`: Log file name (without extension)
+
+**Behavior:**
+- Sets the target file for subsequent log entries
+
+**Example:**
+```bash
+# Set log file
+set_log_file "custom_script"
+```
+
+#### `log_info [message]`
+
+Logs an info-level message.
+
+**Parameters:**
+- `message`: Message to log
+
+**Example:**
+```bash
+log_info "Starting custom operation"
+```
+
+#### `log_error [message]`
+
+Logs an error-level message.
+
+**Parameters:**
+- `message`: Error message to log
+
+**Example:**
+```bash
+log_error "Operation failed: Cannot access file"
+```
+
+#### `log_warn [message]`
+
+Logs a warning-level message.
+
+**Parameters:**
+- `message`: Warning message to log
+
+**Example:**
+```bash
+log_warn "Configuration file format may be incorrect"
+```
+
+#### `log_debug [message]`
+
+Logs a debug-level message.
+
+**Parameters:**
+- `message`: Debug message to log
+
+**Example:**
+```bash
+log_debug "Variable value: $variable"
+```
+
+#### `flush_log`
+
+Forces the log buffer to be written to disk.
+
+**Example:**
+```bash
+# Flush log after critical operation
+flush_log
+```
+
 ### Utility Functions
 
 #### `Aurora_ui_print [message]`
 
-Prints a formatted message to the console.
+Prints a formatted message to the console and logs it.
 
 **Parameters:**
 - `message`: The message to print
@@ -163,7 +242,7 @@ Aurora_ui_print "Starting installation..."
 
 #### `Aurora_abort [message] [error_code]`
 
-Aborts the script with an error message and code.
+Aborts the script with an error message and code, and logs it.
 
 **Parameters:**
 - `message`: Error message
@@ -172,6 +251,21 @@ Aborts the script with an error message and code.
 **Example:**
 ```bash
 Aurora_abort "Installation failed" 1
+```
+
+#### `check_network`
+
+Checks network connectivity status.
+
+**Returns:**
+- Network status in the `$Internet_CONN` variable (0=no connection, 1=China-only network, 2=GitHub accessible, 3=Google accessible)
+
+**Example:**
+```bash
+check_network
+if [ -z "$Internet_CONN" ]; then
+    Aurora_ui_print "No network connection, skipping download"
+fi
 ```
 
 #### `replace_module_id [file_path] [file_description]`
@@ -195,9 +289,11 @@ The following variables are available for use in your scripts:
 
 - `$MODPATH`: Path to the module directory
 - `$MODDIR`: Same as `$MODPATH`
+- `$NOW_PATH`: Current script execution path
 - `$TMP_FOLDER`: Temporary folder path (`$MODPATH/TEMP`)
 - `$SDCARD`: Path to the internal storage (`/storage/emulated/0`)
-- `$download_destination`: Path for downloaded files (defined in `settings.sh`)
+- `$download_destination`: Default directory for downloaded files
+- `$LOG_DIR`: Log directory path
 
 ### Module Information
 
@@ -206,17 +302,12 @@ The following variables are available for use in your scripts:
 - `$action_author`: Module author
 - `$action_description`: Module description
 
-### System Information
-
-- `$MAGISK_VER_CODE`: Magisk version code
-- `$KSU_VER_CODE`: KernelSU version code
-- `$KSU_KERNEL_VER_CODE`: KernelSU kernel version code
-- `$APATCH`: APatch flag
-
 ### Status Variables
 
-- `$STATUS_FILE`: Path to the status file
-- `$SH_ON_MAGISK`: Flag indicating if the script is running on Magisk
+- `$STATUS_FILE`: Status file path
+- `$SH_ON_MAGISK`: Flag indicating if script is running on Magisk
+- `$LOG_LEVEL`: Current log level (0=off, 1=error, 2=warning, 3=info, 4=debug)
+- `$Internet_CONN`: Network connection status
 
 ## 📝 Script Templates
 
@@ -225,17 +316,26 @@ The following variables are available for use in your scripts:
 ```bash
 #!/system/bin/sh
 
-# Custom installation script
+# Custom Installation Script
 # Executed during module installation
+
+# Set log file
+set_log_file "install_custom"
+log_info "Starting custom installation script"
 
 # Example: Create necessary directories
 mkdir -p "$MODPATH/data"
 
-# Example: Download additional files
-download_file "https://example.com/extra_file.zip"
+# Example: Check network and download extra files
+check_network
+if [ -n "$Internet_CONN" ]; then
+    download_file "https://example.com/extra_file.zip"
+else
+    log_warn "No network connection, skipping download"
+fi
 
 # Example: User interaction
-echo "Do you want to enable advanced features?"
+echo "Enable advanced features?"
 echo "Press Volume Up for Yes, Volume Down for No"
 key_select
 
@@ -243,11 +343,16 @@ if [ "$key_pressed" = "KEY_VOLUMEUP" ]; then
     # Enable advanced features
     echo "advanced_features=true" >> "$MODPATH/module_settings/settings.json"
     Aurora_ui_print "Advanced features enabled"
+    log_info "User chose to enable advanced features"
 else
     # Disable advanced features
     echo "advanced_features=false" >> "$MODPATH/module_settings/settings.json"
     Aurora_ui_print "Advanced features disabled"
+    log_info "User chose to disable advanced features"
 fi
+
+# Ensure log is written
+flush_log
 ```
 
 ### Service Script Template
@@ -255,76 +360,140 @@ fi
 ```bash
 #!/system/bin/sh
 
-# Service script
+# Service Script
 # Executed when the device boots
 
-# Start a background service
+# Set log file
+set_log_file "service_custom"
+log_info "Starting custom service script"
+
+# Start background service
 start_background_service() {
     # Service implementation
     nohup some_command > /dev/null 2>&1 &
+    log_info "Background service started"
     Aurora_ui_print "Background service started"
 }
 
-# Monitor configuration file for changes
+# Monitor config file changes
 monitor_config() {
+    log_info "Starting config file monitoring"
     enter_pause_mode "$MODPATH/module_settings/config.sh" "$MODPATH/scripts/reload_config.sh"
 }
 
 # Execute functions
 start_background_service
 monitor_config
+
+# Ensure log is written
+flush_log
 ```
-
-
 
 ## 🔧 Best Practices
 
 1. **Error Handling**
    - Always check for errors and provide meaningful error messages
    - Use `Aurora_abort` for critical errors
+   - Use the logging system to record error details
 
 2. **File Paths**
    - Use absolute paths with variables like `$MODPATH`
    - Create temporary files in `$TMP_FOLDER`
+   - Check if files exist before accessing them
 
 3. **User Interaction**
-   - Provide clear instructions when asking for user input
-   - Use appropriate functions based on the script type
+   - Provide clear instructions when requesting user input
+   - Use appropriate functions based on script type
+   - Log user choices to the log file
 
 4. **Logging**
-   - Use `Aurora_ui_print` for important messages
-   - Log significant events and errors
+   - Set a unique log file name for each script
+   - Use appropriate log levels (error, warn, info, debug)
+   - Use `flush_log` after critical operations to ensure logs are written
 
 5. **Cleanup**
-   - Remove temporary files when they're no longer needed
+   - Delete temporary files when no longer needed
    - Handle service termination properly
+   - Avoid leaving unused resources
 
 6. **Compatibility**
    - Check for required tools and dependencies
    - Use conditional logic based on Android version or root solution
+   - Test behavior on different devices
 
 ## 📋 Debugging Tips
 
-1. **Log Output**
-   - Add debug messages using `echo "DEBUG: $variable_name=$variable_value" >> "$MODPATH/debug.log"`
+1. **Use the Logging System**
+   - Use `log_debug` to record variable values and execution flow
+   - Set `LOG_LEVEL=4` to enable verbose debug logging
+   - Check log files in the `$LOG_DIR` directory
 
 2. **Check Status**
-   - Monitor the status file: `cat "$STATUS_FILE"`
+   - Monitor status file: `cat "$STATUS_FILE"`
+   - Use `Aurora_ui_print` to output key status information
 
 3. **Test Functions**
    - Test individual functions with sample inputs
+   - Add log markers before and after testing
 
 4. **Check Permissions**
    - Ensure scripts have proper execution permissions: `chmod +x script.sh`
+   - Check file access permissions
 
-5. **Validate Paths**
+5. **Verify Paths**
    - Verify file paths exist before accessing them
+   - Use `ls -la` to check file attributes
 
 ## 🔄 Version Compatibility
 
-When upgrading the AMMF framework, pay attention to changes in the following files:
+When upgrading the AMMF framework, pay attention to changes in these files:
 
 1. `files/scripts/default_scripts/main.sh` - Core functions may change
-2. `files/languages.sh` - Language strings may be updated
+2. `files/scripts/default_scripts/logger.sh` - Logging system may be updated
+3. `files/languages.sh` - Language strings may be updated
 
-It's recommended to back up your custom scripts before upgrading and then merge any changes carefully.
+After upgrading, check if your custom scripts are compatible with the new version, especially for scripts that use internal framework functions.
+
+## 🔍 Advanced Features
+
+### File Monitoring System
+
+AMMF2 introduces an efficient inotify-based file monitoring system through the `filewatch` tool. This tool supports:
+
+- Real-time file change monitoring
+- Low power mode option
+- Daemon mode
+- Custom execution scripts or commands
+
+**Advanced Usage Example:**
+
+```bash
+# Monitor config file in low power mode
+"$MODPATH/bin/filewatch" -d -l -i 5 "$MODPATH/module_settings/config.sh" "$MODPATH/scripts/reload_config.sh"
+```
+
+### Enhanced Logging System
+
+AMMF2 includes a powerful logging system implemented through the `logmonitor` tool. This system provides:
+
+- Multi-level logging (ERROR, WARN, INFO, DEBUG)
+- Automatic log rotation
+- Buffered writing for performance
+- Separate log files per module
+
+**Advanced Usage Example:**
+
+```bash
+# Manually control the logging system
+"$MODPATH/bin/logmonitor" -c write -n "custom_module" -l 3 -m "Custom log message"
+```
+
+## 📚 Reference Resources
+
+- [AMMF GitHub Repository](https://github.com/AuroraProject/AMMF)
+- [Magisk Module Development Documentation](https://topjohnwu.github.io/Magisk/guides.html)
+- [Shell Scripting Guide](https://www.gnu.org/software/bash/manual/bash.html)
+
+---
+
+For any questions or suggestions, please submit an issue on the GitHub repository or contact the module author.

@@ -4,11 +4,11 @@
 
 ## 📋 Overview
 
-This document provides development and customization guidelines for the WebUI component of the AMMF framework. WebUI is a browser-based configuration interface that allows users to configure module settings, view status information, and perform common operations through a graphical interface.
+This document provides development and customization guidelines for the WebUI part of the AMMF framework. WebUI is a browser-based configuration interface that allows users to configure module settings, view status information, and perform common operations through a graphical interface.
 
 ## 🚀 Quick Start
 
-## 🎨 Customizing the WebUI
+## 🎨 Customizing WebUI
 
 ### File Structure
 
@@ -20,12 +20,15 @@ webroot/
 ├── app.js             # Main application logic
 ├── core.js            # Core functionality module
 ├── i18n.js            # Multi-language support
-├── logger.js          # Logging
-├── style.css          # Main stylesheet
-├── animations.css     # Animation styles
-├── layout.css         # Layout styles
-├── theme.css          # Theme styles
+├── style.css          # Main stylesheet (imports other CSS modules)
 ├── theme.js           # Theme handling
+└── css/               # Style modules directory
+    ├── base.css       # Base styles and variables
+    ├── animations.css # Animation effects
+    ├── layout.css     # Layout styles
+    ├── components-base.css # Base component styles
+    ├── components-page.css # Page component styles
+    └── utilities.css  # Utility styles
 └── pages/             # Page modules
     ├── status.js      # Status page
     ├── logs.js        # Logs page
@@ -35,7 +38,7 @@ webroot/
 
 ### Modifying the Interface Layout
 
-To modify the WebUI interface layout, edit the `webroot/index.html` file. This file contains the basic HTML structure of the WebUI.
+To modify the WebUI interface layout, edit the `webroot/index.html` file. This file contains the basic HTML structure of WebUI.
 
 ```html
 <!DOCTYPE html>
@@ -43,35 +46,89 @@ To modify the WebUI interface layout, edit the `webroot/index.html` file. This f
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#006495">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="AMMF WebUI - Module Management Interface">
+    <meta name="color-scheme" content="light dark">
     <title>AMMF WebUI</title>
+    
+    <!-- Fonts and icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <!-- Theme script - loaded before stylesheets to prevent flashing -->
+    <script src="theme.js"></script>
     
     <!-- Stylesheets -->
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="animations.css">
-    <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="layout.css">
 </head>
 <body>
     <div id="app">
         <!-- Header -->
-        <header class="app-header">...</header>
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1 id="page-title">AMMF WebUI</h1>
+                </div>
+                <div class="header-actions">
+                    <!-- Page-specific action buttons container -->
+                    <div id="page-actions" class="page-actions"></div>
+                    
+                    <!-- Language switch button -->
+                    <button id="language-button" class="icon-button" title="Language">
+                        <span class="material-symbols-rounded">translate</span>
+                    </button>
+                    
+                    <!-- Theme toggle button -->
+                    <button id="theme-toggle" class="icon-button" title="Theme">
+                        <span class="material-symbols-rounded">light_mode</span>
+                    </button>
+                </div>
+            </div>
+        </header>
         
         <!-- Main content area -->
-        <main id="main-content">...</main>
+        <main id="main-content">
+            <!-- Content will be dynamically loaded by JavaScript -->
+        </main>
         
         <!-- Bottom navigation -->
-        <nav class="app-nav">...</nav>
+        <nav class="app-nav">
+            <div class="nav-content">
+                <div class="nav-item active" data-page="status">
+                    <span class="material-symbols-rounded">dashboard</span>
+                    <span class="nav-label" data-i18n="NAV_STATUS">Status</span>
+                </div>
+                <div class="nav-item" data-page="logs">
+                    <span class="material-symbols-rounded">article</span>
+                    <span class="nav-label" data-i18n="NAV_LOGS">Logs</span>
+                </div>
+                <div class="nav-item" data-page="settings">
+                    <span class="material-symbols-rounded">settings</span>
+                    <span class="nav-label" data-i18n="NAV_SETTINGS">Settings</span>
+                </div>
+                <div class="nav-item" data-page="about">
+                    <span class="material-symbols-rounded">info</span>
+                    <span class="nav-label" data-i18n="NAV_ABOUT">About</span>
+                </div>
+            </div>
+        </nav>
     </div>
     
-    <!-- Script references -->
-    <script src="theme.js"></script>
-    <script src="i18n.js"></script>
+    <!-- Core scripts -->
     <script src="core.js"></script>
-    <script src="logger.js"></script>
+    <script src="i18n.js"></script>
+    
+    <!-- Page modules -->
     <script src="pages/status.js"></script>
     <script src="pages/logs.js"></script>
     <script src="pages/settings.js"></script>
     <script src="pages/about.js"></script>
+    
+    <!-- Main application script -->
     <script src="app.js"></script>
 </body>
 </html>
@@ -79,29 +136,82 @@ To modify the WebUI interface layout, edit the `webroot/index.html` file. This f
 
 ### Customizing Styles
 
-To modify the WebUI styles, edit the `webroot/style.css` file. This file contains the CSS style definitions for the WebUI.
+WebUI styles now use a modular structure, with the main stylesheet `webroot/style.css` organizing styles by importing other CSS modules:
 
 ```css
-/* Example: Modify theme colors */
+/**
+ * AMMF WebUI Main Stylesheet
+ * Imports all modular CSS files
+ */
+
+/* Import base styles and variables */
+@import url('css/base.css');
+
+/* Import layout styles */
+@import url('css/layout.css');
+
+/* Import component styles - split into base components and page components */
+@import url('css/components-base.css');
+@import url('css/components-page.css');
+
+/* Import animation effects */
+@import url('css/animations.css');
+
+/* Import utility styles */
+@import url('css/utilities.css');
+```
+
+To modify styles, you can edit the corresponding CSS module files:
+
+- `css/base.css` - Contains base variables and style definitions
+- `css/layout.css` - Contains page layout related styles
+- `css/components-base.css` - Contains common UI component styles
+- `css/components-page.css` - Contains page-specific component styles
+- `css/animations.css` - Contains animations and transition effects
+- `css/utilities.css` - Contains utility class styles
+
+Base variable definition example (`css/base.css`):
+
+```css
+/* Base variables */
 :root {
-    --md-primary: #006495; /* Primary color */
-    --md-onPrimary: #ffffff;
-    --md-primaryContainer: #cde5ff;
-    --md-onPrimaryContainer: #001d31;
-    --md-secondary: #50606e;
-    --md-onSecondary: #ffffff;
-    --md-secondaryContainer: #d3e5f5;
-    --md-onSecondaryContainer: #0c1d29;
-    /* More color variables */
+  /* Card and element border radius */
+  --card-border-radius: 16px;
+  --button-border-radius: 20px;
+
+  /* Shadows */
+  --md-sys-elevation-level1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-level2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-level3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* State layer opacity */
+  --md-sys-state-hover-opacity: 0.08;
+  --md-sys-state-focus-opacity: 0.12;
+  --md-sys-state-pressed-opacity: 0.12;
+  --md-sys-state-dragged-opacity: 0.16;
+
+  /* Spacing variables */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Color variables */
+  --md-primary: #006495;
+  --md-onPrimary: #ffffff;
+  --md-primaryContainer: #cde5ff;
+  --md-onPrimaryContainer: #001d31;
+  /* More color variables */
 }
 
 /* Dark theme */
-.dark-theme {
-    --md-primary: #91cbff;
-    --md-onPrimary: #003355;
-    --md-primaryContainer: #004a78;
-    --md-onPrimaryContainer: #cde5ff;
-    /* More dark theme variables */
+[data-theme="dark"] {
+  --md-primary: #91cbff;
+  --md-onPrimary: #003355;
+  --md-primaryContainer: #004a78;
+  --md-onPrimaryContainer: #cde5ff;
+  /* More dark theme variables */
 }
 ```
 
@@ -174,7 +284,7 @@ this.pageModules = {
 4. Add an entry for the new page in the navigation bar:
 
 ```html
-<!-- Add in app-nav -->
+<!-- Add in nav-content -->
 <div class="nav-item" data-page="newpage">
     <span class="material-symbols-rounded">extension</span>
     <span class="nav-label" data-i18n="NAV_NEW_PAGE">New Page</span>
@@ -205,7 +315,7 @@ this.translations.en = {
 
 ### Settings Handling
 
-WebUI handles module settings through the `pages/settings.js` file. This file is responsible for fetching settings from the server, displaying settings forms, and saving user-modified settings.
+WebUI handles module settings through the `pages/settings.js` file. This file is responsible for retrieving settings from the server, displaying the settings form, and saving user-modified settings.
 
 ```javascript
 // Load settings data
@@ -252,7 +362,7 @@ async saveSettings() {
 
 ### Status Monitoring
 
-WebUI handles module status information through the `pages/status.js` file. This file is responsible for fetching status information from the server and displaying it in the interface.
+WebUI handles module status information through the `pages/status.js` file. This file is responsible for retrieving status information from the server and displaying it on the interface.
 
 ```javascript
 // Load module status
@@ -391,7 +501,7 @@ setTheme(theme) {
 
 ## 📱 Responsive Design
 
-WebUI uses responsive design to adapt to different screen sizes. Responsive design is primarily implemented through CSS media queries.
+WebUI uses responsive design to adapt to different screen sizes. Responsive design is mainly implemented through CSS media queries in the `css/layout.css` file.
 
 ```css
 /* Desktop devices */
@@ -437,17 +547,18 @@ WebUI uses responsive design to adapt to different screen sizes. Responsive desi
 
 ## 🔧 Debugging Tips
 
-1. **Use browser developer tools**: Press F12 to open developer tools, check console output and network requests.
+1. **Use browser developer tools**: Press F12 to open developer tools, view console output and network requests.
 
 2. **Add debug logs**: Add `console.log()` statements in JavaScript code to output debug information.
 
-3. **Use the logger.js module**: Use the built-in logging module to record information.
+3. **Use Core.showToast method**: Use the built-in toast functionality to display debug information.
 
 ```javascript
-// Record logs
-Logger.log('Information', 'info');
-Logger.log('Warning', 'warning');
-Logger.log('Error', 'error');
+// Show toast messages
+Core.showToast('Debug information', 'info');
+Core.showToast('Warning information', 'warning');
+Core.showToast('Error information', 'error');
+Core.showToast('Success information', 'success');
 ```
 
 ## 🔄 Version Compatibility
@@ -457,5 +568,6 @@ When upgrading the AMMF framework, pay attention to changes in the following fil
 1. `webroot/app.js` - Main application logic may change
 2. `webroot/core.js` - Core functionality may be updated
 3. `webroot/i18n.js` - Language strings may be updated
+4. `webroot/css/` - Style files may be updated
 
 It is recommended to back up customized WebUI files before upgrading, then carefully merge any changes.

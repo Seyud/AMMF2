@@ -19,6 +19,7 @@ This document provides a detailed description of the directory structure of AMMF
 │   ├── languages.sh       # Multi-language support
 │   └── scripts/           # Scripts directory
 ├── module_settings/       # Module settings
+├── src/                   # Source code directory
 ├── webroot/               # WebUI files
 ├── action.sh              # User action script
 ├── customize.sh           # Installation custom script
@@ -44,7 +45,8 @@ Contains GitHub related configurations for automated builds and issue management
 
 Contains binary tools for special module functions.
 
-- `filewatch.c` - File monitoring tool source code, used to monitor file changes and trigger actions
+- `filewatch` - File monitoring tool, used to monitor file changes and trigger actions
+- `logmonitor` - Log monitoring tool, used to manage module logs
 
 ### docs/
 
@@ -57,7 +59,7 @@ Contains project documentation, providing usage guides and development instructi
 - `WEBUI_GUIDE.md` - Chinese WebUI development guide
 - `WEBUI_GUIDE_EN.md` - English WebUI development guide
 - `DIRECTORY_STRUCTURE.md` - Chinese directory structure description
-- `CHANGELOG.md` - Update log
+- `DIRECTORY_STRUCTURE_EN.md` - English directory structure description
 
 ### files/
 
@@ -78,20 +80,35 @@ Contains module configuration files.
 - `config.sh` - Basic module configuration, such as module ID, name, author, description, etc.
 - `settings.json` - Settings JSON file used by WebUI
 
+### src/
+
+Contains source code files for the module, used to compile binary tools.
+
+- `filewatch.cpp` - File monitoring tool source code
+- `logmonitor.cpp` - Log monitoring tool source code
+
 ### webroot/
 
 Contains WebUI related files, used to provide a graphical configuration interface.
 
 - `index.html` - WebUI main page
 - `app.js` - WebUI main application logic
-- `styles.css` - WebUI stylesheet
-- `language.js` - WebUI multi-language support
-- `navigation.js` - WebUI navigation logic
-- `settings.js` - WebUI settings handling
-- `status.js` - WebUI status handling
+- `core.js` - WebUI core functionality
+- `i18n.js` - WebUI internationalization support
+- `style.css` - WebUI stylesheet
 - `theme.js` - WebUI theme handling
-- `ui.js` - WebUI interface components
-- `utils.js` - WebUI utility functions
+- **css/** - CSS style files directory
+  - `animations.css` - Animation effects styles
+  - `base.css` - Base styles
+  - `components-base.css` - Component base styles
+  - `components-page.css` - Page component styles
+  - `layout.css` - Layout styles
+  - `utilities.css` - Utility styles
+- **pages/** - Page components directory
+  - `about.js` - About page
+  - `logs.js` - Logs page
+  - `settings.js` - Settings page
+  - `status.js` - Status page
 
 ## 📄 Core File Description
 

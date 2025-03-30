@@ -19,6 +19,7 @@
 │   ├── languages.sh       # 多语言支持
 │   └── scripts/           # 脚本目录
 ├── module_settings/       # 模块设置
+├── src/                   # 源代码目录
 ├── webroot/               # WebUI文件
 ├── action.sh              # 用户操作脚本
 ├── customize.sh           # 安装自定义脚本
@@ -44,7 +45,8 @@
 
 包含二进制工具，用于模块的特殊功能。
 
-- `filewatch.c` - 文件监控工具源码，用于监控文件变化并触发操作
+- `filewatch` - 文件监控工具，用于监控文件变化并触发操作
+- `logmonitor` - 日志监控工具，用于管理模块日志
 
 ### docs/
 
@@ -57,7 +59,7 @@
 - `WEBUI_GUIDE.md` - 中文WebUI开发指南
 - `WEBUI_GUIDE_EN.md` - 英文WebUI开发指南
 - `DIRECTORY_STRUCTURE.md` - 中文目录结构说明
-- `CHANGELOG.md` - 更新日志
+- `DIRECTORY_STRUCTURE_EN.md` - 英文目录结构说明
 
 ### files/
 
@@ -78,20 +80,35 @@
 - `config.sh` - 模块基本配置，如模块ID、名称、作者、描述等
 - `settings.json` - WebUI使用的设置JSON文件
 
+### src/
+
+包含模块的源代码文件，用于编译生成二进制工具。
+
+- `filewatch.cpp` - 文件监控工具源码
+- `logmonitor.cpp` - 日志监控工具源码
+
 ### webroot/
 
 包含WebUI相关文件，用于提供图形化配置界面。
 
 - `index.html` - WebUI主页面
 - `app.js` - WebUI主应用逻辑
-- `styles.css` - WebUI样式表
-- `language.js` - WebUI多语言支持
-- `navigation.js` - WebUI导航逻辑
-- `settings.js` - WebUI设置处理
-- `status.js` - WebUI状态处理
+- `core.js` - WebUI核心功能
+- `i18n.js` - WebUI国际化支持
+- `style.css` - WebUI样式表
 - `theme.js` - WebUI主题处理
-- `ui.js` - WebUI界面组件
-- `utils.js` - WebUI工具函数
+- **css/** - CSS样式文件目录
+  - `animations.css` - 动画效果样式
+  - `base.css` - 基础样式
+  - `components-base.css` - 组件基础样式
+  - `components-page.css` - 页面组件样式
+  - `layout.css` - 布局样式
+  - `utilities.css` - 实用工具样式
+- **pages/** - 页面组件目录
+  - `about.js` - 关于页面
+  - `logs.js` - 日志页面
+  - `settings.js` - 设置页面
+  - `status.js` - 状态页面
 
 ## 📄 核心文件说明
 

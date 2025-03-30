@@ -1,15 +1,15 @@
-# AMMF - Aurora Modular Magisk Framework
+# AMMF2 - Aurora Modular Magisk Framework
 
 [简体中文](README.md) | [English](README_EN.md)
 
 <div align="center">
-    <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF" alt="GitHub Commit Activity">
-    <img src="https://img.shields.io/github/license/Aurora-Nasa-1/AMMF" alt="GitHub License">
+    <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
+    <img src="https://img.shields.io/github/license/Aurora-Nasa-1/AMMF2" alt="GitHub License">
 </div>
 
 ## 📋 项目概述
 
-AMMF (Aurora Magisk Module Framework) 是一个功能强大的Magisk模块开发框架，旨在简化模块开发流程，提供标准化的结构和丰富的功能组件。该框架支持多语言、WebUI配置界面、自定义脚本等特性，适用于各种类型的Magisk模块开发。
+AMMF2 (Aurora Modular Magisk Framework 2) 是一个功能强大的Magisk模块开发框架，旨在简化模块开发流程，提供标准化的结构和丰富的功能组件。该框架支持多语言、WebUI配置界面、自定义脚本等特性，适用于各种类型的Magisk模块开发。
 
 ## ✨ 主要特性
 
@@ -17,6 +17,7 @@ AMMF (Aurora Magisk Module Framework) 是一个功能强大的Magisk模块开发
 - **WebUI配置界面**：提供美观的Material Design风格Web配置界面
 - **自定义脚本系统**：灵活的脚本系统，支持安装时和运行时脚本
 - **文件监控服务**：内置filewatch工具，支持文件变化触发操作
+- **日志操作工具**：完整的日志系统，支持日志记录和错误处理
 - **用户交互功能**：提供多种用户交互方式，如菜单选择、按键检测等
 - **GitHub Action支持**：内置GitHub Action工作流，支持自动构建和发布
 - **完善的错误处理**：提供全面的错误处理和日志记录机制
@@ -27,10 +28,10 @@ AMMF (Aurora Magisk Module Framework) 是一个功能强大的Magisk模块开发
 
 ```bash
 # 方法1：使用Git克隆仓库
-git clone https://github.com/Aurora-Nasa-1/AMMF.git
+git clone https://github.com/Aurora-Nasa-1/AMMF2.git
 
 # 方法2：直接下载ZIP压缩包
-# 访问 https://github.com/Aurora-Nasa-1/AMMF/archive/refs/heads/main.zip
+# 访问 https://github.com/Aurora-Nasa-1/AMMF2/archive/refs/heads/main.zip
 ```
 
 ### 基本配置
@@ -62,16 +63,6 @@ git clone https://github.com/Aurora-Nasa-1/AMMF.git
 
 2. **服务脚本**：
    在 `files/scripts/service_script.sh` 中编写模块运行时的服务脚本。
-
-### WebUI配置
-
-1. **启用WebUI**：
-   WebUI默认已启用，可通过浏览器访问 `http://localhost:8080`（端口可配置）。
-
-2. **自定义WebUI**：
-   - 修改 `webroot/index.html` 自定义界面布局
-   - 编辑 `webroot/settings.js` 配置可设置的选项
-   - 调整 `webroot/styles.css` 自定义界面样式
 
 ## 📚 更多文档
 
