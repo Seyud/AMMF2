@@ -50,7 +50,8 @@ class UI {
         themeToggle: document.getElementById('theme-toggle'),
         languageButton: document.getElementById('language-button'),
         navItems: document.querySelectorAll('.nav-item'),
-        header: document.querySelector('.app-header')
+        header: document.querySelector('.app-header'),
+        navContent: document.querySelector('.nav-content')
     };
 
     static transitions = {
@@ -92,6 +93,94 @@ class UI {
                 </div>
             </div>
         `;
+    }
+    static updateLayout() {
+        const isLandscape = window.innerWidth >= 768;
+        const header = this.elements.header;
+        const mainContent = document.getElementById('main-content');
+        const navContent = this.elements.navContent;
+        const pageActions = this.elements.pageActions;
+        const pageTitle = this.elements.pageTitle;
+        const themeToggle = this.elements.themeToggle;
+        const languageButton = this.elements.languageButton;
+    
+        if (isLandscape) {
+            // 横屏模式：隐藏顶栏，将标题和操作按钮移至页面顶部
+            header.style.display = 'none';
+            
+            // 创建或获取页面头部容器
+            let pageHeader = mainContent.querySelector('.page-header');
+            if (!pageHeader) {
+                pageHeader = document.createElement('div');
+                pageHeader.className = 'page-header';
+                const pageHeaderContent = document.createElement('div');
+                pageHeaderContent.className = 'page-header-content';
+                pageHeader.appendChild(pageHeaderContent);
+                mainContent.insertBefore(pageHeader, mainContent.firstChild);
+            }
+    
+            // 移动标题和操作按钮到页面头部内容容器中
+            const pageHeaderContent = pageHeader.querySelector('.page-header-content');
+            if (pageTitle && !pageHeaderContent.contains(pageTitle)) {
+                // 修复标题截断问题
+                pageTitle.style.display = 'block';
+                pageTitle.style.overflow = 'visible'; // 确保内容不被截断
+                pageTitle.style.textOverflow = 'clip'; // 移除省略号
+                pageTitle.style.maxWidth = 'none'; // 移除最大宽度限制
+                pageHeaderContent.appendChild(pageTitle);
+            }
+            if (pageActions && !pageHeaderContent.contains(pageActions)) {
+                pageActions.style.margin = '0';
+                pageHeaderContent.appendChild(pageActions);
+            }
+    
+            // 移动主题和语言按钮到侧边栏底部
+            let bottomActions = navContent.querySelector('.nav-bottom-actions');
+            if (!bottomActions) {
+                bottomActions = document.createElement('div');
+                bottomActions.className = 'nav-bottom-actions';
+                navContent.appendChild(bottomActions);
+            }
+            if (!bottomActions.contains(languageButton)) {
+                bottomActions.appendChild(languageButton);
+            }
+            if (!bottomActions.contains(themeToggle)) {
+                bottomActions.appendChild(themeToggle);
+            }
+        } else {
+            // 竖屏模式：恢复原始布局
+            header.style.display = 'flex';
+            const headerContent = header.querySelector('.header-content');
+            if (headerContent) {
+                // 恢复标题显示
+                if (pageTitle) {
+                    pageTitle.style.display = 'block';
+                    // 重置标题样式
+                    pageTitle.style.whiteSpace = '';
+                    pageTitle.style.overflow = '';
+                    pageTitle.style.textOverflow = '';
+                    pageTitle.style.maxWidth = '';
+                    
+                    if (!headerContent.contains(pageTitle)) {
+                        headerContent.insertBefore(pageTitle, headerContent.firstChild);
+                    }
+                }
+                // 恢复操作按钮
+                const headerActions = headerContent.querySelector('.header-actions');
+                if (headerActions) {
+                    if (!headerActions.contains(pageActions)) {
+                        pageActions.style.margin = '';
+                        headerActions.insertBefore(pageActions, headerActions.firstChild);
+                    }
+                    if (!headerActions.contains(languageButton)) {
+                        headerActions.appendChild(languageButton);
+                    }
+                    if (!headerActions.contains(themeToggle)) {
+                        headerActions.appendChild(themeToggle);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -233,7 +322,14 @@ class App {
             e.preventDefault();
             ThemeManager.toggle(e);
         });
+        window.addEventListener('resize', () => {
+            UI.updateLayout();
+        });
 
+        // 添加页面加载完成后的布局初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.updateLayout();
+        });
         window.addEventListener('popstate', (e) => {
             const pageName = e.state?.page || 'status';
             Router.navigate(pageName, false);

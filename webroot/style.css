@@ -19,14 +19,3 @@
 /* 导入工具类样式 */
 @import url('css/utilities.css');
 
-/* 应用特定变量 */
-:root {
-  /* 尺寸变量 */
-  --header-height: 64px;
-  --nav-height: 72px;
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-}

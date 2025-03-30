@@ -61,9 +61,9 @@
   --md-sys-typescale-font-family-monospace: 'Roboto Mono', 'Noto Sans Mono CJK SC', monospace;
   
   /* 字体粗细 - 调整为更符合MD3的值 */
-  --md-sys-typescale-weight-regular: 300;
-  --md-sys-typescale-weight-medium: 400;
-  --md-sys-typescale-weight-bold: 700;
+  --md-sys-typescale-weight-regular: 400;    /* 从300改为400 */
+  --md-sys-typescale-weight-medium: 500;     /* 从400改为500 */
+  --md-sys-typescale-weight-bold: 700;       /* 保持不变 */
   /* 形状 - 添加 */
   --md-sys-shape-corner-extra-small: 4px;
   --md-sys-shape-corner-small: 8px;
@@ -82,8 +82,10 @@
 
   /* 布局变量 */
   --header-height: 64px;
-  --nav-height: 80px;  /* 从72px增加到80px */
-  /* 增加底栏高度，从原来的值增加 */
+  --nav-height: 80px;
+  --nav-width: 80px;  /* 新增侧栏宽度变量 */
+  --header-with-spacing: calc(var(--header-height) + var(--spacing-sm));
+  --nav-bottom-position: calc(var(--nav-height) + var(--spacing-md));
 }
 
 /* 浅色主题 */
@@ -146,6 +148,7 @@
   --md-hover-opacity: 0.08;
   --md-focus-opacity: 0.12;
   --md-pressed-opacity: 0.16;
+  --md-surface-rgb: 255, 251, 254; 
 }
 
 /* 暗色主题 (基于深蓝和青绿组合) */
@@ -199,6 +202,7 @@
   --md-pressed-opacity: 0.25;
   /* 新增导航覆盖层基础色 */
   --md-nav-overlay: rgba(174, 186, 230, 0.16);
+  --md-surface-rgb: 31, 31, 35;
 }
 
 /* 通用颜色 (两种主题共用) */
@@ -254,7 +258,7 @@ body {
   box-sizing: inherit;
 }
 
-/* 滚动条样式 */
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

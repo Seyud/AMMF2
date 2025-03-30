@@ -113,32 +113,30 @@ const StatusPage = {
                 <div class="action-output-content"></div>
             `;
             
-            // 添加到页面
             document.querySelector('.status-page').appendChild(outputContainer);
             const outputContent = outputContainer.querySelector('.action-output-content');
             
-            // 显示加载状态
             Core.showToast(I18n.translate('RUNNING_ACTION', '正在运行Action...'));
-            outputContent.textContent = I18n.translate('ACTION_STARTING', '正在启动Action...');
+            outputContent.textContent = I18n.translate('ACTION_STARTING', '正在启动Action...\n');
             
-            // 绑定关闭按钮事件
             outputContainer.querySelector('.close-output').addEventListener('click', () => {
                 outputContainer.remove();
             });
     
-            // 运行Action并实时显示输出
             await Core.execCommand(`sh ${Core.MODULE_PATH}action.sh`, {
                 onStdout: (data) => {
                     outputContent.textContent += data + '\n';
                     outputContent.scrollTop = outputContent.scrollHeight;
                 },
                 onStderr: (data) => {
-                    outputContent.textContent += '[ERROR] ' + data + '\n';
+                    const errorText = document.createElement('span');
+                    errorText.className = 'error';
+                    errorText.textContent = '[ERROR] ' + data + '\n';
+                    outputContent.appendChild(errorText);
                     outputContent.scrollTop = outputContent.scrollHeight;
                 }
             });
     
-            // 运行完成提示
             outputContent.textContent += '\n' + I18n.translate('ACTION_COMPLETED', 'Action运行完成');
             Core.showToast(I18n.translate('ACTION_COMPLETED', 'Action运行完成'));
         } catch (error) {
@@ -362,42 +360,48 @@ const StatusPage = {
     // 刷新状态
     async refreshStatus(showToast = false) {
         try {
+            const oldStatus = this.moduleStatus;
+            const oldDeviceInfo = JSON.stringify(this.deviceInfo);
+            
             await this.loadModuleStatus();
             await this.loadDeviceInfo();
             
-            // 更新UI
-            const statusPage = document.querySelector('.status-page');
-            if (statusPage) {
-                statusPage.innerHTML = '';
-                statusPage.innerHTML = `
-                    <!-- 模块状态卡片 -->
-                    <div class="status-card">
-                        <div class="status-card-content">
-                            <div class="status-icon-container">
-                                <div class="status-indicator ${this.getStatusClass()}">
-                                    <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
+            // 只在状态发生变化时更新UI
+            const newDeviceInfo = JSON.stringify(this.deviceInfo);
+            if (oldStatus !== this.moduleStatus || oldDeviceInfo !== newDeviceInfo) {
+                // 更新UI
+                const statusPage = document.querySelector('.status-page');
+                if (statusPage) {
+                    statusPage.innerHTML = `
+                        <!-- 模块状态卡片 -->
+                        <div class="status-card">
+                            <div class="status-card-content">
+                                <div class="status-icon-container">
+                                    <div class="status-indicator ${this.getStatusClass()}">
+                                        <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="status-info-container">
-                                <div class="status-title-row">
-                                    <span class="status-title" data-i18n="MODULE_STATUS">模块状态</span>
-                                    <span class="status-value" data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
-                                </div>
-                                <div class="status-update-row">
-                                    <span class="status-update-time">${new Date().toLocaleString()}</span>
+                                <div class="status-info-container">
+                                    <div class="status-title-row">
+                                        <span class="status-title" data-i18n="MODULE_STATUS">模块状态</span>
+                                        <span class="status-value" data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
+                                    </div>
+                                    <div class="status-update-row">
+                                        <span class="status-update-time">${new Date().toLocaleString()}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        
+                        <!-- 设备信息卡片 -->
+                        <div class="card device-info">
+                            <h3 data-i18n="DEVICE_INFO">设备信息</h3>
+                            ${this.renderDeviceInfo()}
+                        </div>
+                    `;
                     
-                    <!-- 设备信息卡片 -->
-                    <div class="card device-info">
-                        <h3 data-i18n="DEVICE_INFO">设备信息</h3>
-                        ${this.renderDeviceInfo()}
-                    </div>
-                `;
-                
-                this.afterRender();
+                    this.afterRender();
+                }
             }
             
             if (showToast) {
@@ -413,10 +417,10 @@ const StatusPage = {
     
     // 启动自动刷新
     startAutoRefresh() {
-        // 每30秒刷新一次
+        // 每60秒刷新一次
         this.refreshTimer = setInterval(() => {
             this.refreshStatus();
-        }, 30000);
+        }, 60000);
     },
     
     // 停止自动刷新
@@ -466,14 +470,17 @@ const StatusPage = {
     // 页面激活时的回调
     onActivate() {
         console.log('状态页面已激活');
-        // 刷新状态
-        this.refreshStatus();
+        // 如果没有状态数据才进行刷新
+        if (!this.moduleStatus || !this.deviceInfo) {
+            this.refreshStatus();
+        }
+        // 启动自动刷新
+        this.startAutoRefresh();
     },
     
-    // 页面停用时的回调
     onDeactivate() {
         console.log('状态页面已停用');
-        // 停止自动刷新
+        // 停止自动刷新但保留状态数据
         this.stopAutoRefresh();
     }
 };

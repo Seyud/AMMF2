@@ -6,7 +6,7 @@
 const AboutPage = {
     // 模块信息
     moduleInfo: {},
-    version: '5.0.0',
+    version: '6.0.0',
     
     // 初始化
     async init() {
@@ -134,6 +134,14 @@ const AboutPage = {
     // 加载模块信息
     async loadModuleInfo() {
         try {
+            // 检查是否有缓存的模块信息
+            const cachedInfo = sessionStorage.getItem('moduleInfo');
+            if (cachedInfo) {
+                this.moduleInfo = JSON.parse(cachedInfo);
+                console.log('从缓存加载模块信息:', this.moduleInfo);
+                return;
+            }
+            
             // 尝试从配置文件获取模块信息
             const configOutput = await Core.execCommand(`cat "${Core.MODULE_PATH}module.prop"`);
             
@@ -152,6 +160,8 @@ const AboutPage = {
                 });
                 
                 this.moduleInfo = config;
+                // 缓存模块信息
+                sessionStorage.setItem('moduleInfo', JSON.stringify(config));
                 console.log('模块信息加载成功:', this.moduleInfo);
             } else {
                 console.warn('无法读取模块配置文件');

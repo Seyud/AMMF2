@@ -27,47 +27,54 @@
 
 /* 页面切换动画 */
 .page-enter {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: 
-        transform var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard),
-        opacity var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard);
+  opacity: 0;
+  transform: translateY(20px) translateZ(0);
+  will-change: transform, opacity;
+  transition: 
+    transform var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-emphasized),
+    opacity var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-emphasized);
 }
 
 .page-enter.page-active {
-    transform: translateY(0);
-    opacity: 1;
+  transform: translateY(0) translateZ(0);
+  opacity: 1;
 }
 
 .page-exit {
-    opacity: 1;
-    transition: opacity var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-standard-accelerate);
-    position: absolute;
-    width: 100%;
-    left: 0;
-    top: 0;
+  opacity: 1;
+  transform: translateZ(0);
+  will-change: opacity;
+  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard-accelerate);
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 0;
+  pointer-events: none; /* 添加此行，防止退出页面捕获点击事件 */
 }
 
 .page-exit.page-active {
-    opacity: 0;
+  opacity: 0;
 }
 
-/* 顶栏标题切换动画 */
-#page-title.changing {
-    opacity: 0;
-    transition: opacity var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-standard);
+/* 添加这个新规则，确保动画完成后清除绝对定位 */
+.page-exit-complete {
+  position: static;
+  width: auto;
+  transform: none;
 }
 
-/* 页面操作按钮切换动画 */
-#page-actions.changing {
-    opacity: 0;
-    transition: opacity var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-standard);
+#page-actions.active {
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* 按钮动画效果 */
 .icon-button .material-symbols-rounded,
 .md-button .material-symbols-rounded {
-  transition: transform 0.2s ease-in-out, font-variation-settings 0.3s ease;
+  transition: 
+    transform 0.2s var(--md-sys-motion-easing-emphasized), 
+    font-variation-settings 0.3s var(--md-sys-motion-easing-standard);
+  will-change: transform;
 }
 
 /* 刷新按钮动画 */
@@ -78,7 +85,7 @@
 
 .icon-button#refresh-logs.spinning .material-symbols-rounded,
 .icon-button#refresh-settings.spinning .material-symbols-rounded {
-  animation: refresh-spin 1s linear infinite;
+  animation: refresh-spin 0.8s var(--md-sys-motion-easing-standard) infinite;
 }
 
 /* 删除按钮动画 */
@@ -91,7 +98,7 @@
 }
 
 .icon-button#clear-logs:hover .material-symbols-rounded {
-  animation: delete-shake 0.4s ease-in-out;
+  animation: delete-shake 0.4s var(--md-sys-motion-easing-emphasized) forwards;
 }
 
 /* 下载按钮动画 */
@@ -102,7 +109,7 @@
 }
 
 .icon-button#export-logs:hover .material-symbols-rounded {
-  animation: download-bounce 0.4s ease-in-out;
+  animation: download-bounce 0.4s var(--md-sys-motion-easing-emphasized) forwards;
 }
 
 /* 保存按钮动画 */
@@ -113,10 +120,10 @@
 }
 
 .md-button#save-settings:hover .material-symbols-rounded {
-  animation: save-pulse 0.4s ease-in-out;
+  animation: save-pulse 0.4s var(--md-sys-motion-easing-emphasized) forwards;
 }
 
-/* 添加新的关键帧动画 */
+/* 导航栏动画效果 */
 @keyframes nav-overlay-expand {
   0% {
     width: 0;
@@ -137,4 +144,27 @@
     width: 0;
     opacity: 0;
   }
+}
+
+/* 主题切换涟漪动画 */
+.theme-ripple {
+  position: fixed;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: var(--md-primary);
+  transform: scale(0);
+  opacity: 0.2;
+  z-index: 9999;
+  pointer-events: none;
+  transition: transform 0.8s var(--md-sys-motion-easing-emphasized);
+}
+
+.theme-ripple.active {
+  transform: scale(30);
+}
+
+/* 优化Toast动画 */
+.toast {
+  will-change: transform, opacity;
 }

@@ -22,12 +22,11 @@ const SettingsPage = {
     // 初始化
     async init() {
         try {
-            // 加载设置数据
-            await this.loadSettingsData();
-            
-            // 加载设置元数据（排除项、描述、选项）
-            await this.loadSettingsMetadata();
-            
+            // 只在首次加载时获取数据
+            if (!this.settings) {
+                await this.loadSettingsData();
+                await this.loadSettingsMetadata();
+            }
             return true;
         } catch (error) {
             console.error('初始化设置页面失败:', error);
@@ -40,10 +39,10 @@ const SettingsPage = {
         // 设置页面标题
         document.getElementById('page-title').textContent = I18n.translate('NAV_SETTINGS', '设置');
         
-        // 添加刷新按钮到页面操作区
+        // 只保留手动刷新按钮
         const pageActions = document.getElementById('page-actions');
         pageActions.innerHTML = `
-            <button id="refresh-settings" class="md-button icon-only" title="${I18n.translate('REFRESH_SETTINGS', '刷新设置')}">
+            <button id="refresh-settings" class="md-button icon-only" title="${I18n.translate('REFRESH_SETTINGS', '手动刷新设置')}">
                 <span class="material-symbols-rounded">refresh</span>
             </button>
         `;
@@ -63,8 +62,8 @@ const SettingsPage = {
                     </button>
                 </div>
                 
-                <!-- 加载覆盖层 -->
-                <div id="settings-loading" class="settings-loading-overlay" style="display: none;">
+                <!-- 修改加载覆盖层的z-index和position -->
+                <div id="settings-loading" class="settings-loading-overlay" style="display: none; position: absolute; z-index: 1000;">
                     <div class="loading-spinner"></div>
                     <p data-i18n="LOADING_SETTINGS">${I18n.translate('LOADING_SETTINGS', '加载设置中...')}</p>
                 </div>
@@ -187,8 +186,10 @@ const SettingsPage = {
         try {
             this.showLoading();
             
-            // 使用setTimeout让UI有机会更新
-            await new Promise(resolve => setTimeout(resolve, 0));
+            // 如果已经有缓存的设置数据,直接使用
+            if (this.settings && Object.keys(this.settings).length > 0) {
+                return;
+            }
             
             const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
             const configContent = await Core.execCommand(`cat "${configPath}"`);
@@ -199,13 +200,7 @@ const SettingsPage = {
                 return;
             }
             
-            // 使用requestIdleCallback处理大数据
-            await new Promise(resolve => {
-                requestIdleCallback(() => {
-                    this.settings = this.parseConfigFile(configContent);
-                    resolve();
-                });
-            });
+            this.settings = this.parseConfigFile(configContent);
         } catch (error) {
             console.error('加载设置数据失败:', error);
             this.settings = {};
@@ -378,6 +373,9 @@ const SettingsPage = {
         const loadingElement = document.getElementById('settings-loading');
         if (loadingElement) {
             loadingElement.style.display = 'flex';
+            // 确保loading覆盖层完全隐藏
+            loadingElement.style.visibility = 'visible';
+            loadingElement.style.opacity = '1';
         }
     },
     
@@ -386,7 +384,12 @@ const SettingsPage = {
         this.isLoading = false;
         const loadingElement = document.getElementById('settings-loading');
         if (loadingElement) {
-            loadingElement.style.display = 'none';
+            // 使用渐变效果隐藏loading覆盖层
+            loadingElement.style.opacity = '0';
+            loadingElement.style.visibility = 'hidden';
+            setTimeout(() => {
+                loadingElement.style.display = 'none';
+            }, 300); // 等待渐变动画完成后完全隐藏
         }
     },
     

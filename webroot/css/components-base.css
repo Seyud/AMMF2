@@ -232,7 +232,7 @@ button:disabled .material-symbols-rounded,
 /* 滑块样式 */
 .slider-container {
   width: 100%;
-  padding: 8px 0;
+  padding: 12px 0;  /* 增加内边距提供更好的触摸区域 */
 }
 
 .setting-slider {
@@ -242,6 +242,7 @@ button:disabled .material-symbols-rounded,
   background: var(--md-surfaceVariant);
   border-radius: 2px;
   outline: none;
+  transition: background-color 0.2s ease;
 }
 
 .setting-slider::-webkit-slider-thumb,
@@ -256,11 +257,42 @@ button:disabled .material-symbols-rounded,
 
 .setting-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  box-shadow: var(--md-sys-elevation-level1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.setting-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: var(--md-sys-elevation-level2);
 }
 
+.setting-slider::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  box-shadow: var(--md-sys-elevation-level3);
+}
 .setting-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
   border: none;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  box-shadow: var(--md-sys-elevation-level1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.setting-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: var(--md-sys-elevation-level2);
+}
+
+.setting-slider::-moz-range-thumb:active {
+  transform: scale(1.15);
+  box-shadow: var(--md-sys-elevation-level3);
 }
 
 /* 列表样式 */
@@ -387,6 +419,9 @@ button:disabled .material-symbols-rounded,
   background-color: rgba(var(--md-background-rgb), 0.8);
   z-index: 1000;
   backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
 }
 
 @keyframes spin {

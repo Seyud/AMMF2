@@ -5,81 +5,43 @@
 
 /* 主内容区域 */
 #main-content {
-  will-change: transform;
-  transform: translateZ(0);
-  padding-top: calc(var(--header-height) + var(--spacing-sm));
-  padding-bottom: calc(var(--nav-height) + var(--spacing-md));
-  min-height: calc(100vh - var(--header-height) - var(--nav-height));
+  padding: calc(var(--header-height) + var(--spacing-sm)) var(--spacing-md) var(--spacing-md);
+  min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
   background-color: var(--md-background);
+  transition: padding var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
 }
 
 /* 页面容器 */
 .page-container {
-  will-change: transform, opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
   padding: var(--spacing-md);
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden; /* 防止水平滚动 */
-  overscroll-behavior: none; /* 防止滑动越界反弹 */
-}
-
-/* 确保所有可滚动容器在移动端没有滚动条 */
-@media (max-width: 768px) {
-  .page-container,
-  #main-content,
-  .card,
-  .list-container {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .page-container::-webkit-scrollbar,
-  #main-content::-webkit-scrollbar,
-  .card::-webkit-scrollbar,
-  .list-container::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
-  }
-}
-
-/* 添加页面容器内元素的间距 */
-.page-container > * {
-  margin-bottom: var(--spacing-md);
-}
-
-.page-container > *:last-child {
-  margin-bottom: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  scrollbar-gutter: stable;
 }
 
 /* 头部样式 */
 .app-header {
-  background-color: rgba(var(--md-background-rgb), 0.7); /* 降低透明度到70% */
+  background-color: rgba(var(--md-surface-rgb), 0.7);
   color: var(--md-onSurface);
   height: var(--header-height);
-  box-shadow: none;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  /* 降低模糊程度,提升性能 */
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  /* 添加底部圆角 */
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  /* 性能优化 */
+  border-radius: 0 0 20px 20px;
+  /* 保留 will-change，因为头部固定且有动画 */
   will-change: transform;
   transform: translateZ(0);
-  backface-visibility: hidden;
+  transition: background-color 0.3s ease;
 }
 
 .header-content {
@@ -93,6 +55,13 @@
   width: 100%;
 }
 
+.header-title {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0; /* 允许标题区域收缩 */
+  overflow: hidden; /* 防止溢出 */
+}
 /* Toast 通知样式 */
 #toast-container {
   position: fixed;
@@ -114,11 +83,11 @@
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--button-border-radius);
   box-shadow: var(--md-sys-elevation-level2);
-  margin-bottom: var(--spacing-sm);
   width: 100%;
   max-width: 400px;
   opacity: 0;
   transform: translateY(20px);
+  /* 使用更高效的过渡属性 */
   transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard),
               transform var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
   text-align: center;
@@ -130,31 +99,25 @@
   font-weight: var(--md-sys-typescale-weight-medium);
 }
 
+/* 使用 transform 和 opacity 进行动画，避免触发布局重新计算 */
 .toast.show {
   opacity: 1;
   transform: translateY(0);
 }
 
-.toast-info {
-  background-color: var(--md-secondaryContainer);
-  color: var(--md-onSecondaryContainer);
+/* 为固定位置的元素添加 transform: translateZ(0) 启用硬件加速 */
+.app-header,
+.app-nav {
+  transform: translateZ(0);
 }
 
-.toast-success {
-  background-color: var(--md-successContainer);
-  color: var(--md-onSuccessContainer);
-}
+/* Toast variants */
+.toast-info { background-color: var(--md-secondaryContainer); color: var(--md-onSecondaryContainer); }
+.toast-success { background-color: var(--md-successContainer); color: var(--md-onSuccessContainer); }
+.toast-warning { background-color: var(--md-warningContainer); color: var(--md-onWarningContainer); }
+.toast-error { background-color: var(--md-errorContainer); color: var(--md-onErrorContainer); }
 
-.toast-warning {
-  background-color: var(--md-warningContainer);
-  color: var(--md-onWarningContainer);
-}
-
-.toast-error {
-  background-color: var(--md-errorContainer);
-  color: var(--md-onErrorContainer);
-}
-
+/* 头部操作按钮 */
 .header-actions {
   display: flex;
   gap: var(--spacing-sm);
@@ -167,12 +130,8 @@
   margin-right: var(--spacing-sm);
 }
 
-/* 当没有页面操作按钮时隐藏分隔符 */
-.page-actions:empty {
-  margin-right: 0;
-}
+.page-actions:empty { margin-right: 0; }
 
-/* 当有页面操作按钮时显示分隔符 */
 .page-actions:not(:empty)::after {
   content: "";
   height: 24px;
@@ -180,24 +139,21 @@
   background-color: var(--md-outlineVariant);
   margin-left: var(--spacing-sm);
   align-self: center;
-  display: flex;
 }
 
-/* 导航栏样式 - 增加高度 */
+/* 导航栏基础样式 */
 .app-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--nav-height);  /* 将在:root中增加高度值 */
+  height: var(--nav-height);
   background-color: var(--card-background);
   display: flex;
   justify-content: space-around;
   z-index: 100;
-  /* 移除阴影 */
-  box-shadow: none;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  border-radius: 20px 20px 0 0;
+  transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
 }
 
 .nav-content {
@@ -208,72 +164,51 @@
   justify-content: space-around;
 }
 
+/* 导航项样式 */
 .nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px 0;  /* 增加上下内边距，从12px改为16px */
-  color: var(--md-onSurfaceVariant); /* 保持颜色不变 */
+  padding: var(--spacing-md) 0;
+  color: var(--md-onSurfaceVariant);
   text-decoration: none;
   width: 80px;
-  position: relative;
-  transition: all 0.2s ease;
   height: 100%;
   gap: 6px;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-/* 未选中状态文本样式 */
 .nav-item .nav-label {
-  font-weight: var(--md-sys-typescale-weight-regular); /* 常规字重 */
-  opacity: 0.9; /* 降低亮度 */
+  font-weight: var(--md-sys-typescale-weight-regular);
+  opacity: 0.9;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1;
 }
 
-/* 选中状态文本样式 */
 .nav-item.active .nav-label {
-  font-weight: var(--md-sys-typescale-weight-medium); /* 加粗字重 */
-  opacity: 1; /* 恢复亮度 */
-  color: var(--md-onSurfaceVariant); /* 确保颜色不变 */
+  font-weight: var(--md-sys-typescale-weight-medium);
+  opacity: 1;
+  color: var(--md-onSurfaceVariant);
 }
 
-/* 图标样式保持不变 */
 .nav-item .material-symbols-rounded {
   color: var(--md-onSurfaceVariant);
-  transition: color 0.2s;
+  transition: all 0.2s ease;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 24px;
 }
 
+/* 优化选择器 - 避免过深的嵌套 */
 .nav-item.active .material-symbols-rounded {
   color: var(--md-primary);
   font-variation-settings: 'FILL' 1;
 }
 
-.nav-item.active {
-  color: var(--md-primary);
-  position: relative;
-}
-
-/* 修改选中状态样式 - 调整覆盖层位置 */
-.nav-item.active::before {
-  content: "";
-  position: absolute;
-  top: 26px;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 60px;
-  height: 30px;
-  background-color: rgba(174, 186, 230, 0.16); /* 深色模式：带蓝调的半透明灰色 */
-  border-radius: 16px;
-  z-index: -1;
-  animation: nav-overlay-expand 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.light-theme .nav-item.active::before {
-  background-color: rgba(103, 80, 164, 0.08); /* 浅色模式：主色调淡紫色 */
-}
-
-/* 添加消失动画样式 */
-.nav-item::before {
-  content: "";
+/* 使用更高效的类选择器替代伪元素选择器 */
+.nav-item-bg {
   position: absolute;
   top: 26px;
   left: 50%;
@@ -282,128 +217,255 @@
   height: 30px;
   border-radius: 16px;
   z-index: -1;
-  animation: nav-overlay-shrink 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  background-color: var(--md-nav-overlay, rgba(174, 186, 230, 0.16));
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 为收缩动画添加主题颜色 */
-.dark-theme .nav-item::before {
-  background-color: rgba(174, 186, 230, 0.16);
+.nav-item.active .nav-item-bg {
+  width: 60px;
 }
 
-.light-theme .nav-item::before {
-  background-color: rgba(103, 80, 164, 0.08);
+/* 导航项激活状态 */
+.nav-item.active::before,
+.nav-item::before {
+  content: "";
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 30px;
+  border-radius: 16px;
+  z-index: -1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.nav-icon {
-  font-size: 24px;
-  /* 移除 margin-bottom，改用 flex 布局控制间距 */
-  /* margin-bottom: 16px; */
-  /* 确保图标居中 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.nav-item.active::before {
+  background-color: var(--md-nav-overlay, rgba(174, 186, 230, 0.16));
+  width: 60px;
 }
 
-/* 添加新的样式，使用 flex 布局控制间距 */
-.nav-item {
-  gap: 6px; /* 从8px减少到4px，进一步降低图标与文字的间距 */
+.nav-item::before {
+  width: 0;
+  background-color: var(--md-nav-overlay, rgba(174, 186, 230, 0.16));
 }
 
-/* Material Symbols 图标样式 */
-.nav-item .material-symbols-rounded {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  transition: font-variation-settings 0.2s;
-  font-size: 24px;
-}
-
-.nav-item.active .material-symbols-rounded {
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}
-
-.nav-label {
-  font-size: 14px;
-  font-weight: var(--md-sys-typescale-weight-medium);  /* 加粗字体，从regular改为medium */
-  text-align: center;
-  line-height: 1;
-}
-
-/* 卡片布局 */
-.card {
-  background-color: var(--card-background);
-  border-radius: var(--card-border-radius);
-  padding: var(--spacing-md);
-  box-shadow: none; /* 移除阴影 */
-  margin-bottom: var(--spacing-md);
-  border: none;
-  transition: background-color 0.3s ease;
-}
-
-.card:hover {
-  box-shadow: none; /* 确保悬停状态也没有阴影 */
-}
-
-/* 列表项容器 */
+/* 卡片和列表样式 */
+.card,
 .list-container {
   background-color: var(--card-background);
   border-radius: var(--card-border-radius);
-  overflow: hidden;
+  padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  box-shadow: none; /* 移除阴影 */
-}
-.card:hover {
-  /* 移除悬停阴影 */
-  box-shadow: none;
+  border: none;
+  transition: background-color 0.3s ease;
 }
 
 .list-item-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: var(--spacing-md);
   border-bottom: 1px solid var(--md-outlineVariant);
-  margin-bottom: var(--spacing-xs); /* 添加列表项之间的边距 */
+  margin-bottom: var(--spacing-xs);
 }
 
 .list-item-row:last-child {
   border-bottom: none;
-  margin-bottom: 0; /* 最后一项不需要底部边距 */
+  margin-bottom: 0;
 }
 
-/* 响应式布局调整 */
-@media (min-width: 600px) {
-  .card {
-    padding: 24px;
+/* 响应式布局 */
+@media (max-width: 768px) {
+  /* 移动端滚动条处理 */
+  .page-container,
+  #main-content,
+  .card,
+  .list-container,
+  body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-container::-webkit-scrollbar,
+  #main-content::-webkit-scrollbar,
+  .card::-webkit-scrollbar,
+  .list-container::-webkit-scrollbar,
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
   
-  .list-item-row {
-    padding: 20px 24px;
+  /* 其他移动端样式 */
+  .settings-actions,
+  .logs-actions {
+    width: 100%;
   }
-  
-  /* 恢复正常的页面容器内边距 */
+
+  .app-nav {
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+@media (min-width: 768px) {
+  /* 桌面端导航栏样式 */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
+    min-height: calc(var(--header-height) * 1.1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--md-background);
+  }
+
+  .page-header-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    padding: 0;
+  }
+  #page-title {
+    font-size: var(--md-sys-typescale-title-medium-size);
+    font-weight: var(--md-sys-typescale-weight-medium);
+    margin: 0;
+    white-space: nowrap; /* 防止标题换行 */
+    overflow: hidden;
+  }
+  /* 标题样式调整 */
+  .page-header #page-title {
+    font-size: calc(var(--md-sys-typescale-title-large-size) * 1.15); /* 增大标题字体大小 */
+    font-weight: var(--md-sys-typescale-weight-medium); /* 增加字重使标题更明显 */
+    color: var(--md-onSurface);
+    margin: 0;
+    padding-left: var(--spacing-md);
+  }
+  .app-nav {
+    top: 0;
+    left: 0;
+    width: var(--nav-width);
+    height: 100vh;
+    border-radius: 0;
+    border-right: 1px solid var(--md-outlineVariant);
+  }
+
+  .nav-content {
+    flex-direction: column;
+    height: 100%;
+    padding: var(--spacing-lg) 0;
+    justify-content: flex-start;
+    width: var(--nav-width);
+  }
+
+  /* 导航项容器 */
+  .nav-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  /* 导航底部操作按钮 */
+  .nav-bottom-actions,
+  #page-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: auto;
+    width: 100%;
+    align-items: center;
+  }
+  .nav-bottom-actions {
+    flex-direction: column;
+  }
+  .page-actions:not(:empty)::after {
+    display: none;  /* 新增：在横屏模式下隐藏分隔条 */
+  }
+  /* 图标按钮样式 */
+  .nav-bottom-actions .icon-button,
+  #page-actions .icon-button {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto;
+  }
+
+  /* 导航项样式调整 */
+  .nav-item {
+    height: 72px;
+    width: var(--nav-width);
+    padding: var(--spacing-sm) 0;
+    gap: var(--spacing-xs);
+    position: relative;  /* 确保相对定位 */
+  }
+
+
+  .nav-item .nav-label {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  /* 主内容区域调整 */
+  #main-content {
+    padding-left: var(--nav-width);
+    padding-top: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+  }
+
+  #toast-container {
+    left: var(--nav-width);
+    bottom: var(--spacing-md);
+  }
+
   .page-container {
-    padding: var(--spacing-md);
+    max-width: calc(1200px + var(--nav-width));
   }
+  #page-actions {
+    flex-direction: row;
+    margin: 0;
+    padding-right: var(--spacing-md);
+    justify-content: flex-end;
+    height: var(--header-height);
+  }
+  /* 页面标题样式 */
+  .nav-content #page-title {
+    font-size: var(--md-sys-typescale-title-medium-size);
+    color: var(--md-onSurface);
+    text-align: center;
+    padding: 0 var(--spacing-sm);
+    margin-top: var(--spacing-md);
+  }
+
+  /* 卡片和列表容器边距 */
+  .card,
+  .list-container {
+    margin-left: var(--spacing-md);
+    margin-right: var(--spacing-md);
+  }
+
 }
 
+/* 小屏幕适配 */
 @media (max-width: 600px) {
   .page-container {
     padding: var(--spacing-sm);
-    /* 移除之前添加的 transition: none; */
   }
-  
+
   .module-actions {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-md);
   }
-  
+
   .settings-actions,
   .logs-actions {
     width: 100%;
   }
-  
+
   .app-nav {
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
+    border-radius: 12px 12px 0 0;
   }
 }
