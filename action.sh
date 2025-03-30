@@ -22,9 +22,9 @@ if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
 else
     . "$MODPATH/files/scripts/default_scripts/main.sh"
     # 记录action.sh被调用
+    start_script
     log_info "action.sh was called with parameters: $*"
 fi
-start_script
 # 在这里添加您的自定义脚本逻辑
 # -----------------
 # This script extends the functionality of the default and setup scripts, allowing direct use of their variables and functions.

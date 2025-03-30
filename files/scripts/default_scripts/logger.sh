@@ -19,7 +19,7 @@ init_logger() {
 
     # 确保日志目录存在
     mkdir -p "$LOG_DIR" 2>/dev/null || {
-        echo "无法创建日志目录: $LOG_DIR" >&2
+        echo "${ERROR_TEXT}: ${ERROR_INVALID_DIR:-无法创建日志目录}: $LOG_DIR" >&2
         return 1
     }
 
@@ -31,8 +31,8 @@ init_logger() {
     # 检查 logmonitor 可执行文件是否存在
     LOGMONITOR_BIN="${MODPATH}/bin/logmonitor"
     if [ ! -f "$LOGMONITOR_BIN" ]; then
-        echo "警告: logmonitor 可执行文件未找到: $LOGMONITOR_BIN" >&2
-        echo "将使用简化的日志功能" >&2
+        echo "${WARN_TEXT}: ${SERVICE_FILE_NOT_FOUND}: $LOGMONITOR_BIN" >&2
+        echo "${INFO_TEXT}: ${LOG_FALLBACK:-将使用简化的日志功能}" >&2
     else
         # 启动 logmonitor 守护进程
         "$LOGMONITOR_BIN" -c start -d "$LOG_DIR" -l "$LOG_LEVEL" >/dev/null 2>&1 &
@@ -40,13 +40,14 @@ init_logger() {
     
     # 标记为已初始化
     LOGGER_INITIALIZED=1
+    log_info "${LOG_INITIALIZED}"
     return 0
 }
 
 # 设置日志文件函数
 set_log_file() {
     if [ -z "$1" ]; then
-        echo "错误: 未指定日志文件名" >&2
+        echo "${ERROR_TEXT}: ${WARN_MISSING_PARAMETERS}" >&2
         return 1
     fi
 
@@ -56,6 +57,7 @@ set_log_file() {
     fi
 
     LOG_FILE_NAME="$1"
+    log_info "${LOG_FILE_SET}: $1"
     return 0
 }
 
@@ -130,6 +132,7 @@ clean_logs() {
             rm -f "$LOG_DIR"/*.log "$LOG_DIR"/*.log.old 2>/dev/null
         fi
     fi
+    log_info "${LOG_CLEANED}"
     return 0
 }
 

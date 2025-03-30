@@ -22,6 +22,8 @@ lang_en() {
     LOG_FILE_SET="Log file set to"
     LOG_FLUSHED="Log flushed"
     LOG_CLEANED="Logs cleaned"
+    ERROR_INVALID_DIR="Cannot create log directory"
+    LOG_FALLBACK="Will use simplified logging"
     
     # 自定义脚本相关
     CUSTOM_SCRIPT_DISABLED="CustomScript is disabled. Custom scripts will not be executed."
@@ -99,7 +101,9 @@ lang_zh() {
     LOG_FILE_SET="日志文件已设置为"
     LOG_FLUSHED="日志已刷新"
     LOG_CLEANED="日志已清理"
-    
+    ERROR_INVALID_DIR="无法创建日志目录"
+    LOG_FALLBACK="将使用简化的日志功能"
+
     # 自定义脚本相关
     CUSTOM_SCRIPT_DISABLED="已禁用CustomScript。将不执行自定义脚本。"
     CUSTOM_SCRIPT_ENABLED="已启用CustomScript。正在执行自定义脚本。"
@@ -176,7 +180,9 @@ lang_ru() {
     LOG_FILE_SET="Файл журнала установлен на"
     LOG_FLUSHED="Журнал сброшен"
     LOG_CLEANED="Журналы очищены"
-    
+    ERROR_INVALID_DIR="Не удалось создать каталог журнала"
+    LOG_FALLBACK="Будет использоваться упрощенное ведение журнала"
+
     # 自定义脚本相关
     CUSTOM_SCRIPT_DISABLED="CustomScript отключен. Пользовательские скрипты не будут выполняться."
     CUSTOM_SCRIPT_ENABLED="CustomScript включен. Выполнение пользовательских скриптов."

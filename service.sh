@@ -10,7 +10,7 @@ echo "RUNNING" >"$STATUS_FILE"
 # 初始化日志目录
 LOG_DIR="$MODPATH/logs"
 mkdir -p "$LOG_DIR" || {
-    echo "无法创建日志目录: $LOG_DIR" >&2
+    echo "${ERROR_INVALID_DIR}: $LOG_DIR" >&2
     exit 1
 }
 
@@ -18,12 +18,12 @@ mkdir -p "$LOG_DIR" || {
 if [ -f "$MODPATH/bin/logmonitor" ]; then
     "$MODPATH/bin/logmonitor" -c start -d "$LOG_DIR" >/dev/null 2>&1 &
     # 记录启动信息
-    "$MODPATH/bin/logmonitor" -c write -n "service" -m "日志监控器已启动" -l 3 >/dev/null 2>&1
+    "$MODPATH/bin/logmonitor" -c write -n "service" -m "LOGSTART" -l 3 >/dev/null 2>&1
 fi
 
 # 加载主脚本
 if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
-    echo "错误: 文件未找到: $MODPATH/files/scripts/default_scripts/main.sh" > "$LOG_DIR/error.log"
+    echo "Error NotFound: $MODPATH/files/scripts/default_scripts/main.sh" > "$LOG_DIR/error.log"
     exit 1
 else
     . "$MODPATH/files/scripts/default_scripts/main.sh"
@@ -54,11 +54,11 @@ enter_pause_mode() {
     # 检查参数数量
     if [ "$#" -eq 2 ]; then
         # 如果是两个参数，第二个参数是脚本路径
-        log_debug "使用脚本文件: $2"
+        log_debug "Use Script: $2"
         if [ -f "$MODPATH/bin/filewatch" ]; then
             "$MODPATH/bin/filewatch" -s "$STATUS_FILE" "$1" "$2"
         else
-            log_error "filewatch工具未找到"
+            log_error "filewatch$SERVICE_FILE_NOT_FOUND"
             update_status "ERROR"
         fi
     elif [ "$#" -eq 3 ] && [ "$2" = "-c" ]; then
@@ -67,7 +67,7 @@ enter_pause_mode() {
         if [ -f "$MODPATH/bin/filewatch" ]; then
             "$MODPATH/bin/filewatch" -s "$STATUS_FILE" -c "$3" "$1"
         else
-            log_error "filewatch工具未找到"
+            log_error "filewatch$SERVICE_FILE_NOT_FOUND"
             update_status "ERROR"
         fi
     else
