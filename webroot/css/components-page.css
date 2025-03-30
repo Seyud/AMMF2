@@ -859,8 +859,24 @@
   color: var(--md-onSurface);
   white-space: pre-wrap;
   word-break: break-word;
+  background-color: var(--md-surface-3, var(--md-surface-2)); /* 添加背景颜色 */
+  border-radius: 0 0 16px 16px; /* 添加圆角，与容器底部圆角匹配 */
+}
+.action-output-content .command-line::before {
+  content: "$ ";
+  color: var(--md-primary);
+  font-weight: bold;
 }
 
+/* 添加终端输出行样式 */
+.action-output-content .output-line {
+  padding: 2px 0;
+}
+
+/* 终端成功消息样式 */
+.action-output-content .success {
+  color: var(--md-success, #66BB6A);
+}
 /* 自定义滚动条样式 */
 .action-output-content::-webkit-scrollbar {
   width: 8px;
