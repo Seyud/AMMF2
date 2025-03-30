@@ -28,7 +28,7 @@ The AMMF framework provides several useful functions that can be used in your sc
 
 #### `select_on_magisk [input_path]`
 
-Presents a selection menu to the user using volume keys for navigation.
+Presents a selection menu to the user using volume keys for navigation (first letter selection).
 
 **Parameters:**
 - `input_path`: Path to a text file containing options (one per line)
@@ -47,6 +47,32 @@ echo "Option 1\nOption 2\nOption 3" > "$MODPATH/options.txt"
 
 # Call the function
 select_on_magisk "$MODPATH/options.txt"
+
+# Use the selected option
+echo "User selected: $SELECT_OUTPUT"
+```
+
+#### `list_select [input_path] [TITLE]`
+
+Presents a selection menu to the user using volume keys for navigation.
+
+**Parameters:**
+- `input_path`: Path to a text file containing options (one per line)
+- `TITLE`: Menu title
+
+**Returns:**
+- Selected option in the `$SELECT_OUTPUT` variable
+
+**Compatibility:**
+- Can be used in installation scripts and user scripts (use with caution in user scripts)
+
+**Example:**
+```bash
+# Create a file with options
+echo "Option 1\nOption 2\nOption 3" > "$MODPATH/options.txt"
+
+# Call the function
+list_select "$MODPATH/options.txt" "Text Selection"
 
 # Use the selected option
 echo "User selected: $SELECT_OUTPUT"

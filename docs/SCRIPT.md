@@ -28,10 +28,10 @@ AMMF框架提供了几个有用的函数，可以在您的脚本中使用：
 
 #### `select_on_magisk [input_path]`
 
-使用音量键导航向用户呈现选择菜单。
+使用音量键导航向用户呈现选择菜单（首字母选择）。
 
 **参数：**
-- `input_path`：包含选项的文本文件路径（每行一个）
+- `input_path`：包含选项的文本文件路径（文件内容每行一个选项）
 
 **返回：**
 - 在`$SELECT_OUTPUT`变量中返回所选选项
@@ -52,12 +52,38 @@ select_on_magisk "$MODPATH/options.txt"
 echo "用户选择了: $SELECT_OUTPUT"
 ```
 
+#### `list_select [input_path] [TITLE]`
+
+使用音量键导航向用户呈现选择菜单。
+
+**参数：**
+- `input_path`：包含选项的文本文件路径（文件内容每行一个选项）
+- `TITLE`：菜单标题
+
+**返回：**
+- 在`$SELECT_OUTPUT`变量中返回所选选项
+
+**兼容性：**
+- 可以在安装脚本和用户脚本中使用（在用户脚本中谨慎使用）
+
+**示例：**
+```bash
+# 创建一个包含选项的文件
+echo "选项1\n选项2\n选项3" > "$MODPATH/options.txt"
+
+# 调用函数
+list_select "$MODPATH/options.txt" "文本选择"
+
+# 使用所选选项
+echo "用户选择了: $SELECT_OUTPUT"
+```
+
 #### `number_select [input_path]`
 
 向用户呈现编号选择菜单。
 
 **参数：**
-- `input_path`：包含选项的文本文件路径（每行一个）
+- `input_path`：包含选项的文本文件路径（文件内容每行一个选项）
 
 **返回：**
 - 在`$SELECT_OUTPUT`变量中返回所选编号
