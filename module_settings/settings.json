@@ -24,45 +24,28 @@
   "descriptions": {
     "print_languages": {
       "en": "Default language for printing",
-      "zh": "默认显示语言"
+      "zh": "默认显示语言",
+      "ru": "Язык отображения по умолчанию"
     },
     "download_destination": {
       "en": "Download path for module files",
-      "zh": "模块文件下载路径"
-    },
-    "magisk_min_version": {
-      "en": "Minimum required version of Magisk",
-      "zh": "最低要求的Magisk版本"
-    },
-    "ksu_min_version": {
-      "en": "Minimum compatible version of KernelSU",
-      "zh": "最低兼容的KernelSU版本"
-    },
-    "ksu_min_kernel_version": {
-      "en": "Minimum compatible kernel version of KernelSU",
-      "zh": "最低兼容的KernelSU内核版本"
-    },
-    "apatch_min_version": {
-      "en": "Minimum compatible version of APatch",
-      "zh": "最低兼容的APatch版本"
-    },
-    "ANDROID_API": {
-      "en": "Minimum required Android API level",
-      "zh": "最低要求的Android API级别"
+      "zh": "模块文件下载路径",
+      "ru": "Путь загрузки для файлов модуля"
     }
   },
   "options": {
     "print_languages": {
       "options": [
-        {"value": "en", "label": {"en": "English", "zh": "英文"}},
-        {"value": "zh", "label": {"en": "Chinese", "zh": "中文"}}
+        {"value": "en", "label": {"en": "English", "zh": "英文", "ru": "Английский"}},
+        {"value": "zh", "label": {"en": "Chinese", "zh": "中文", "ru": "Китайский"}},
+        {"value": "ru", "label": {"en": "Russian", "zh": "俄文", "ru": "Русский"}}
       ]
     },
     "download_destination": {
       "options": [
-        {"value": "/sdcard/Download", "label": {"en": "Download folder", "zh": "下载文件夹"}},
-        {"value": "/sdcard/AMMF", "label": {"en": "AMMF folder", "zh": "AMMF文件夹"}},
-        {"value": "/data/local/tmp", "label": {"en": "Temporary folder", "zh": "临时文件夹"}}
+        {"value": "/sdcard/Download", "label": {"en": "Download folder", "zh": "下载文件夹", "ru": "Папка загрузки"}},
+        {"value": "/sdcard/AMMF", "label": {"en": "AMMF folder", "zh": "AMMF文件夹", "ru": "Папка AMMF"}},
+        {"value": "/data/local/tmp", "label": {"en": "Temporary folder", "zh": "临时文件夹", "ru": "Временная папка"}}
       ]
     }
   }
