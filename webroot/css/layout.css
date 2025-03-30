@@ -226,18 +226,18 @@
 }
 
 /* 导航项激活状态 */
-.nav-item.active::before,
 .nav-item::before {
   content: "";
   position: absolute;
-  top: 26px;
+  top: 30px;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 60px;
+  width: 0;
   height: 30px;
   border-radius: 16px;
   z-index: -1;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: var(--md-nav-overlay, rgba(174, 186, 230, 0.16));
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-item.active::before {

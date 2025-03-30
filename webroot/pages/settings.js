@@ -192,7 +192,20 @@ const SettingsPage = {
             }
             
             const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+            
+            // 检查是否已取消
+            if (this.isCancelled) {
+                console.log('设置数据加载已取消');
+                return;
+            }
+            
             const configContent = await Core.execCommand(`cat "${configPath}"`);
+            
+            // 再次检查是否已取消
+            if (this.isCancelled) {
+                console.log('设置数据加载已取消');
+                return;
+            }
             
             if (!configContent) {
                 console.warn('配置文件为空或不存在');
@@ -205,7 +218,9 @@ const SettingsPage = {
             console.error('加载设置数据失败:', error);
             this.settings = {};
         } finally {
-            this.hideLoading();
+            if (!this.isCancelled) {
+                this.hideLoading();
+            }
         }
     },
     
@@ -255,7 +270,20 @@ const SettingsPage = {
         try {
             // 加载设置元数据
             const metadataPath = `${Core.MODULE_PATH}module_settings/settings.json`;
+            
+            // 检查是否已取消
+            if (this.isCancelled) {
+                console.log('设置元数据加载已取消');
+                return;
+            }
+            
             const metadataContent = await Core.execCommand(`cat "${metadataPath}"`);
+            
+            // 再次检查是否已取消
+            if (this.isCancelled) {
+                console.log('设置元数据加载已取消');
+                return;
+            }
             
             if (!metadataContent) {
                 console.warn('设置元数据文件为空或不存在');
@@ -321,7 +349,20 @@ const SettingsPage = {
             
             // 写入配置文件
             const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+            
+            // 检查是否已取消
+            if (this.isCancelled) {
+                console.log('保存设置已取消');
+                return;
+            }
+            
             await Core.execCommand(`echo '${configContent.replace(/'/g, "'\\''")}' > "${configPath}"`);
+            
+            // 再次检查是否已取消
+            if (this.isCancelled) {
+                console.log('保存设置已取消');
+                return;
+            }
             
             // 更新本地设置
             this.settings = updatedSettings;
@@ -331,17 +372,20 @@ const SettingsPage = {
             
             // 重新加载设置显示
             const settingsContainer = document.getElementById('settings-container');
-            if (settingsContainer) {
+            if (settingsContainer && !this.isCancelled) {
                 settingsContainer.innerHTML = this.renderSettings();
+                // 重新绑定事件
+                this.bindSettingEvents();
             }
-            
-            // 重新绑定事件
-            this.bindSettingEvents();
         } catch (error) {
             console.error('保存设置失败:', error);
-            Core.showToast(I18n.translate('SETTINGS_SAVE_ERROR', '保存设置失败'), 'error');
+            if (!this.isCancelled) {
+                Core.showToast(I18n.translate('SETTINGS_SAVE_ERROR', '保存设置失败'), 'error');
+            }
         } finally {
-            this.hideLoading();
+            if (!this.isCancelled) {
+                this.hideLoading();
+            }
         }
     },
     
@@ -433,12 +477,41 @@ const SettingsPage = {
     // 页面激活时的回调
     onActivate() {
         console.log('设置页面已激活');
+        // 重置取消标志
+        this.isCancelled = false;
     },
     
     // 页面停用时的回调
     onDeactivate() {
         console.log('设置页面已停用');
-    }
+        // 设置取消标志，用于中断正在进行的异步操作
+        this.isCancelled = true;
+        // 清理资源
+        this.cleanupResources();
+    },
+    
+    // 清理资源
+    cleanupResources() {
+        // 移除可能存在的事件监听器
+        const container = document.getElementById('settings-container');
+        if (container) {
+            // 使用克隆节点的方式移除所有事件监听器
+            const newContainer = container.cloneNode(true);
+            container.parentNode.replaceChild(newContainer, container);
+        }
+        
+        // 确保加载覆盖层被隐藏
+        this.hideLoading();
+        
+        // 取消所有正在进行的操作
+        this.cancelAllOperations();
+    },
+    
+    // 取消所有操作
+    cancelAllOperations() {
+        // 这里可以添加取消其他异步操作的逻辑
+        console.log('取消所有正在进行的设置操作');
+    },
 };
 
 // 导出设置页面模块
