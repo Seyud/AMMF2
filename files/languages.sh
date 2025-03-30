@@ -73,6 +73,11 @@ lang_en() {
     LOGGER_NOT_LOADED="Warning: Logger system not loaded"
     FILE_NOT_FOUND="File not found"
     WARN_MISSING_PARAMETERS="Missing parameters"
+    LIST_SELECT_TITLE="Please select the list to install:"
+    PRESS_VOLUME_SELECT="Press VOL+ to select"
+    PRESS_VOLUME_NEXT="Press VOL- to next"
+    CURRENT_SELECTION="Current selection:"
+    MOVED_TO_ITEM="Moved to item"
 }
 
 # 中文
@@ -145,6 +150,11 @@ lang_zh() {
     LOGGER_NOT_LOADED="警告: 日志系统未加载"
     FILE_NOT_FOUND="文件未找到"
     WARN_MISSING_PARAMETERS="缺少参数"
+    LIST_SELECT_TITLE="请选择要安装的列表："
+    PRESS_VOLUME_SELECT="音量+选择"
+    PRESS_VOLUME_NEXT="音量-下一个"
+    CURRENT_SELECTION="当前选择："
+    MOVED_TO_ITEM="已移动到项"
 }
 
 # 俄语
@@ -211,4 +221,14 @@ lang_ru() {
     SERVICE_LOADING_SERVICE_SCRIPT="Загрузка service_script.sh"
     SERVICE_FILE_NOT_FOUND="Файл не найден"
     SERVICE_LOG_ROTATED="Журнал ротирован"
+    # main.sh 相关
+    SCRIPT_INIT_COMPLETE="Запуск скрипта - инициализация завершена"
+    LOGGER_NOT_LOADED="Предупреждение: Система журналирования не загружена"
+    FILE_NOT_FOUND="Файл не найден"
+    WARN_MISSING_PARAMETERS="Отсутствуют параметры"
+    LIST_SELECT_TITLE="Пожалуйста, выберите список для установки:"
+    PRESS_VOLUME_SELECT="Нажмите VOL+ для выбора"
+    PRESS_VOLUME_NEXT="Нажмите VOL- для следующего"
+    CURRENT_SELECTION="Текущая выборка:"
+    MOVED_TO_ITEM="Перемещено в элемент"
 }

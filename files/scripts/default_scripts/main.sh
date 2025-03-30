@@ -372,3 +372,68 @@ number_select() {
         fi
     done
 }
+# 列表选择函数
+list_select() {
+    local list_file="$1"
+    local title="${2:-$LIST_SELECT_TITLE}"
+    
+    # 初始化临时文件
+    local temp_list="$TMP_FOLDER/list_select.tmp"
+    cp "$list_file" "$temp_list"
+    
+    # 获取列表总数
+    local total_items=$(wc -l < "$temp_list")
+    
+    # 当前选择的索引
+    local current_index=1
+    local current_item=$(sed -n "${current_index}p" "$temp_list")
+    
+    # 显示列表并处理选择
+    while true; do
+        clear
+        echo "$title"
+        echo "--------------------------"
+        echo "$CURRENT_SELECTION: $current_item"
+        echo "--------------------------"
+        
+        # 显示列表项
+        local item_num=1
+        while IFS= read -r line; do
+            if [ "$item_num" -eq "$current_index" ]; then
+                echo "> $line"
+            else
+                echo "  $line"
+            fi
+            item_num=$((item_num + 1))
+        done < "$temp_list"
+        
+        echo "========================"
+        echo "${KEY_VOLUME}+ ${PRESS_VOLUME_SELECT}"
+        echo "${KEY_VOLUME}- ${PRESS_VOLUME_NEXT}"
+        
+        # 获取按键输入
+        key_select
+        
+        case "$key_pressed" in
+            KEY_VOLUMEUP)
+                # 选择当前项
+                SELECT_OUTPUT="$current_item"
+                Aurora_ui_print "$RESULT_TITLE $SELECT_OUTPUT"
+                rm -f "$temp_list" 2>/dev/null
+                return 0
+                ;;
+            KEY_VOLUMEDOWN)
+                # 移动到下一项
+                current_index=$((current_index + 1))
+                # 如果超出范围，回到第一项
+                if [ "$current_index" -gt "$total_items" ]; then
+                    current_index=1
+                fi
+                # 更新当前选中项
+                current_item=$(sed -n "${current_index}p" "$temp_list")
+                # 显示当前选择的提示
+                Aurora_ui_print "$MOVED_TO_ITEM $current_item"
+                ;;
+        esac
+    done
+}
