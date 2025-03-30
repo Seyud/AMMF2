@@ -241,8 +241,9 @@ class Router {
 
     static async renderPage(pageName) {
         const headerHeight = UI.elements.header.offsetHeight;
-        UI.elements.mainContent.style.minHeight = `calc(100vh - ${headerHeight}px - var(--nav-height))`;
-
+        // 修改最小高度计算，确保内容区域足够长
+        UI.elements.mainContent.style.minHeight = `calc(100vh - ${headerHeight}px)`;
+        
         const pageModule = await PageManager.loadPage(pageName);
         const pageContainer = document.createElement('div');
         pageContainer.className = 'page-container page-enter';

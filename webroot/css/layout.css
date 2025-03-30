@@ -297,7 +297,9 @@
     height: 0;
     display: none;
   }
-  
+  #main-content {
+    padding-bottom: calc(var(--nav-height) + var(--spacing-lg));
+  }
   /* 其他移动端样式 */
   .settings-actions,
   .logs-actions {
@@ -454,7 +456,20 @@
 /* 小屏幕适配 */
 @media (max-width: 600px) {
   .page-container {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs);  /* 从 spacing-sm(8px) 改为 spacing-xs(4px) */
+  }
+
+  /* 调整卡片和列表容器边距 */
+  .card,
+  .list-container {
+    margin-left: var(--spacing-xs);
+    margin-right: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);  /* 减小卡片之间的间距 */
+    padding: var(--spacing-sm);  /* 减小卡片内边距 */
+  }
+
+  #main-content {
+    padding: calc(var(--header-height) + var(--spacing-xs)) var(--spacing-xs) var(--spacing-md);  /* 减小主内容区域内边距 */
   }
 
   .module-actions {
