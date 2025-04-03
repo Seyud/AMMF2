@@ -466,14 +466,28 @@ const SettingsPage = {
     },
     
     // 渲染后的回调
-    afterRender() {
-        // 加载设置数据并更新显示
-        this.init().then(() => {
-            this.updateSettingsDisplay();
-        });
-        
+    async afterRender() {
         // 添加页面操作按钮
         this.setupPageActions();
+        
+        try {
+            // 显示加载状态
+            this.showLoading();
+            
+            // 等待设置数据加载完成
+            await this.init();
+            
+            // 更新设置显示
+            this.updateSettingsDisplay();
+            
+            // 绑定设置项事件
+            this.bindSettingEvents();
+        } catch (error) {
+            console.error('设置页面初始化失败:', error);
+            Core.showToast(I18n.translate('SETTINGS_INIT_ERROR', '设置页面初始化失败'), 'error');
+        } finally {
+            this.hideLoading();
+        }
     },
     
     // 设置页面操作按钮
