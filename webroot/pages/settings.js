@@ -326,32 +326,31 @@ const SettingsPage = {
     setupTestMetadata() {
         // 设置描述
         this.settingsDescriptions = {
-            ENABLE_FEATURE_A: { zh_CN: "启用功能A", en: "Enable Feature A" },
-            ENABLE_FEATURE_B: { zh_CN: "启用功能B", en: "Enable Feature B" },
-            SERVER_PORT: { zh_CN: "服务器端口", en: "Server Port" },
-            API_KEY: { zh_CN: "API密钥", en: "API Key" },
-            LOG_LEVEL: { zh_CN: "日志级别", en: "Log Level" },
-            THEME: { zh_CN: "主题", en: "Theme" },
-            VOLUME: { zh_CN: "音量", en: "Volume" },
-            BRIGHTNESS: { zh_CN: "亮度", en: "Brightness" }
+            ENABLE_FEATURE_A: { zh: "启用功能A", en: "Enable Feature A" },
+            ENABLE_FEATURE_B: { zh: "启用功能B", en: "Enable Feature B" },
+            SERVER_PORT: { zh: "服务器端口", en: "Server Port" },
+            API_KEY: { zh: "API密钥", en: "API Key" },
+            LOG_LEVEL: { zh: "日志级别", en: "Log Level" },
+            THEME: { zh: "主题", en: "Theme" },
+            VOLUME: { zh: "音量", en: "Volume" },
+            BRIGHTNESS: { zh: "亮度", en: "Brightness" }
         };
 
         // 设置选项配置
         this.settingsOptions = {
-            // 下拉选择框示例
             LOG_LEVEL: {
                 options: [
-                    { value: "debug", label: { zh_CN: "调试", en: "Debug" } },
-                    { value: "info", label: { zh_CN: "信息", en: "Info" } },
-                    { value: "warn", label: { zh_CN: "警告", en: "Warning" } },
-                    { value: "error", label: { zh_CN: "错误", en: "Error" } }
+                    { value: "debug", label: { zh: "调试", en: "Debug" } },
+                    { value: "info", label: { zh: "信息", en: "Info" } },
+                    { value: "warn", label: { zh: "警告", en: "Warning" } },
+                    { value: "error", label: { zh: "错误", en: "Error" } }
                 ]
             },
             THEME: {
                 options: [
-                    { value: "auto", label: { zh_CN: "自动", en: "Auto" } },
-                    { value: "light", label: { zh_CN: "浅色", en: "Light" } },
-                    { value: "dark", label: { zh_CN: "深色", en: "Dark" } }
+                    { value: "auto", label: { zh: "自动", en: "Auto" } },
+                    { value: "light", label: { zh: "浅色", en: "Light" } },
+                    { value: "dark", label: { zh: "深色", en: "Dark" } }
                 ]
             }
         };
@@ -604,6 +603,12 @@ const SettingsPage = {
         // 添加页面操作按钮
         this.setupPageActions();
 
+        // 添加语言变更事件监听
+        document.addEventListener('languageChanged', () => {
+            // 更新设置显示
+            this.updateSettingsDisplay();
+        });
+
         try {
             // 显示加载状态
             this.showLoading();
@@ -713,6 +718,9 @@ const SettingsPage = {
 
         // 设置取消标志，用于中断正在进行的异步操作
         this.isCancelled = true;
+
+        // 移除语言变更事件监听器
+        document.removeEventListener('languageChanged', this.updateSettingsDisplay);
 
         // 清理资源
         this.cleanupResources();
