@@ -269,19 +269,24 @@ const SettingsPage = {
             // 如果去除注释后是空行则跳过
             if (effectiveLine.trim() === '') continue;
 
-            // 匹配变量赋值
+            // 匹配变量赋值，保留原始值格式
             const match = effectiveLine.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
             if (match) {
                 const key = match[1];
-                let value = match[2].trim();
+                const originalValue = match[2].trim();
+                let value = originalValue;
 
-                // 处理引号
-                if ((value.startsWith('"') && value.endsWith('"')) ||
-                    (value.startsWith("'") && value.endsWith("'"))) {
+                // 如果值带有引号，记录引号类型并去除引号用于内部处理
+                const hasDoubleQuotes = value.startsWith('"') && value.endsWith('"');
+                const hasSingleQuotes = value.startsWith("'") && value.endsWith("'");
+                
+                if (hasDoubleQuotes || hasSingleQuotes) {
                     value = value.substring(1, value.length - 1);
+                    // 在值中存储引号信息
+                    settings[`${key}_quote_type`] = hasDoubleQuotes ? 'double' : 'single';
                 }
 
-                // 转换布尔值（不管是否有引号，都检查值是否为 true/false）
+                // 转换布尔值
                 const lowerValue = value.toLowerCase();
                 if (lowerValue === 'true' || lowerValue === 'false') {
                     settings[key] = lowerValue === 'true';
@@ -384,6 +389,8 @@ const SettingsPage = {
             originalLines.forEach(line => {
                 const commentIndex = line.indexOf('#');
                 let effectiveLine = commentIndex !== -1 ? line.substring(0, commentIndex).trim() : line.trim();
+                // 保存注释前的空格
+                const commentSpacing = commentIndex !== -1 ? line.substring(0, commentIndex).match(/\s*$/)[0] : '';
                 const comment = commentIndex !== -1 ? line.substring(commentIndex) : '';
                 
                 // 匹配键值对，保留引号信息
@@ -392,6 +399,7 @@ const SettingsPage = {
                     const [, key, originalValue] = match;
                     originalFormats.set(key, {
                         comment,
+                        commentSpacing,  // 添加注释前的空格信息
                         hasDoubleQuotes: originalValue.startsWith('"') && originalValue.endsWith('"'),
                         hasSingleQuotes: originalValue.startsWith("'") && originalValue.endsWith("'")
                     });
@@ -418,6 +426,9 @@ const SettingsPage = {
             // 生成新的配置文件内容
             let configContent = '';
             for (const key in updatedSettings) {
+                // 跳过引号类型标记
+                if (key.endsWith('_quote_type')) continue;
+                
                 // 如果是排除项，保持原样
                 if (this.excludedSettings.includes(key)) {
                     const originalLine = originalLines.find(line => line.trim().startsWith(`${key}=`));
@@ -429,12 +440,18 @@ const SettingsPage = {
 
                 let value = updatedSettings[key];
                 const format = originalFormats.get(key) || {};
+                const quoteType = updatedSettings[`${key}_quote_type`];
 
-                // 根据原始格式处理值
+                // 根据原始格式和设置类型处理值
                 if (typeof value === 'string') {
-                    if (format.hasDoubleQuotes) {
+                    // 如果是预定义选项的设置项，强制使用双引号
+                    if (this.settingsOptions[key]) {
                         value = `"${value}"`;
-                    } else if (format.hasSingleQuotes) {
+                    }
+                    // 否则按原有逻辑处理
+                    else if (quoteType === 'double' || format.hasDoubleQuotes) {
+                        value = `"${value}"`;
+                    } else if (quoteType === 'single' || format.hasSingleQuotes) {
                         value = `'${value}'`;
                     } else if (value.includes(' ') || value === '') {
                         value = `"${value}"`;
@@ -444,7 +461,7 @@ const SettingsPage = {
                 }
 
                 // 添加注释
-                configContent += `${key}=${value}${format.comment ? ' ' + format.comment : ''}\n`;
+                configContent += `${key}=${value}${format.comment ? `${format.commentSpacing || ' '}${format.comment}` : ''}\n`;
             }
 
 
