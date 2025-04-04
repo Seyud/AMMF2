@@ -4,6 +4,7 @@
  */
 
 /* 导入MD3基础样式系统 */
+@import url('css/main-color.css');
 @import url('css/md3.css');
 @import url('css/pages.css');
 @import url('css/app.css');
