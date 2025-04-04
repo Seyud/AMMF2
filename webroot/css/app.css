@@ -283,7 +283,7 @@
 }
 
 /* ===== 对话框组件 ===== */
-/* 语言选择器 */
+/* ===== 语言选择器 - MD3规范 ===== */
 .language-selector {
     position: fixed;
     top: 0;
@@ -304,10 +304,10 @@
 .language-selector-content {
     background-color: var(--surface-container);
     border-radius: 28px;
-    width: 90%;
-    max-width: 400px;
+    width: min(90%, 560px); /* 增加最大宽度 */
     max-height: 80vh;
     overflow: hidden;
+    margin: 24px;
 }
 
 .language-selector-header {
@@ -319,41 +319,30 @@
     margin: 0;
     font: var(--headline-s);
     color: var(--on-surface);
-    font-size: 1.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* 语言选项 */
 .language-options {
-    padding: 12px 0;
+    padding: 16px 0;
     max-height: 60vh;
     overflow-y: auto;
+    min-width: 280px; /* 防止内容挤压 */
 }
 
 .language-option {
-    --color: var(--on-surface);
-    display: flex;
-    align-items: center;
     padding: 16px 24px;
     cursor: pointer;
     transition: background-color var(--tra);
-    position: relative;
-    font-size: 1rem;
-}
-
-.language-option label {
-    font-size: 1rem;
-    font-weight: 400;
-    color: var(--on-surface);
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 12px;
 }
 
 .language-option:hover {
-    background-color: color-mix(in oklch, var(--color) 8%, transparent);
-}
-
-.language-option:active,
-.language-option:focus {
-    background-color: color-mix(in oklch, var(--color) 10%, transparent);
+    background-color: color-mix(in oklch, var(--primary) 8%, transparent);
 }
 
 .language-option.selected {
@@ -361,24 +350,6 @@
     color: var(--on-primary-container);
 }
 
-.language-option.selected label {
-    color: var(--on-primary-container);
-    font-weight: 500;
-}
-
-.language-option.selected::after {
-    content: "";
-    position: absolute;
-    right: 24px;
-    width: 24px;
-    height: 24px;
-    background-color: var(--primary);
-    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>');
-    mask-size: contain;
-    mask-repeat: no-repeat;
-}
-
-/* 语言选择器底部 */
 .language-selector-footer {
     display: flex;
     justify-content: flex-end;
@@ -388,30 +359,18 @@
 
 #cancel-language {
     font: var(--label-l);
-    font-size: 0.9375rem;
     padding: 10px 24px;
     border-radius: 20px;
-    background-color: var(--surface-container-high);
-    color: var(--primary);
+    background-color: var(--primary);
+    color: var(--on-primary);
     border: none;
     cursor: pointer;
     transition: background-color var(--tra);
-    min-width: 100px;
-    text-align: center;
-    white-space: nowrap;
+    min-width: 80px; /* 确保按钮有足够宽度 */
 }
 
 #cancel-language:hover {
-    background-color: color-mix(in oklch, var(--primary) 8%, transparent);
-}
-
-#cancel-language:active,
-#cancel-language:focus {
-    background-color: color-mix(in oklch, var(--primary) 12%, transparent);
-}
-
-.language-selector-footer button {
-    margin-left: 8px;
+    background-color: var(--on-primary-container);
 }
 
 /* ===== 表单元素 ===== */
@@ -443,7 +402,6 @@
 .md-popover {
     border-radius: 24px;
     background-color: var(--surface-container);
-    box-shadow: var(--ele3);
     width: 280px;
     max-width: 90vw;
     overflow: hidden;

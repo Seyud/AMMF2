@@ -79,25 +79,13 @@
 
 /* 语言选择器动画 */
 @keyframes languageSelectorFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes languageSelectorFadeOut {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* 语言选择器动画应用 */
@@ -107,6 +95,14 @@
 
 .language-selector.closing {
   animation: languageSelectorFadeOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.log-delete-dialog {
+  opacity: 0;
+  animation: fadeIn 180ms ease-out forwards;
+}
+
+.log-delete-dialog.closing {
+  animation: fadeOut 120ms ease-out forwards;
 }
 
 /* 开关切换动画 */
