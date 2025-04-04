@@ -1,19 +1,60 @@
 /**
- * AMMF WebUI 主应用脚本
- * 处理页面加载、路由和全局事件
+ * AMMF WebUI 主应用程序
+ * 负责页面路由、UI管理和应用状态
  */
 
-class AppState {
+// 应用程序主类
+class App {
     constructor() {
-        this.currentPage = null;
-        this.pageInstance = null;
-        this.isLoading = true;
-        this.themeChanging = false;
-        this.pageChanging = false;
+        this.state = {
+            isLoading: true,
+            currentPage: null,
+            themeChanging: false
+        };
+    }
+
+    // 初始化应用
+    async init() {
+        await I18n.init();
+        ThemeManager.init();
+
+        // 添加应用加载完成标记
+        requestAnimationFrame(() => document.body.classList.add('app-loaded'));
+
+        // 初始化语言选择器
+        if (window.I18n?.initLanguageSelector) {
+            I18n.initLanguageSelector();
+        } else {
+            document.addEventListener('i18nReady', () => I18n.initLanguageSelector());
+        }
+
+        // 加载初始页面
+        const initialPage = Router.getCurrentPage();
+        await Router.navigate(initialPage, false);
+
+        // 更新加载状态
+        this.state.isLoading = false;
+
+        // 移除加载指示器
+        const loadingContainer = document.querySelector('#main-content .loading-container');
+        if (loadingContainer) {
+            loadingContainer.style.opacity = '0';
+            setTimeout(() => loadingContainer.remove(), 300);
+        }
+
+        // 预加载其他页面
+        Router.preloadPages();
+    }
+
+    // 执行命令
+    async execCommand(command) {
+        return await Core.execCommand(command);
     }
 }
 
-class PageManager {
+// 路由管理器
+class Router {
+    // 页面模块映射
     static modules = {
         status: 'StatusPage',
         logs: 'LogsPage',
@@ -21,51 +62,161 @@ class PageManager {
         about: 'AboutPage'
     };
 
+    // 页面缓存
     static cache = new Map();
 
-    static async loadPage(pageName) {
-        const module = this.cache.get(pageName) || window[this.modules[pageName]];
-        if (!module) throw new Error(`页面模块 ${pageName} 未找到`);
-        return module;
+    // 获取当前页面
+    static getCurrentPage() {
+        const hash = window.location.hash.slice(1);
+        return this.modules[hash] ? hash : 'status';
     }
 
+    // 预加载所有页面
     static preloadPages() {
         requestIdleCallback(() => {
-            Object.entries(this.modules).forEach(([name, module]) => {
-                if (!this.cache.has(name)) {
-                    const pageModule = window[module];
-                    if (pageModule) this.cache.set(name, pageModule);
+            const pageOrder = ['status', 'settings', 'logs', 'about'];
+            const currentPage = app.state.currentPage;
+
+            // 移除当前页面
+            const pagesToLoad = pageOrder.filter(page => page !== currentPage);
+
+            // 并行预加载页面
+            Promise.all(pagesToLoad.map(async (pageName) => {
+                if (this.cache.has(pageName)) return;
+
+                try {
+                    const pageModule = window[this.modules[pageName]];
+                    if (pageModule && typeof pageModule.init === 'function') {
+                        await pageModule.init();
+                        this.cache.set(pageName, pageModule);
+                    }
+                } catch (error) {
+                    console.warn(`预加载页面 ${pageName} 失败:`, error);
                 }
-            });
+            }));
+        }, { timeout: 2000 });
+    }
+
+    // 导航到指定页面
+    static async navigate(pageName, updateHistory = true) {
+        try {
+            // 如果是当前页面，不进行切换
+            if (app.state.currentPage === pageName) return;
+
+            // 提前更新UI，提高感知速度
+            UI.updateNavigation(pageName);
+            UI.updatePageTitle(pageName);
+
+            // 如果有当前页面，调用其 onDeactivate 方法
+            if (app.state.currentPage) {
+                const currentPageModule = this.cache.get(app.state.currentPage) ||
+                    window[this.modules[app.state.currentPage]];
+                if (currentPageModule?.onDeactivate) {
+                    currentPageModule.onDeactivate();
+                }
+            }
+
+            // 使用缓存或加载页面模块
+            const pageModule = this.cache.get(pageName) || window[this.modules[pageName]];
+            if (!pageModule) throw new Error(`页面模块 ${pageName} 未找到`);
+
+            // 初始化页面模块（如果尚未初始化）
+            if (!this.cache.has(pageName) && typeof pageModule.init === 'function') {
+                const initResult = await pageModule.init();
+                if (initResult === false) {
+                    throw new Error(`页面 ${pageName} 初始化失败`);
+                }
+                this.cache.set(pageName, pageModule);
+            }
+
+            // 渲染页面内容
+            const pageContent = pageModule.render();
+
+            // 创建新页面容器
+            const newContainer = document.createElement('div');
+            newContainer.className = 'page-container';
+            newContainer.innerHTML = pageContent;
+
+            // 获取旧页面容器
+            const oldContainer = document.querySelector('.page-container');
+
+            // 执行页面过渡
+            await this.performPageTransition(newContainer, oldContainer);
+
+            // 执行页面渲染后的回调
+            if (pageModule.afterRender) {
+                pageModule.afterRender();
+            }
+
+            // 调用新页面的 onActivate 方法
+            if (pageModule.onActivate) {
+                pageModule.onActivate();
+            }
+
+            // 更新历史记录
+            if (updateHistory) {
+                window.history.pushState(null, '', `#${pageName}`);
+            }
+
+            app.state.currentPage = pageName;
+
+        } catch (error) {
+            console.error('页面导航错误:', error);
+            UI.showError('页面加载失败', error.message);
+        }
+    }
+
+    // 页面过渡效果 - 简化为纯淡入淡出
+    static async performPageTransition(newContainer, oldContainer) {
+        return new Promise(resolve => {
+            if (oldContainer) {
+                // 先添加新容器但设为透明
+                UI.elements.mainContent.appendChild(newContainer);
+                newContainer.style.opacity = '0';
+
+                // 添加淡出动画类
+                oldContainer.classList.add('fade-out');
+
+                // 监听动画结束
+                const onAnimationEnd = () => {
+                    oldContainer.removeEventListener('animationend', onAnimationEnd);
+                    oldContainer.remove();
+
+                    // 显示新容器
+                    newContainer.style.opacity = '1';
+
+                    resolve();
+                };
+
+                oldContainer.addEventListener('animationend', onAnimationEnd);
+
+                // 添加超时保护 (60ms动画 + 10ms缓冲)
+                setTimeout(onAnimationEnd, 70);
+            } else {
+                // 没有旧容器，直接添加新容器
+                UI.elements.mainContent.appendChild(newContainer);
+                resolve();
+            }
         });
     }
 }
 
+// UI管理器
 class UI {
+    // UI元素引用
     static elements = {
         app: document.getElementById('app'),
+        header: document.querySelector('.app-header'),
         mainContent: document.getElementById('main-content'),
+        navContent: document.querySelector('.nav-content'),
         pageTitle: document.getElementById('page-title'),
         pageActions: document.getElementById('page-actions'),
         themeToggle: document.getElementById('theme-toggle'),
         languageButton: document.getElementById('language-button'),
-        navItems: document.querySelectorAll('.nav-item'),
-        header: document.querySelector('.app-header'),
-        navContent: document.querySelector('.nav-content')
+        toastContainer: document.getElementById('toast-container')
     };
 
-    static transitions = {
-        duration: {
-            page: 300,
-            theme: 400,
-            nav: 200
-        },
-        timing: {
-            standard: 'ease',
-            emphasized: 'cubic-bezier(0.2, 0, 0, 1)'
-        }
-    };
-
+    // 更新页面标题
     static updatePageTitle(pageName) {
         const titles = {
             status: I18n.translate('NAV_STATUS', '状态'),
@@ -77,13 +228,60 @@ class UI {
         this.elements.pageTitle.textContent = titles[pageName] || 'AMMF WebUI';
     }
 
-    static updateNavigation(pageName) {
-        this.elements.navItems.forEach(item => {
-            const isActive = item.getAttribute('data-page') === pageName;
-            item.classList.toggle('active', isActive);
+    // 显示底栏覆盖层 - 添加动画效果
+    // 显示底栏覆盖层 - 添加动画效果
+    static showOverlay(overlayElement) {
+        if (!overlayElement) return;
+        
+        // 移除可能存在的closing类
+        overlayElement.classList.remove('closing');
+        
+        // 先设置为显示
+        overlayElement.style.display = 'flex';  // 改为flex以确保居中
+        
+        // 使用requestAnimationFrame确保DOM更新后再添加active类
+        requestAnimationFrame(() => {
+            overlayElement.classList.add('active');
         });
     }
+    
+    // 隐藏底栏覆盖层 - 添加动画效果
+    static hideOverlay(overlayElement) {
+        if (!overlayElement) return;
+        
+        // 添加closing类以触发淡出动画
+        overlayElement.classList.add('closing');
+        overlayElement.classList.remove('active');
+        
+        // 监听动画结束后隐藏元素
+        const handleAnimationEnd = () => {
+            overlayElement.removeEventListener('animationend', handleAnimationEnd);
+            overlayElement.style.display = 'none';
+            overlayElement.classList.remove('closing');
+        };
+        
+        overlayElement.addEventListener('animationend', handleAnimationEnd);
+        
+        // 添加超时保护，确保元素最终被隐藏
+        setTimeout(() => {
+            if (!overlayElement.classList.contains('active')) {
+                overlayElement.style.display = 'none';
+                overlayElement.classList.remove('closing');
+            }
+        }, 300);
+    }
 
+    static toggleOverlay(overlayElement) {
+        if (!overlayElement) return;
+
+        if (!overlayElement.classList.contains('active')) {
+            this.showOverlay(overlayElement);
+        } else {
+            this.hideOverlay(overlayElement);
+        }
+    }
+
+    // 显示错误信息
     static showError(title, message) {
         this.elements.mainContent.innerHTML = `
             <div class="page-container">
@@ -94,298 +292,232 @@ class UI {
             </div>
         `;
     }
+
+    // 更新导航状态
+    static updateNavigation(pageName) {
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            if (item.dataset.page === pageName) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
     static updateLayout() {
         const isLandscape = window.innerWidth >= 768;
         const header = this.elements.header;
-        const mainContent = document.getElementById('main-content');
-        const navContent = this.elements.navContent;
         const pageActions = this.elements.pageActions;
-        const pageTitle = this.elements.pageTitle;
         const themeToggle = this.elements.themeToggle;
         const languageButton = this.elements.languageButton;
     
         if (isLandscape) {
-            // 横屏模式：隐藏顶栏，将标题和操作按钮移至页面顶部
-            header.style.display = 'none';
-            
-            // 创建或获取页面头部容器
-            let pageHeader = mainContent.querySelector('.page-header');
-            if (!pageHeader) {
-                pageHeader = document.createElement('div');
-                pageHeader.className = 'page-header';
-                const pageHeaderContent = document.createElement('div');
-                pageHeaderContent.className = 'page-header-content';
-                pageHeader.appendChild(pageHeaderContent);
-                mainContent.insertBefore(pageHeader, mainContent.firstChild);
-            }
+            // 横屏模式：移动按钮到侧栏
+            const navContent = document.querySelector('.nav-content');
+            if (navContent) {
+                // 确保存在或创建操作按钮容器
+                let pageActionsContainer = navContent.querySelector('.page-actions');
+                if (!pageActionsContainer) {
+                    pageActionsContainer = document.createElement('div');
+                    pageActionsContainer.className = 'page-actions';
+                    navContent.appendChild(pageActionsContainer);
+                }
     
-            // 移动标题和操作按钮到页面头部内容容器中
-            const pageHeaderContent = pageHeader.querySelector('.page-header-content');
-            if (pageTitle && !pageHeaderContent.contains(pageTitle)) {
-                // 修复标题截断问题
-                pageTitle.style.display = 'block';
-                pageTitle.style.overflow = 'visible'; // 确保内容不被截断
-                pageTitle.style.textOverflow = 'clip'; // 移除省略号
-                pageTitle.style.maxWidth = 'none'; // 移除最大宽度限制
-                pageHeaderContent.appendChild(pageTitle);
-            }
-            if (pageActions && !pageHeaderContent.contains(pageActions)) {
-                pageActions.style.margin = '0';
-                pageHeaderContent.appendChild(pageActions);
-            }
+                // 确保存在或创建系统按钮容器
+                let systemActionsContainer = navContent.querySelector('.system-actions');
+                if (!systemActionsContainer) {
+                    systemActionsContainer = document.createElement('div');
+                    systemActionsContainer.className = 'system-actions';
+                    navContent.appendChild(systemActionsContainer);
+                }
     
-            // 移动主题和语言按钮到侧边栏底部
-            let bottomActions = navContent.querySelector('.nav-bottom-actions');
-            if (!bottomActions) {
-                bottomActions = document.createElement('div');
-                bottomActions.className = 'nav-bottom-actions';
-                navContent.appendChild(bottomActions);
-            }
-            if (!bottomActions.contains(languageButton)) {
-                bottomActions.appendChild(languageButton);
-            }
-            if (!bottomActions.contains(themeToggle)) {
-                bottomActions.appendChild(themeToggle);
+                // 移动操作按钮
+                if (pageActions && !pageActionsContainer.contains(pageActions)) {
+                    pageActionsContainer.appendChild(pageActions);
+                }
+    
+                // 移动系统按钮
+                if (languageButton && !systemActionsContainer.contains(languageButton)) {
+                    systemActionsContainer.appendChild(languageButton);
+                }
+                if (themeToggle && !systemActionsContainer.contains(themeToggle)) {
+                    systemActionsContainer.appendChild(themeToggle);
+                }
             }
         } else {
-            // 竖屏模式：恢复原始布局
-            header.style.display = 'flex';
-            const headerContent = header.querySelector('.header-content');
-            if (headerContent) {
-                // 恢复标题显示
-                if (pageTitle) {
-                    pageTitle.style.display = 'block';
-                    // 重置标题样式
-                    pageTitle.style.whiteSpace = '';
-                    pageTitle.style.overflow = '';
-                    pageTitle.style.textOverflow = '';
-                    pageTitle.style.maxWidth = '';
-                    
-                    if (!headerContent.contains(pageTitle)) {
-                        headerContent.insertBefore(pageTitle, headerContent.firstChild);
-                    }
+            // 竖屏模式：恢复按钮到顶栏
+            const headerActions = header?.querySelector('.header-actions');
+            if (headerActions) {
+                if (pageActions && !headerActions.contains(pageActions)) {
+                    headerActions.insertBefore(pageActions, headerActions.firstChild);
                 }
-                // 恢复操作按钮
-                const headerActions = headerContent.querySelector('.header-actions');
-                if (headerActions) {
-                    if (!headerActions.contains(pageActions)) {
-                        pageActions.style.margin = '';
-                        headerActions.insertBefore(pageActions, headerActions.firstChild);
-                    }
-                    if (!headerActions.contains(languageButton)) {
-                        headerActions.appendChild(languageButton);
-                    }
-                    if (!headerActions.contains(themeToggle)) {
-                        headerActions.appendChild(themeToggle);
-                    }
+                if (languageButton && !headerActions.contains(languageButton)) {
+                    headerActions.appendChild(languageButton);
+                }
+                if (themeToggle && !headerActions.contains(themeToggle)) {
+                    headerActions.appendChild(themeToggle);
                 }
             }
         }
     }
-}
 
-class ThemeManager {
-    static toggle(event) {
-        if (app.state.themeChanging) return;
-        app.state.themeChanging = true;
-
-        const isDark = document.documentElement.classList.contains('dark-theme');
-        const newTheme = isDark ? 'light' : 'dark';
-
-        document.documentElement.classList.toggle('dark-theme');
-        document.documentElement.classList.toggle('light-theme');
-
-        localStorage.setItem('theme', newTheme);
-        
-        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) {
-            metaThemeColor.setAttribute('content', newTheme === 'dark' ? '#1C1B1E' : '#6750A4');
+    // 显示Toast通知
+    static showToast(message, type = 'info', duration = 3000) {
+        if (!this.elements.toastContainer) {
+            this.elements.toastContainer = document.createElement('div');
+            this.elements.toastContainer.id = 'toast-container';
+            document.body.appendChild(this.elements.toastContainer);
         }
 
-        const iconElement = UI.elements.themeToggle.querySelector('.material-symbols-rounded');
-        if (iconElement) {
-            iconElement.textContent = newTheme === 'dark' ? 'dark_mode' : 'light_mode';
-        }
+        // 创建toast元素
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
 
-        document.dispatchEvent(new CustomEvent('themeChanged', { 
-            detail: { theme: newTheme }
-        }));
+        // 创建内容容器
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'toast-content';
 
-        setTimeout(() => {
-            app.state.themeChanging = false;
-        }, UI.transitions.duration.theme);
-    }
-}
+        // 添加消息文本
+        const messageText = document.createElement('span');
+        messageText.textContent = message;
 
-class Router {
-    static async navigate(pageName, pushState = true) {
-        if (app.state.pageChanging || pageName === app.state.currentPage) return;
-        app.state.pageChanging = true;
+        // 组装内容
+        contentDiv.appendChild(messageText);
+        toast.appendChild(contentDiv);
 
-        try {
-            UI.updateNavigation(pageName);
-            await this.renderPage(pageName);
-            
-            if (pushState) {
-                history.pushState({ page: pageName }, '', `?page=${pageName}`);
-            }
+        // 添加到容器
+        this.elements.toastContainer.appendChild(toast);
 
-            app.state.currentPage = pageName;
-        } catch (error) {
-            console.error('页面导航失败:', error);
-            UI.showError(I18n.translate('PAGE_LOAD_ERROR', '页面加载失败'), error.message);
-        } finally {
-            app.state.pageChanging = false;
-        }
-    }
-
-    static async renderPage(pageName) {
-        const headerHeight = UI.elements.header.offsetHeight;
-        // 修改最小高度计算，确保内容区域足够长
-        UI.elements.mainContent.style.minHeight = `calc(100vh - ${headerHeight}px)`;
-        
-        const pageModule = await PageManager.loadPage(pageName);
-        const pageContainer = document.createElement('div');
-        pageContainer.className = 'page-container page-enter';
-        pageContainer.id = `page-${pageName}`;
-        pageContainer.innerHTML = pageModule.render();
-
-        const oldContainer = UI.elements.mainContent.querySelector('.page-container');
-        if (oldContainer) {
-            oldContainer.classList.add('page-exit');
-        }
-
-        await this.performPageTransition(pageContainer, oldContainer);
-        
-        if (app.state.pageInstance) {
-            await Promise.all([
-                app.state.pageInstance.onDeactivate?.(),
-                app.state.pageInstance.destroy?.()
-            ].filter(Boolean));
-        }
-
-        app.state.pageInstance = pageModule;
-        
-        await Promise.all([
-            pageModule.init?.(),
-            pageModule.afterRender?.(),
-            pageModule.onActivate?.()
-        ].filter(Boolean));
-
-        UI.updatePageTitle(pageName);
-        PageManager.preloadPages();
-
-        requestIdleCallback(() => {
-            document.dispatchEvent(new CustomEvent('pageChanged', { 
-                detail: { page: pageName }
-            }));
-        });
-    }
-
-    static async performPageTransition(newContainer, oldContainer) {
-        return new Promise(resolve => {
-            UI.elements.mainContent.appendChild(newContainer);
-            requestAnimationFrame(() => {
-                newContainer.classList.add('page-active');
-                
-                const onTransitionEnd = () => {
-                    if (oldContainer) oldContainer.remove();
-                    newContainer.removeEventListener('transitionend', onTransitionEnd);
-                    resolve();
-                };
-                
-                newContainer.addEventListener('transitionend', onTransitionEnd);
-            });
-        });
-    }
-
-    static getCurrentPage() {
-        return new URLSearchParams(window.location.search).get('page') || 'status';
-    }
-}
-
-class App {
-    constructor() {
-        this.state = new AppState();
-        this.setupEventListeners();
-    }
-
-    setupEventListeners() {
-        UI.elements.navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const pageName = item.getAttribute('data-page');
-                Router.navigate(pageName);
-            });
-        });
-
-        UI.elements.themeToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            ThemeManager.toggle(e);
-        });
-        window.addEventListener('resize', () => {
-            UI.updateLayout();
-        });
-
-        // 添加页面加载完成后的布局初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            UI.updateLayout();
-        });
-        window.addEventListener('popstate', (e) => {
-            const pageName = e.state?.page || 'status';
-            Router.navigate(pageName, false);
-        });
-
-        document.addEventListener('languageChanged', () => {
-            UI.updatePageTitle(this.state.currentPage);
-        });
-    }
-
-    async init() {
-        await I18n.init();
-        
+        // 使用requestAnimationFrame确保DOM更新后再添加动画类
         requestAnimationFrame(() => {
-            document.body.classList.add('app-loaded');
+            toast.classList.add('show');
         });
 
-        if (window.I18n?.initLanguageSelector) {
-            I18n.initLanguageSelector();
-        } else {
-            document.addEventListener('i18nReady', () => {
-                I18n.initLanguageSelector();
-            });
-        }
+        // 自动关闭
+        const hideToast = () => {
+            toast.classList.remove('show');
+            toast.classList.add('hide');
 
-        const initialPage = Router.getCurrentPage();
-        await Router.navigate(initialPage, false);
-        
-        this.state.isLoading = false;
+            // 监听动画结束后移除元素
+            const handleAnimationEnd = () => {
+                toast.removeEventListener('animationend', handleAnimationEnd);
+                if (this.elements.toastContainer?.contains(toast)) {
+                    this.elements.toastContainer.removeChild(toast);
+                }
+            };
 
-        const loadingContainer = document.querySelector('#main-content .loading-container');
-        if (loadingContainer) {
-            loadingContainer.style.opacity = '0';
-            setTimeout(() => loadingContainer.remove(), UI.transitions.duration.page);
-        }
-    }
+            toast.addEventListener('animationend', handleAnimationEnd);
 
-    async execCommand(command) {
-        try {
-            return await Core.execCommand(command);
-        } catch (error) {
-            console.error('执行终端命令失败:', error);
-            return false;
-        }
+            // 安全超时
+            setTimeout(() => {
+                if (this.elements.toastContainer?.contains(toast)) {
+                    this.elements.toastContainer.removeChild(toast);
+                }
+            }, 300);
+        };
+
+        // 设置定时器
+        const timer = setTimeout(hideToast, duration);
+
+        // 添加交互功能：点击关闭
+        toast.addEventListener('click', () => {
+            clearTimeout(timer);
+            hideToast();
+        });
+
+        return toast;
     }
 }
-
-// 创建应用实例并导出公共API
-const app = new App();
-
-window.App = {
-    loadPage: (pageName) => Router.navigate(pageName),
-    updateActiveNavItem: (pageName) => UI.updateNavigation(pageName),
-    o: (command) => app.execCommand(command)
-};
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', () => app.init());
+const app = new App();
+
+// 绑定事件监听器
+window.addEventListener('DOMContentLoaded', () => {
+    // 绑定导航项点击事件
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const page = item.dataset.page;
+            if (page) Router.navigate(page);
+        });
+    });
+
+    // 绑定主题切换按钮点击事件
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            if (window.ThemeManager?.toggleTheme) {
+                window.ThemeManager.toggleTheme();
+            }
+        });
+    }
+
+    // 绑定语言切换按钮点击事件
+    const languageButton = document.getElementById('language-button');
+    if (languageButton) {
+        languageButton.addEventListener('click', () => {
+            const languageSelector = document.querySelector('.language-selector');
+            if (languageSelector) {
+                UI.showOverlay(languageSelector);
+            }
+        });
+    }
+
+    // 绑定取消语言选择按钮点击事件
+    const cancelLanguage = document.getElementById('cancel-language');
+    if (cancelLanguage) {
+        cancelLanguage.addEventListener('click', () => {
+            const languageSelector = document.querySelector('.language-selector');
+            if (languageSelector) {
+                UI.hideOverlay(languageSelector);
+            }
+        });
+    }
+
+    // 初始化所有底栏覆盖层
+    document.querySelectorAll('.bottom-overlay').forEach(overlay => {
+        // 点击背景时隐藏
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                UI.hideOverlay(overlay);
+            }
+        });
+
+        // 点击关闭按钮时隐藏
+        const closeButton = overlay.querySelector('.close-button');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                UI.hideOverlay(overlay);
+            });
+        }
+    });
+
+    // 绑定窗口大小变化事件
+    window.addEventListener('resize', () => {
+        UI.updateLayout();
+    });
+
+    // 绑定历史记录变化事件
+    window.addEventListener('popstate', () => {
+        const pageName = Router.getCurrentPage();
+        Router.navigate(pageName, false);
+    });
+
+    // 初始化布局
+    UI.updateLayout();
+
+    // 初始化应用
+    app.init().catch(error => {
+        console.error('应用初始化失败:', error);
+        UI.showError('应用初始化失败', error.message);
+    });
+});
+
+// 导出全局API
+window.app = {
+    init: () => app.init(),
+    execCommand: (command) => app.execCommand(command),
+    loadPage: (pageName) => Router.navigate(pageName),
+    o: (command) => app.execCommand(command)
+};

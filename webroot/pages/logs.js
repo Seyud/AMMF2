@@ -93,7 +93,7 @@ const LogsPage = {
                 this.logFiles[fileName] = file;
             });
             
-            console.log(I18n.translate('LOGS_FILES_FOUND', '找到 {count} 个日志文件').replace('{count}', Object.keys(this.logFiles).length));
+            console.log(I18n.translate('LOGS_FILES_FOUND', '找到 {count} 个日志文件', {count: Object.keys(this.logFiles).length}));
         } catch (error) {
             console.error(I18n.translate('LOGS_SCAN_ERROR', '扫描日志文件失败:'), error);
             this.logFiles = {};
@@ -121,6 +121,12 @@ const LogsPage = {
                 return;
             }
             
+            // 显示加载指示器
+            const logsDisplay = document.getElementById('logs-display');
+            if (logsDisplay) {
+                logsDisplay.classList.add('loading');
+            }
+            
             // 使用requestIdleCallback处理大数据
             await new Promise(resolve => {
                 requestIdleCallback(async () => {
@@ -128,9 +134,11 @@ const LogsPage = {
                     this.logContent = content || I18n.translate('NO_LOGS', '没有可用的日志');
                     
                     // 更新显示
-                    const logsDisplay = document.getElementById('logs-display');
                     if (logsDisplay) {
                         logsDisplay.innerHTML = this.formatLogContent();
+                        logsDisplay.classList.remove('loading');
+                        // 滚动到底部
+                        logsDisplay.scrollTop = logsDisplay.scrollHeight;
                     }
                     
                     if (showToast) Core.showToast(I18n.translate('LOGS_REFRESHED', '日志已刷新'));
@@ -140,6 +148,12 @@ const LogsPage = {
         } catch (error) {
             console.error(I18n.translate('LOGS_LOAD_ERROR', '加载日志内容失败:'), error);
             this.logContent = I18n.translate('LOGS_LOAD_ERROR', '加载失败');
+            
+            const logsDisplay = document.getElementById('logs-display');
+            if (logsDisplay) {
+                logsDisplay.classList.remove('loading');
+            }
+            
             if (showToast) Core.showToast(this.logContent, 'error');
         }
     },
@@ -161,21 +175,55 @@ const LogsPage = {
                 return;
             }
             
-            // 确认对话框
-            if (!confirm(I18n.translate('CONFIRM_CLEAR_LOG', '确定要清除此日志文件吗？此操作不可撤销。'))) {
-                return;
-            }
+            // 使用MD3对话框确认
+            const dialog = document.createElement('dialog');
+            dialog.className = 'md-dialog';
+            dialog.innerHTML = `
+                <h2>${I18n.translate('CLEAR_LOGS', '清除日志')}</h2>
+                <p>${I18n.translate('CONFIRM_CLEAR_LOG', '确定要清除此日志文件吗？此操作不可撤销。')}</p>
+                <fieldset>
+                    <button class="icon-button" data-action="cancel">${I18n.translate('CANCEL', '取消')}</button>
+                    <button class="icon-button filled" data-action="confirm">${I18n.translate('CONFIRM', '确认')}</button>
+                </fieldset>
+            `;
+            document.body.appendChild(dialog);
             
-            // 清空日志文件
-            await Core.execCommand(`cat /dev/null > "${logPath}" && chmod 666 "${logPath}"`);
+            // 显示对话框
+            dialog.showModal();
             
-            // 重新加载日志内容
-            await this.loadLogContent();
-            
-            Core.showToast(I18n.translate('LOG_CLEARED', '日志已清除'));
+            // 处理对话框按钮点击
+            return new Promise((resolve, reject) => {
+                dialog.addEventListener('click', async (e) => {
+                    const action = e.target.getAttribute('data-action');
+                    if (action === 'cancel') {
+                        dialog.close();
+                        document.body.removeChild(dialog);
+                        resolve(false);
+                    } else if (action === 'confirm') {
+                        dialog.close();
+                        document.body.removeChild(dialog);
+                        
+                        try {
+                            // 清空日志文件
+                            await Core.execCommand(`cat /dev/null > "${logPath}" && chmod 666 "${logPath}"`);
+                            
+                            // 重新加载日志内容
+                            await this.loadLogContent();
+                            
+                            Core.showToast(I18n.translate('LOG_CLEARED', '日志已清除'));
+                            resolve(true);
+                        } catch (error) {
+                            console.error(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败:'), error);
+                            Core.showToast(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败'), 'error');
+                            reject(error);
+                        }
+                    }
+                });
+            });
         } catch (error) {
             console.error(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败:'), error);
             Core.showToast(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败'), 'error');
+            return false;
         }
     },
     
@@ -194,10 +242,13 @@ const LogsPage = {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const exportFileName = `${this.currentLogFile}_${timestamp}.log`;
             
+            // 显示加载指示器
+            Core.showToast(I18n.translate('LOADING', '导出中...'), 'info');
+            
             // 确保下载目录存在并复制文件
             await Core.execCommand(`mkdir -p "${downloadDir}" && cp "${logPath}" "${downloadDir}${exportFileName}"`);
             
-            Core.showToast(I18n.translate('LOG_EXPORTED', '日志已导出到: {path}').replace('{path}', `${downloadDir}${exportFileName}`));
+            Core.showToast(I18n.translate('LOG_EXPORTED', '日志已导出到: {path}', {path: `${downloadDir}${exportFileName}`}));
         } catch (error) {
             console.error(I18n.translate('LOG_EXPORT_ERROR', '导出日志失败:'), error);
             Core.showToast(I18n.translate('LOG_EXPORT_ERROR', '导出日志失败'), 'error');
@@ -237,7 +288,7 @@ const LogsPage = {
     // 格式化日志内容
     formatLogContent() {
         if (!this.logContent || this.logContent.trim() === '') {
-            return I18n.translate('NO_LOGS', '没有可用的日志');
+            return `<div class="empty-state">${I18n.translate('NO_LOGS', '没有可用的日志')}</div>`;
         }
         
         let formatted = this.escapeHtml(this.logContent);
@@ -245,7 +296,25 @@ const LogsPage = {
         // 为不同级别的日志添加颜色标识
         formatted = formatted
             .replace(/\[(ERROR|WARN|INFO|DEBUG)\]/g, (match, level) => {
-                return `<span class="log-level ${level.toLowerCase()}">${level}</span>`;
+                const levelClass = level.toLowerCase();
+                let icon = '';
+                
+                switch (levelClass) {
+                    case 'error':
+                        icon = '<span class="material-symbols-rounded">error</span>';
+                        break;
+                    case 'warn':
+                        icon = '<span class="material-symbols-rounded">warning</span>';
+                        break;
+                    case 'info':
+                        icon = '<span class="material-symbols-rounded">info</span>';
+                        break;
+                    case 'debug':
+                        icon = '<span class="material-symbols-rounded">code</span>';
+                        break;
+                }
+                
+                return `<span class="log-level ${levelClass}">${icon}${level}</span>`;
             });
             
         return formatted;
@@ -259,13 +328,13 @@ const LogsPage = {
         // 添加操作按钮
         const pageActions = document.getElementById('page-actions');
         pageActions.innerHTML = `
-            <button id="refresh-logs" class="md-button icon-only" title="${I18n.translate('REFRESH_LOGS', '刷新日志')}">
+            <button id="refresh-logs" class="icon-button" title="${I18n.translate('REFRESH_LOGS', '刷新日志')}">
                 <span class="material-symbols-rounded">refresh</span>
             </button>
-            <button id="export-logs" class="md-button icon-only" title="${I18n.translate('EXPORT_LOGS', '导出日志')}">
+            <button id="export-logs" class="icon-button" title="${I18n.translate('EXPORT_LOGS', '导出日志')}">
                 <span class="material-symbols-rounded">download</span>
             </button>
-            <button id="clear-logs" class="md-button icon-only" title="${I18n.translate('CLEAR_LOGS', '清除日志')}">
+            <button id="clear-logs" class="icon-button" title="${I18n.translate('CLEAR_LOGS', '清除日志')}">
                 <span class="material-symbols-rounded">delete</span>
             </button>
         `;
@@ -273,29 +342,26 @@ const LogsPage = {
         const hasLogFiles = Object.keys(this.logFiles).length > 0;
         
         return `
-            <div class="logs-page">
-                <div class="card shadow-sm">
-                    <div class="logs-controls">
-                        <div class="logs-controls-left">
-                            <div class="log-file-selector">
-                                <select id="log-file-select" class="styled-select" ${!hasLogFiles ? 'disabled' : ''}>
+            <div class="logs-container">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="controls-row">
+                            <label>
+                                <span>${I18n.translate('SELECT_LOG_FILE', '选择日志文件')}</span>
+                                <select id="log-file-select" ${!hasLogFiles ? 'disabled' : ''}>
                                     ${this.renderLogFileOptions()}
                                 </select>
-                            </div>
-                            <div class="log-refresh-controls">
-                                <label class="auto-refresh-toggle">
-                                    <span class="switch">
-                                        <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
-                                        <span class="slider round"></span>
-                                    </span>
-                                    <span class="switch-label">${I18n.translate('AUTO_REFRESH', '自动刷新')}</span>
-                                </label>
-                            </div>
+                            </label>
+                            
+                            <label class="switches">
+                                <span data-i18n="AUTO_REFRESH">${I18n.translate('AUTO_REFRESH', '自动刷新')}</span>
+                                <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
+                            </label>
                         </div>
                     </div>
                     
-                    <div class="logs-content">
-                        <pre id="logs-display" class="logs-display">${this.formatLogContent()}</pre>
+                    <div id="logs-display-container" class="card-content">
+                        <pre id="logs-display" class="logs-content">${this.formatLogContent()}</pre>
                     </div>
                 </div>
             </div>
@@ -345,11 +411,67 @@ const LogsPage = {
         if (this.autoRefresh) {
             this.toggleAutoRefresh(true);
         }
+        
+        // 添加日志显示区域的样式
+        const logsDisplay = document.getElementById('logs-display');
+        if (logsDisplay) {
+            // 检测是否为空内容
+            if (this.logContent.trim() === '') {
+                logsDisplay.classList.add('empty');
+            } else {
+                logsDisplay.classList.remove('empty');
+            }
+        }
+        
+        // 设置日志容器高度
+        this.adjustLogContainerHeight();
+        
+        // 监听窗口大小变化
+        window.addEventListener('resize', this.adjustLogContainerHeight);
+    },
+    
+    // 调整日志容器高度
+    adjustLogContainerHeight() {
+        const container = document.getElementById('logs-display-container');
+        if (container) {
+            const viewportHeight = window.innerHeight;
+            const headerHeight = document.querySelector('header')?.offsetHeight || 0;
+            const navHeight = document.querySelector('.app-nav')?.offsetHeight || 0;
+            const controlsHeight = document.querySelector('.controls-row')?.offsetHeight || 0;
+            
+            // 计算可用高度
+            const availableHeight = viewportHeight - headerHeight - navHeight - controlsHeight - 40; // 40px为其他边距
+            
+            // 设置最小高度
+            container.style.minHeight = `${Math.max(300, availableHeight)}px`;
+        }
     },
     
     // 页面激活/停用回调
-    onActivate() { this.autoRefresh && this.toggleAutoRefresh(true); },
-    onDeactivate() { this.toggleAutoRefresh(false); }
+    onActivate() { 
+        // 刷新日志文件列表
+        this.scanLogFiles().then(() => {
+            // 如果当前选择的日志文件不在列表中，选择第一个
+            if (this.currentLogFile && !this.logFiles[this.currentLogFile] && Object.keys(this.logFiles).length > 0) {
+                this.currentLogFile = Object.keys(this.logFiles)[0];
+            }
+            // 加载日志内容
+            this.loadLogContent();
+            // 启动自动刷新
+            this.autoRefresh && this.toggleAutoRefresh(true);
+            // 调整容器高度
+            this.adjustLogContainerHeight();
+        });
+        
+        // 添加窗口大小变化监听
+        window.addEventListener('resize', this.adjustLogContainerHeight);
+    },
+    
+    onDeactivate() { 
+        this.toggleAutoRefresh(false);
+        // 移除窗口大小变化监听
+        window.removeEventListener('resize', this.adjustLogContainerHeight);
+    }
 };
 
 window.LogsPage = LogsPage;

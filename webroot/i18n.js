@@ -114,6 +114,21 @@ const I18n = {
             FRAMEWORK_DEVELOPER: '框架开发者',
             MODULE_DEVELOPER: '模块开发者',
             COPYRIGHT_INFO: 'Copyright (c) 2025 Aurora星空',
+            AUTO_REFRESH: '自动刷新',
+            SELECT_LOG_FILE: '选择日志文件',
+            RESTORE: '还原',
+            CONFIRM_REFRESH_UNSAVED: '有未保存的更改，确定要刷新吗？',
+            UNSAVED_SETTINGS: '设置有未保存的更改',
+            NO_SETTINGS_BACKUP: '没有可用的设置备份',
+            SETTINGS_RESTORED: '设置已还原',
+            SETTINGS_LOAD_ERROR: '加载设置失败',
+            SETTINGS_INIT_ERROR: '设置页面初始化失败',
+            ACTION_OUTPUT: 'Action输出',
+            ACTION_STARTING: '正在启动Action...',
+            RUNNING_ACTION: '正在运行Action...',
+            ACTION_COMPLETED: 'Action运行完成',
+            ACTION_ERROR: '运行Action失败',
+            ROOT_IMPLEMENTATION: 'Root实现',
         };
         this.translations.en = {
             NAV_STATUS: 'Status',
@@ -198,6 +213,21 @@ const I18n = {
             FRAMEWORK_DEVELOPER: 'Framework Developer',
             MODULE_DEVELOPER: 'Module Developer',
             COPYRIGHT_INFO: 'Copyright (c) 2025 AuroraNasa',
+            AUTO_REFRESH: 'Auto Refresh',
+            SELECT_LOG_FILE: 'Select Log File',
+            RESTORE: 'Restore',
+            CONFIRM_REFRESH_UNSAVED: 'There are unsaved changes. Are you sure you want to refresh?',
+            UNSAVED_SETTINGS: 'Settings have unsaved changes',
+            NO_SETTINGS_BACKUP: 'No settings backup available',
+            SETTINGS_RESTORED: 'Settings restored',
+            SETTINGS_LOAD_ERROR: 'Failed to load settings',
+            SETTINGS_INIT_ERROR: 'Failed to initialize settings page',
+            ACTION_OUTPUT: 'Action Output',
+            ACTION_STARTING: 'Starting Action...',
+            RUNNING_ACTION: 'Running Action...',
+            ACTION_COMPLETED: 'Action Completed',
+            ACTION_ERROR: 'Action Failed',
+            ROOT_IMPLEMENTATION: 'Root Implementation',
         };
         this.translations.ru = {
             NAV_STATUS: 'Статус',
@@ -282,6 +312,21 @@ const I18n = {
             FRAMEWORK_DEVELOPER: 'Разработчик AMMF',
             MODULE_DEVELOPER: 'Разработчик модуля',
             COPYRIGHT_INFO: 'Copyright (c) 2025 AuroraNasa',
+            AUTO_REFRESH: 'Автообновление',
+            SELECT_LOG_FILE: 'Выбрать файл журнала',
+            RESTORE: 'Восстановить',
+            CONFIRM_REFRESH_UNSAVED: 'Есть несохраненные изменения. Вы уверены, что хотите обновить?',
+            UNSAVED_SETTINGS: 'В настройках есть несохраненные изменения',
+            NO_SETTINGS_BACKUP: 'Нет доступной резервной копии настроек',
+            SETTINGS_RESTORED: 'Настройки восстановлены',
+            SETTINGS_LOAD_ERROR: 'Не удалось загрузить настройки',
+            SETTINGS_INIT_ERROR: 'Не удалось инициализировать страницу настроек',
+            ACTION_OUTPUT: 'Вывод Action',
+            ACTION_STARTING: 'Запуск Action...',
+            RUNNING_ACTION: 'Выполнение Action...',
+            ACTION_COMPLETED: 'Action завершен',
+            ACTION_ERROR: 'Ошибка выполнения Action',
+            ROOT_IMPLEMENTATION: 'Реализация Root',
         };
         console.log('默认翻译已加载');
     },
@@ -306,6 +351,7 @@ const I18n = {
     },
 
     applyTranslations() {
+        // 处理带有 data-i18n 属性的元素
         const elements = document.querySelectorAll('[data-i18n]');
         elements.forEach(el => {
             const key = el.getAttribute('data-i18n');
@@ -314,56 +360,157 @@ const I18n = {
                 el.textContent = translation;
             }
         });
+
+        // 处理带有 data-i18n-placeholder 属性的元素
+        const placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
+        placeholderElements.forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            const translation = this.translate(key);
+            if (translation) {
+                el.setAttribute('placeholder', translation);
+            }
+        });
+
+        // 处理带有 data-i18n-title 属性的元素
+        const titleElements = document.querySelectorAll('[data-i18n-title]');
+        titleElements.forEach(el => {
+            const key = el.getAttribute('data-i18n-title');
+            const translation = this.translate(key);
+            if (translation) {
+                el.setAttribute('title', translation);
+            }
+        });
+
+        // 处理带有 data-i18n-label 属性的元素
+        const labelElements = document.querySelectorAll('[data-i18n-label]');
+        labelElements.forEach(el => {
+            const key = el.getAttribute('data-i18n-label');
+            const translation = this.translate(key);
+            if (translation && el.querySelector('.switch-label')) {
+                el.querySelector('.switch-label').textContent = translation;
+            }
+        });
     },
 
     translate(key, defaultText = '') {
+        if (!key) return defaultText;
+        
+        // 支持参数替换，例如：translate('HELLO', '你好 {name}', {name: '张三'})
+        if (arguments.length > 2 && typeof arguments[2] === 'object') {
+            let text = this.translations[this.currentLang][key] || defaultText || key;
+            const params = arguments[2];
+            
+            for (const param in params) {
+                if (Object.prototype.hasOwnProperty.call(params, param)) {
+                    text = text.replace(new RegExp(`{${param}}`, 'g'), params[param]);
+                }
+            }
+            
+            return text;
+        }
+        
         return this.translations[this.currentLang][key] || defaultText || key;
     },
 
     initLanguageSelector() {
         const languageButton = document.getElementById('language-button');
-        const languageSelector = document.getElementById('language-selector');
-        const languageOptions = document.getElementById('language-options');
-        const cancelButton = document.getElementById('cancel-language');
-
-        if (!languageButton || !languageSelector || !languageOptions) {
-            console.error('找不到语言选择器必要的DOM元素');
+        if (!languageButton) {
+            console.error('找不到语言选择器按钮');
             return;
         }
 
-        this.updateLanguageSelector();
+        // 使用已有的语言选择器容器
+        const languageSelector = document.getElementById('language-selector');
+        if (!languageSelector) {
+            console.error('找不到语言选择器容器');
+            return;
+        }
 
-        languageButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.updateLanguageSelector();
-            languageSelector.classList.add('show');
-        });
-
-        cancelButton.addEventListener('click', () => {
-            languageSelector.classList.remove('show');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (languageSelector.classList.contains('show') && !languageSelector.contains(e.target) && e.target !== languageButton) {
-                languageSelector.classList.remove('show');
+        // 设置语言按钮点击事件
+        languageButton.addEventListener('click', () => {
+            // 使用UI类的方法显示覆盖层
+            if (window.UI && window.UI.showOverlay) {
+                window.UI.showOverlay(languageSelector);
+            } else {
+                languageSelector.classList.add('active');
             }
         });
+
+        // 设置取消按钮点击事件
+        const cancelButton = document.getElementById('cancel-language');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', () => {
+                // 使用UI类的方法隐藏覆盖层
+                if (window.UI && window.UI.hideOverlay) {
+                    window.UI.hideOverlay(languageSelector);
+                } else {
+                    languageSelector.classList.remove('active');
+                }
+            });
+        }
+        
+        // 更新语言选项
+        this.updateLanguageSelector();
     },
 
     updateLanguageSelector() {
         const languageOptions = document.getElementById('language-options');
+        if (!languageOptions) return;
+        
         languageOptions.innerHTML = '';
+        
         this.supportedLangs.forEach(lang => {
             const option = document.createElement('div');
-            option.className = `language-option ${lang === this.currentLang ? 'active' : ''}`;
+            option.className = `language-option ${lang === this.currentLang ? 'selected' : ''}`;
             option.setAttribute('data-lang', lang);
-            option.textContent = this.getLanguageDisplayName(lang);
+            
+            const radioInput = document.createElement('input');
+            radioInput.type = 'radio';
+            radioInput.name = 'language';
+            radioInput.id = `lang-${lang}`;
+            radioInput.value = lang;
+            radioInput.checked = lang === this.currentLang;
+            radioInput.className = 'md-radio';
+            
+            const label = document.createElement('label');
+            label.htmlFor = `lang-${lang}`;
+            label.textContent = this.getLanguageDisplayName(lang);
+            
+            option.appendChild(radioInput);
+            option.appendChild(label);
+            
             option.addEventListener('click', async () => {
+                // 先关闭语言选择器，然后再切换语言
+                const languageSelector = document.getElementById('language-selector');
+                if (languageSelector) {
+                    // 使用UI类的方法隐藏覆盖层
+                    if (window.UI && window.UI.hideOverlay) {
+                        window.UI.hideOverlay(languageSelector);
+                    } else {
+                        // 添加关闭动画类
+                        languageSelector.classList.add('closing');
+                        
+                        // 确保动画完成后移除所有相关类
+                        setTimeout(() => {
+                            languageSelector.classList.remove('active');
+                            languageSelector.classList.remove('closing');
+                            languageSelector.style.display = 'none'; // 强制隐藏
+                            
+                            // 重置后恢复正常显示设置，但保持隐藏状态
+                            setTimeout(() => {
+                                languageSelector.style.display = '';
+                            }, 50);
+                        }, 200); // 与CSS动画时间匹配
+                    }
+                }
+                
+                // 切换语言
                 if (lang !== this.currentLang) {
                     await this.setLanguage(lang);
+                    this.updateLanguageSelector();
                 }
-                document.getElementById('language-selector')?.classList.remove('show');
             });
+            
             languageOptions.appendChild(option);
         });
     },
@@ -395,18 +542,62 @@ const I18n = {
     },
 
     observeDOMChanges() {
-        const observer = new MutationObserver(() => {
-            this.applyTranslations();
+        // 使用 MutationObserver 监听 DOM 变化
+        const observer = new MutationObserver((mutations) => {
+            let shouldApply = false;
+            
+            // 检查是否有新增的需要翻译的元素
+            for (const mutation of mutations) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length) {
+                    for (const node of mutation.addedNodes) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // 检查新增元素或其子元素是否包含需要翻译的属性
+                            if (
+                                node.hasAttribute && (
+                                    node.hasAttribute('data-i18n') || 
+                                    node.hasAttribute('data-i18n-placeholder') || 
+                                    node.hasAttribute('data-i18n-title') ||
+                                    node.hasAttribute('data-i18n-label') ||
+                                    node.querySelector('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-label]')
+                                )
+                            ) {
+                                shouldApply = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (shouldApply) break;
+            }
+            
+            // 如果有需要翻译的元素，应用翻译
+            if (shouldApply) {
+                this.applyTranslations();
+            }
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        
+        // 配置观察选项
+        const config = { 
+            childList: true, 
+            subtree: true 
+        };
+        
+        // 开始观察 document.body
+        observer.observe(document.body, config);
+        
+        // 监听页面变化事件
         document.addEventListener('pageChanged', () => {
-            setTimeout(() => this.applyTranslations(), 100);
+            // 使用 requestAnimationFrame 确保在下一帧渲染前应用翻译
+            requestAnimationFrame(() => this.applyTranslations());
         });
+        
+        // 监听语言变化事件
         document.addEventListener('languageChanged', () => {
             this.applyTranslations();
         });
     }
 };
 
-// 导出国际化模块
+// 导出 I18n 模块
 window.I18n = I18n;

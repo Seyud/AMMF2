@@ -36,10 +36,10 @@ const StatusPage = {
         
         const pageActions = document.getElementById('page-actions');
         pageActions.innerHTML = `
-            <button id="refresh-status" class="md-button icon-only" title="${I18n.translate('REFRESH', '刷新')}">
+            <button id="refresh-status" class="icon-button" title="${I18n.translate('REFRESH', '刷新')}">
                 <span class="material-symbols-rounded">refresh</span>
             </button>
-            <button id="run-action" class="md-button icon-only" title="${I18n.translate('RUN_ACTION', '运行Action')}">
+            <button id="run-action" class="icon-button" title="${I18n.translate('RUN_ACTION', '运行Action')}">
                 <span class="material-symbols-rounded">play_arrow</span>
             </button>
         `;
@@ -47,8 +47,11 @@ const StatusPage = {
         // 渲染页面内容
         return `
             <div class="status-page">
-                <!-- 模块状态卡片 -->
-                <div class="status-card">
+                <!-- 合并的状态卡片 -->
+                <div class="card status-card">
+                    <div class="status-card-header">
+                        <span class="status-title" data-i18n="MODULE_STATUS">模块状态</span>
+                    </div>
                     <div class="status-card-content">
                         <div class="status-icon-container">
                             <div class="status-indicator ${this.getStatusClass()}">
@@ -57,20 +60,18 @@ const StatusPage = {
                         </div>
                         <div class="status-info-container">
                             <div class="status-title-row">
-                                <span class="status-title" data-i18n="MODULE_STATUS">模块状态</span>
-                                <span class="status-value" data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
+                                <span class="status-value ${this.getStatusClass()}-text" data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
                             </div>
                             <div class="status-update-row">
                                 <span class="status-update-time">${new Date().toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- 设备信息卡片 -->
-                <div class="card device-info">
-                    <h3 data-i18n="DEVICE_INFO">设备信息</h3>
-                    ${this.renderDeviceInfo()}
+                    
+                    <!-- 设备信息部分 -->
+                    <div class="device-info-grid">
+                        ${this.renderDeviceInfo()}
+                    </div>
                 </div>
             </div>
         `;
@@ -102,19 +103,25 @@ const StatusPage = {
         try {
             // 创建输出容器
             const outputContainer = document.createElement('div');
-            outputContainer.className = 'action-output-container';
+            outputContainer.className = 'card action-output-container';
             outputContainer.innerHTML = `
                 <div class="action-output-header">
                     <h3>${I18n.translate('ACTION_OUTPUT', 'Action输出')}</h3>
-                    <button class="md-button icon-only close-output">
+                    <button class="icon-button close-output" title="${I18n.translate('CLOSE', '关闭')}">
                         <span class="material-symbols-rounded">close</span>
                     </button>
                 </div>
                 <div class="action-output-content"></div>
             `;
             
-            document.querySelector('.status-page').appendChild(outputContainer);
+            document.body.appendChild(outputContainer);
             const outputContent = outputContainer.querySelector('.action-output-content');
+            
+            // 修复关闭按钮的事件监听
+            const closeButton = outputContainer.querySelector('.close-output');
+            closeButton.addEventListener('click', () => {
+                outputContainer.remove();
+            });
             
             Core.showToast(I18n.translate('RUNNING_ACTION', '正在运行Action...'));
             outputContent.textContent = I18n.translate('ACTION_STARTING', '正在启动Action...\n');
@@ -201,8 +208,7 @@ const StatusPage = {
                 model: await this.getDeviceModel(),
                 android: await this.getAndroidVersion(),
                 kernel: await this.getKernelVersion(),
-                magisk: await this.getMagiskVersion(),
-                ksu: await this.getKsuVersion(),
+                root: await this.getRootImplementation(),
                 android_api: await this.getAndroidAPI(),
                 device_abi: await this.getDeviceABI()
             };
@@ -263,44 +269,47 @@ const StatusPage = {
         }
     },
 
-    async getMagiskVersion() {
+    async getRootImplementation() {
         try {
             // 检查Magisk是否安装
             const magiskPath = '/data/adb/magisk';
-            const fileExistsResult = await Core.execCommand(`[ -f "${magiskPath}" ] && echo "true" || echo "false"`);
+            const magiskExists = await Core.execCommand(`[ -f "${magiskPath}" ] && echo "true" || echo "false"`);
             
-            if (fileExistsResult.trim() === "true") {
+            if (magiskExists.trim() === "true") {
                 const version = await Core.execCommand(`cat "${magiskPath}"`);
-                return version.trim() || 'Unknown';
+                if (version && version.trim()) {
+                    return `Magisk ${version.trim()}`;
+                }
             }
             
             // 尝试通过magisk命令获取版本
-            const cmdResult = await Core.execCommand('magisk -v');
-            if (cmdResult && !cmdResult.includes('not found')) {
-                return cmdResult.trim().split(':')[0] || 'Unknown';
+            const magiskResult = await Core.execCommand('magisk -v');
+            if (magiskResult && !magiskResult.includes('not found')) {
+                const magiskVersion = magiskResult.trim().split(':')[0];
+                if (magiskVersion) {
+                    return `Magisk ${magiskVersion}`;
+                }
             }
             
-            return 'Not Installed';
+            // 检查KernelSU是否安装
+            const ksuResult = await Core.execCommand('ksud -V');
+            if (ksuResult && !ksuResult.includes('not found')) {
+                return `KernelSU ${ksuResult.trim()}`;
+            }
+            
+            // 检查APatch是否安装
+            const apatchResult = await Core.execCommand('apd -V');
+            if (apatchResult && !apatchResult.includes('not found')) {
+                return `APatch ${apatchResult.trim()}`;
+            }
+            
+            return 'No Root';
         } catch (error) {
-            console.error('获取Magisk版本失败:', error);
+            console.error('获取ROOT实现失败:', error);
             return 'Unknown';
         }
     },
 
-    async getKsuVersion() {
-        try {
-            // 检查KernelSU是否安装
-            const result = await Core.execCommand('ksud');
-            if (result && !result.includes('not found')) {
-                return result.trim() || 'Unknown';
-            }
-            return 'Not Installed';
-        } catch (error) {
-            console.error('获取KernelSU版本失败:', error);
-            return 'Unknown';
-        }
-    },
-    
     getStatusI18nKey() {
         switch (this.moduleStatus) {
             case 'RUNNING':
@@ -331,11 +340,10 @@ const StatusPage = {
             { key: 'android_api', label: 'ANDROID_API', icon: 'api' },
             { key: 'device_abi', label: 'DEVICE_ABI', icon: 'memory' },
             { key: 'kernel', label: 'KERNEL_VERSION', icon: 'terminal' },
-            { key: 'magisk', label: 'MAGISK_VERSION', icon: 'security' },
-            { key: 'ksu', label: 'KSU_VERSION', icon: 'new_releases' }
+            { key: 'root', label: 'ROOT_IMPLEMENTATION', icon: 'security' }
         ];
         
-        let html = '<div class="device-info-grid">';
+        let html = '';
         
         infoItems.forEach(item => {
             if (this.deviceInfo[item.key]) {
@@ -353,7 +361,6 @@ const StatusPage = {
             }
         });
         
-        html += '</div>';
         return html || `<div class="no-info" data-i18n="NO_DEVICE_INFO">无设备信息</div>`;
     },
     
@@ -373,17 +380,19 @@ const StatusPage = {
                 const statusPage = document.querySelector('.status-page');
                 if (statusPage) {
                     statusPage.innerHTML = `
-                        <!-- 模块状态卡片 -->
-                        <div class="status-card">
+                        <!-- 合并的状态卡片 -->
+                        <div class="card status-card">
+                            <div class="status-card-header">
+                                <span class="status-title" data-i18n="MODULE_STATUS">模块状态</span>
+                            </div>
                             <div class="status-card-content">
                                 <div class="status-icon-container">
                                     <div class="status-indicator ${this.getStatusClass()}">
                                         <span class="material-symbols-rounded">${this.getStatusIcon()}</span>
                                     </div>
                                 </div>
-                                <div class="status-info-container">
+                                <div class="status-info-container ${this.getStatusClass()}">
                                     <div class="status-title-row">
-                                        <span class="status-title" data-i18n="MODULE_STATUS">模块状态</span>
                                         <span class="status-value" data-i18n="${this.getStatusI18nKey()}">${this.getStatusText()}</span>
                                     </div>
                                     <div class="status-update-row">
@@ -391,12 +400,11 @@ const StatusPage = {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- 设备信息卡片 -->
-                        <div class="card device-info">
-                            <h3 data-i18n="DEVICE_INFO">设备信息</h3>
-                            ${this.renderDeviceInfo()}
+                            
+                            <!-- 设备信息部分 -->
+                            <div class="device-info-grid">
+                                ${this.renderDeviceInfo()}
+                            </div>
                         </div>
                     `;
                     

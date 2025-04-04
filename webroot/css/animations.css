@@ -1,170 +1,216 @@
 /**
- * 动画效果样式
- * 包含过渡、关键帧动画和状态变化效果
+ * AMMF WebUI 动画样式
+ * 包含所有界面动画和过渡效果
  */
 
-/* MD3 标准动画时长 */
-:root {
-  --md-sys-motion-duration-short1: 50ms;
-  --md-sys-motion-duration-short2: 100ms;
-  --md-sys-motion-duration-short3: 150ms;
-  --md-sys-motion-duration-short4: 200ms;
-  --md-sys-motion-duration-medium1: 250ms;
-  --md-sys-motion-duration-medium2: 300ms;
-  --md-sys-motion-duration-medium3: 350ms;
-  --md-sys-motion-duration-medium4: 400ms;
-  --md-sys-motion-duration-long1: 450ms;
-  --md-sys-motion-duration-long2: 500ms;
-  
-  /* 标准缓动曲线 */
-  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0.0, 0, 1.0);
-  --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0.0, 1.0, 1.0);
-  --md-sys-motion-easing-standard-decelerate: cubic-bezier(0.0, 0.0, 0.0, 1.0);
-  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0.0, 0, 1.0);
-  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0.0, 0.8, 0.15);
-  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1.0);
+/* 页面切换淡入淡出效果 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* 页面切换动画 */
-.page-enter {
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* 页面容器过渡效果 */
+.page-container {
   opacity: 0;
-  transform: translateY(20px) translateZ(0);
-  will-change: transform, opacity;
-  transition: 
-    transform var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-emphasized),
-    opacity var(--md-sys-motion-duration-medium3) var(--md-sys-motion-easing-emphasized);
-}
-
-.page-enter.page-active {
-  transform: translateY(0) translateZ(0);
-  opacity: 1;
-}
-
-.page-exit {
-  opacity: 1;
-  transform: translateZ(0);
+  animation: fadeIn 180ms ease-out forwards;
   will-change: opacity;
-  transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard-accelerate);
-  position: absolute;
-  width: 100%;
-  left: 0;
-  top: 0;
-  pointer-events: none; /* 添加此行，防止退出页面捕获点击事件 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
-.page-exit.page-active {
-  opacity: 0;
+.page-container.fade-out {
+  animation: fadeOut 120ms ease-out forwards;
 }
 
-/* 添加这个新规则，确保动画完成后清除绝对定位 */
-.page-exit-complete {
-  position: static;
-  width: auto;
-  transform: none;
+/* 加载动画 */
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-#page-actions.active {
-  opacity: 1;
-  transform: scale(1);
-}
-
-/* 按钮动画效果 */
-.icon-button .material-symbols-rounded,
-.md-button .material-symbols-rounded {
-  transition: 
-    transform 0.2s var(--md-sys-motion-easing-emphasized), 
-    font-variation-settings 0.3s var(--md-sys-motion-easing-standard);
-  will-change: transform;
-}
-
-/* 刷新按钮动画 */
-@keyframes refresh-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.icon-button#refresh-logs.spinning .material-symbols-rounded,
-.icon-button#refresh-settings.spinning .material-symbols-rounded {
-  animation: refresh-spin 0.8s var(--md-sys-motion-easing-standard) infinite;
-}
-
-/* 删除按钮动画 */
-@keyframes delete-shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  50% { transform: translateX(0); }
-  75% { transform: translateX(3px); }
-  100% { transform: translateX(0); }
-}
-
-.icon-button#clear-logs:hover .material-symbols-rounded {
-  animation: delete-shake 0.4s var(--md-sys-motion-easing-emphasized) forwards;
-}
-
-/* 下载按钮动画 */
-@keyframes download-bounce {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(3px); }
-  100% { transform: translateY(0); }
-}
-
-.icon-button#export-logs:hover .material-symbols-rounded {
-  animation: download-bounce 0.4s var(--md-sys-motion-easing-emphasized) forwards;
-}
-
-/* 保存按钮动画 */
-@keyframes save-pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-.md-button#save-settings:hover .material-symbols-rounded {
-  animation: save-pulse 0.4s var(--md-sys-motion-easing-emphasized) forwards;
-}
-
-/* 导航栏动画效果 */
-@keyframes nav-overlay-expand {
-  0% {
-    width: 0;
-    opacity: 0;
-  }
-  100% {
-    width: 60px;
-    opacity: 1;
-  }
-}
-
-@keyframes nav-overlay-shrink {
-  0% {
-    width: 60px;
-    opacity: 1;
-  }
-  100% {
-    width: 0;
-    opacity: 0;
-  }
-}
-
-/* 主题切换涟漪动画 */
-.theme-ripple {
-  position: fixed;
-  width: 100px;
-  height: 100px;
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid color-mix(in oklch, var(--on-surface) 10%, transparent);
   border-radius: 50%;
-  background-color: var(--md-primary);
+  border-top-color: var(--primary);
+  animation: spin 1s ease-in-out infinite;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Toast 动画效果 */
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+}
+
+/* Toast 动画应用 */
+.toast.show {
+  animation: toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.toast.hide {
+  animation: toastSlideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 语言选择器动画 */
+@keyframes languageSelectorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes languageSelectorFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
+/* 语言选择器动画应用 */
+.language-selector.active {
+  animation: languageSelectorFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.language-selector.closing {
+  animation: languageSelectorFadeOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 开关切换动画 */
+@keyframes switchTrackOn {
+  from {
+    background-color: var(--surface-container-highest);
+    border-color: var(--outline);
+  }
+  to {
+    background-color: var(--primary);
+    border-color: var(--primary);
+  }
+}
+
+@keyframes switchTrackOff {
+  from {
+    background-color: var(--primary);
+    border-color: var(--primary);
+  }
+  to {
+    background-color: var(--surface-container-highest);
+    border-color: var(--outline);
+  }
+}
+
+@keyframes switchHandleOn {
+  0% {
+    transform: translateX(-50%);
+    background-color: var(--outline);
+  }
+  50% {
+    transform: translateX(0%);
+    width: 24px;
+    height: 24px;
+  }
+  100% {
+    transform: translateX(50%);
+    background-color: var(--on-primary);
+  }
+}
+
+@keyframes switchHandleOff {
+  0% {
+    transform: translateX(50%);
+    background-color: var(--on-primary);
+  }
+  50% {
+    transform: translateX(0%);
+    width: 24px;
+    height: 24px;
+  }
+  100% {
+    transform: translateX(-50%);
+    background-color: var(--outline);
+  }
+}
+
+/* 单选按钮和复选框动画 */
+@keyframes checkboxOn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes radioOn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 修改后的涟漪效果类 */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: color-mix(in oklch, currentColor 12%, transparent);
   transform: scale(0);
-  opacity: 0.2;
-  z-index: 9999;
   pointer-events: none;
-  transition: transform 0.8s var(--md-sys-motion-easing-emphasized);
+  animation: rippleEffect 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.theme-ripple.active {
-  transform: scale(30);
-}
-
-/* 优化Toast动画 */
-.toast {
-  will-change: transform, opacity;
+/* 新的涟漪动画 */
+@keyframes rippleEffect {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
 }

@@ -1,0 +1,512 @@
+/**
+ * AMMF WebUI 页面样式
+ * 基于 Material Design 3 设计系统
+ */
+
+/* ===== 通用组件 ===== */
+.empty-state {
+    padding: 16px;
+    text-align: center;
+    color: var(--on-surface-variant);
+    font: var(--body-m);
+}
+
+/* 加载状态 */
+.loading-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--surface);
+    z-index: 10;
+    justify-content: center;
+    align-items: center;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity var(--tra), visibility var(--tra);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid color-mix(in oklch, var(--on-surface) 10%, transparent);
+    border-radius: 50%;
+    border-top-color: var(--primary);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== 关于页面 ===== */
+.about-container {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    max-width: 800px;
+    margin: 0 auto;
+    gap: 24px;
+}
+
+.about-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 32px 0;
+}
+
+.app-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 24px;
+    background-color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.app-logo .material-symbols-rounded {
+    font-size: 48px;
+    color: var(--on-primary);
+}
+
+.about-header h2 {
+    font: var(--headline-l);
+    margin: 8px 0;
+    color: var(--on-surface);
+}
+
+.version-badge {
+    background-color: var(--secondary-container);
+    color: var(--on-secondary-container);
+    padding: 4px 16px;
+    border-radius: 16px;
+    font: var(--label-l);
+    margin: 8px 0;
+}
+
+.about-description {
+    color: var(--on-surface-variant);
+    margin: 12px 0 0;
+    font: var(--body-m);
+    max-width: 400px;
+}
+
+.about-card {
+    background-color: var(--surface-container);
+    border-radius: 24px;
+    overflow: hidden;
+}
+
+.about-section {
+    padding: 24px;
+    border-bottom: 1px solid var(--outline-variant);
+}
+
+.about-section:last-child {
+    border-bottom: none;
+}
+
+.section-title {
+    font: var(--title-m);
+    color: var(--on-surface);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title .material-symbols-rounded {
+    color: var(--primary);
+}
+
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.info-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    background-color: var(--secondary-container);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.info-icon .material-symbols-rounded {
+    font-size: 20px;
+    color: var(--on-secondary-container);
+}
+
+.info-content {
+    flex: 1;
+}
+
+.info-label {
+    font: var(--label-m);
+    color: var(--on-surface-variant);
+    margin-bottom: 4px;
+}
+
+.info-value {
+    font: var(--body-l);
+    color: var(--on-surface);
+}
+
+.developer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.developer-name {
+    font: var(--title-m);
+    color: var(--on-surface);
+}
+
+.social-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: var(--secondary-container);
+    color: var(--on-secondary-container);
+    border-radius: 20px;
+    text-decoration: none;
+    font: var(--label-l);
+    width: fit-content;
+    transition: all var(--tra);
+}
+
+.social-link:hover {
+    background-color: var(--primary-container);
+    color: var(--on-primary-container);
+}
+
+.about-footer {
+    text-align: center;
+    color: var(--on-surface-variant);
+    font: var(--body-s);
+    padding: 8px 0 32px;
+}
+
+/* ===== 设置页面 ===== */
+.settings-content {
+    position: relative;
+    padding: 16px;
+}
+
+.setting-item {
+    margin-bottom: 16px;
+}
+
+/* 滑动条输出值 */
+input[type="range"] + output {
+    margin-left: 8px;
+    font: var(--label-m);
+    color: var(--on-surface-variant);
+}
+
+/* ===== 状态页面 ===== */
+.status-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+}
+
+/* 状态卡片 */
+.status-card {
+    background-color: var(--surface-container);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+
+.status-card-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 16px 8px;
+    border-bottom: 1px solid var(--outline-variant);
+}
+
+.status-card-content {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+}
+
+/* 状态图标容器 */
+.status-icon-container {
+    margin-right: 16px;
+}
+
+.status-indicator {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-indicator .material-symbols-rounded {
+    font-size: 24px;
+}
+
+/* 状态颜色 */
+.status-running,
+.status-normal-exit {
+    background-color: var(--tertiary-container);
+    color: var(--on-tertiary-container);
+}
+
+.status-stopped,
+.status-error {
+    background-color: var(--error-container);
+    color: var(--on-error-container);
+}
+
+.status-paused {
+    background-color: var(--secondary-container);
+    color: var(--on-secondary-container);
+}
+
+.status-unknown {
+    background-color: var(--surface-variant);
+    color: var(--on-surface-variant);
+}
+
+/* 状态信息容器 */
+.status-info-container {
+    flex: 1;
+}
+
+.status-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.status-title {
+    font: var(--title-m);
+    color: var(--on-surface);
+}
+
+.status-value {
+    font: var(--label-l);
+    font-weight: 500;
+}
+
+/* 状态文字颜色 */
+.status-running-text,
+.status-normal-exit-text {
+    color: var(--tertiary);
+}
+
+.status-stopped-text,
+.status-error-text {
+    color: var(--error);
+}
+
+.status-paused-text  {
+    color: var(--secondary);
+}
+
+.status-unknown-text {
+    color: var(--on-surface-variant);
+}
+
+.status-update-row {
+    font: var(--body-s);
+    color: var(--on-surface-variant);
+}
+
+/* 设备信息部分 */
+.device-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 16px;
+    border-top: 1px solid var(--outline-variant);
+}
+
+.device-info-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.device-info-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.device-info-icon .material-symbols-rounded {
+    font-size: 24px;
+    color: var(--primary);
+}
+
+.device-info-content {
+    flex: 1;
+}
+
+.device-info-label {
+    font: var(--label-l);
+    font-weight: 600;
+    color: var(--on-surface);
+    margin-bottom: 4px;
+}
+
+.device-info-value {
+    font: var(--body-m);
+    color: var(--on-surface-variant);
+}
+
+.no-info {
+    padding: 16px;
+    text-align: center;
+    color: var(--on-surface-variant);
+    font: var(--body-m);
+}
+
+/* Action输出容器 */
+.action-output-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    z-index: 1000;
+    background-color: var(--surface-container-high);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.action-output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: var(--surface-container-highest);
+    border-bottom: 1px solid var(--outline-variant);
+}
+
+.action-output-header h3 {
+    margin: 0;
+    font: var(--title-m);
+    color: var(--on-surface);
+}
+
+.action-output-content {
+    padding: 16px;
+    max-height: calc(80vh - 60px);
+    overflow-y: auto;
+    font-family: monospace;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--on-surface);
+    background-color: var(--surface-container);
+}
+
+.action-output-content .error {
+    color: var(--error);
+}
+/* ... 其他现有样式保持不变 ... */
+
+/* ===== 下拉菜单样式 - MD3优化版 ===== */
+.select-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+/* 悬停状态 */
+select:hover {
+    background-color: color-mix(in oklch, var(--on-surface) 4%, var(--surface-container-high));
+    box-shadow: var(--ele1);
+}
+
+/* 焦点状态 */
+select:focus {
+    outline: none;
+    background-color: color-mix(in oklch, var(--primary) 8%, var(--surface-container-high));
+    border-bottom: 2px solid var(--primary);
+    box-shadow: var(--ele1);
+}
+
+/* 禁用状态 */
+select:disabled {
+    background-color: color-mix(in oklch, var(--on-surface) 4%, var(--surface-container-high));
+    color: var(--on-surface-variant);
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+
+/* 选项样式 */
+select option {
+    padding: 12px 16px;
+    background-color: var(--surface-container);
+    color: var(--on-surface);
+    font: var(--body-m);
+}
+
+/* 标签样式 */
+.select-label {
+    display: block;
+    margin-bottom: 8px;
+    font: var(--label-m);
+    color: var(--on-surface-variant);
+}
+
+/* 设置页面特定样式 */
+.settings-content .select-container {
+    max-width: 320px;
+}
+
+/* 日志页面特定样式 */
+.logs-container .select-container {
+    min-width: 200px;
+    max-width: 320px;
+}
+/* ===== 响应式布局调整 ===== */
+@media (min-width: 768px) {
+    .about-container,
+    .status-page,
+    .settings-content {
+        padding: 24px;
+    }
+    
+    .about-header {
+        padding: 48px 0;
+    }
+    
+    .device-info-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+}

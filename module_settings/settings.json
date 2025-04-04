@@ -31,21 +31,73 @@
       "en": "Download path for module files",
       "zh": "模块文件下载路径",
       "ru": "Путь загрузки для файлов модуля"
+    },
+    "MAX_CONNECTIONS": {
+      "en": "Maximum number of connections",
+      "zh": "最大连接数",
+      "ru": "Максимальное количество соединений"
+    },
+    "TIMEOUT_SECONDS": {
+      "en": "Connection timeout (seconds)",
+      "zh": "连接超时时间（秒）",
+      "ru": "Тайм-аут соединения (секунды)"
     }
   },
   "options": {
     "print_languages": {
       "options": [
-        {"value": "en", "label": {"en": "English", "zh": "英文", "ru": "Английский"}},
-        {"value": "zh", "label": {"en": "Chinese", "zh": "中文", "ru": "Китайский"}},
-        {"value": "ru", "label": {"en": "Russian", "zh": "俄文", "ru": "Русский"}}
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "zh": "英文",
+            "ru": "Английский"
+          }
+        },
+        {
+          "value": "zh",
+          "label": {
+            "en": "Chinese",
+            "zh": "中文",
+            "ru": "Китайский"
+          }
+        },
+        {
+          "value": "ru",
+          "label": {
+            "en": "Russian",
+            "zh": "俄文",
+            "ru": "Русский"
+          }
+        }
       ]
     },
     "download_destination": {
       "options": [
-        {"value": "/sdcard/Download", "label": {"en": "Download folder", "zh": "下载文件夹", "ru": "Папка загрузки"}},
-        {"value": "/sdcard/AMMF", "label": {"en": "AMMF folder", "zh": "AMMF文件夹", "ru": "Папка AMMF"}},
-        {"value": "/data/local/tmp", "label": {"en": "Temporary folder", "zh": "临时文件夹", "ru": "Временная папка"}}
+        {
+          "value": "/sdcard/Download",
+          "label": {
+            "en": "Download folder",
+            "zh": "下载文件夹",
+            "ru": "Папка загрузки"
+          }
+        },
+        {
+          "value": "/sdcard/AMMF",
+          "label": {
+            "en": "AMMF folder",
+            "zh": "AMMF文件夹",
+            "ru": "Папка AMMF"
+          }
+        },
+        {
+          "value": "/data/local/tmp",
+          "label": {
+            "en": "Temporary folder",
+            "zh": "临时文件夹",
+            "ru": "Временная папка"
+          }
+        }
       ]
     }
   }

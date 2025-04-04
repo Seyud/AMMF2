@@ -1,21 +1,19 @@
 /**
  * AMMF WebUI 主样式文件
- * 导入所有模块化的CSS文件
+ * 基于MD3设计系统重构的统一样式
  */
 
-/* 导入基础样式和变量 */
-@import url('css/base.css');
-
-/* 导入布局样式 */
-@import url('css/layout.css');
-
-/* 导入组件样式 - 拆分为基础组件和页面组件 */
-@import url('css/components-base.css');
-@import url('css/components-page.css');
-
-/* 导入动画效果 */
+/* 导入MD3基础样式系统 */
+@import url('css/md3.css');
+@import url('css/pages.css');
+@import url('css/app.css');
 @import url('css/animations.css');
 
-/* 导入工具类样式 */
-@import url('css/utilities.css');
+/* 主题切换支持 */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
 
+:root[data-theme="light"] {
+  color-scheme: light;
+}
