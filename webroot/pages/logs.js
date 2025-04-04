@@ -177,7 +177,7 @@ const LogsPage = {
             
             // 使用MD3对话框确认
             const dialog = document.createElement('dialog');
-            dialog.className = 'md-dialog';
+            dialog.className = 'md-dialog log-delete-dialog';
             dialog.innerHTML = `
                 <h2>${I18n.translate('CLEAR_LOGS', '清除日志')}</h2>
                 <p>${I18n.translate('CONFIRM_CLEAR_LOG', '确定要清除此日志文件吗？此操作不可撤销。')}</p>
@@ -195,27 +195,30 @@ const LogsPage = {
             return new Promise((resolve, reject) => {
                 dialog.addEventListener('click', async (e) => {
                     const action = e.target.getAttribute('data-action');
-                    if (action === 'cancel') {
-                        dialog.close();
-                        document.body.removeChild(dialog);
-                        resolve(false);
-                    } else if (action === 'confirm') {
-                        dialog.close();
-                        document.body.removeChild(dialog);
-                        
-                        try {
-                            // 清空日志文件
-                            await Core.execCommand(`cat /dev/null > "${logPath}" && chmod 666 "${logPath}"`);
-                            
-                            // 重新加载日志内容
-                            await this.loadLogContent();
-                            
-                            Core.showToast(I18n.translate('LOG_CLEARED', '日志已清除'));
-                            resolve(true);
-                        } catch (error) {
-                            console.error(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败:'), error);
-                            Core.showToast(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败'), 'error');
-                            reject(error);
+                    if (action === 'cancel' || action === 'confirm') {
+                        // 添加关闭动画
+                        dialog.classList.add('closing');
+                        // 等待动画完成后关闭
+                        setTimeout(() => {
+                            dialog.close();
+                            document.body.removeChild(dialog);
+                        }, 120); // 与 fadeOut 动画时长匹配
+
+                        if (action === 'confirm') {
+                            try {
+                                // 清空日志文件
+                                await Core.execCommand(`cat /dev/null > "${logPath}" && chmod 666 "${logPath}"`);
+                                
+                                // 重新加载日志内容
+                                await this.loadLogContent();
+                                
+                                Core.showToast(I18n.translate('LOG_CLEARED', '日志已清除'));
+                                resolve(true);
+                            } catch (error) {
+                                console.error(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败:'), error);
+                                Core.showToast(I18n.translate('LOG_CLEAR_ERROR', '清除日志失败'), 'error');
+                                reject(error);
+                            }
                         }
                     }
                 });

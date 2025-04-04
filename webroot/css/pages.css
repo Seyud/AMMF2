@@ -440,35 +440,41 @@ input[type="range"] + output {
 /* 对话框按钮样式 */
 .dialog-buttons {
     display: flex;
-    gap: 16px;
-    margin-top: 24px;
+    gap: 8px;
+    margin: 24px -24px -24px;
+    padding: 16px 24px;
     justify-content: flex-end;
+    border-top: 1px solid var(--outline-variant);
 }
 
 .dialog-button {
-    min-width: 120px;
-    padding: 0 24px;
+    min-width: 72px;
     height: 40px;
+    padding: 0 24px;
     border-radius: 20px;
     border: none;
     font: var(--label-l);
     cursor: pointer;
-    transition: background-color var(--tra);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--tra), box-shadow var(--tra);
 }
 
 .dialog-button.filled {
     background-color: var(--primary);
     color: var(--on-primary);
+    box-shadow: var(--ele1);
 }
 
 .dialog-button.filled:hover {
-    background-color: var(--primary-hover);
+    box-shadow: var(--ele2);
+    background-color: color-mix(in oklch, var(--primary) 8%, transparent);
 }
 
 .dialog-button:not(.filled) {
     background-color: transparent;
     color: var(--primary);
-    border: 1px solid var(--outline);
 }
 
 .dialog-button:not(.filled):hover {
