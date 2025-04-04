@@ -254,14 +254,21 @@ const SettingsPage = {
         const lines = content.split('\n');
 
         for (const line of lines) {
-            // 跳过注释和空行
-            if (line.trim().startsWith('#') || line.trim() === '') continue;
+            // 跳过空行
+            if (line.trim() === '') continue;
+
+            // 提取注释之前的实际内容
+            const commentIndex = line.indexOf('#');
+            const effectiveLine = commentIndex !== -1 ? line.substring(0, commentIndex) : line;
+
+            // 如果去除注释后是空行则跳过
+            if (effectiveLine.trim() === '') continue;
 
             // 匹配变量赋值
-            const match = line.match(/^([A-Za-z0-9_]+)=(.*)$/);
+            const match = effectiveLine.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
             if (match) {
                 const key = match[1];
-                let value = match[2];
+                let value = match[2].trim();
 
                 // 处理引号
                 if ((value.startsWith('"') && value.endsWith('"')) ||
@@ -361,9 +368,27 @@ const SettingsPage = {
         try {
             this.showLoading();
 
+            // 首先读取原始配置文件内容，以保留注释
+            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+            const originalConfig = await Core.execCommand(`cat "${configPath}"`);
+            const originalLines = originalConfig.split('\n');
+            const originalComments = new Map();
+
+            // 保存每个设置项的注释
+            originalLines.forEach(line => {
+                const commentIndex = line.indexOf('#');
+                if (commentIndex !== -1) {
+                    const effectiveLine = line.substring(0, commentIndex).trim();
+                    const comment = line.substring(commentIndex);
+                    const match = effectiveLine.match(/^([A-Za-z0-9_]+)=/);
+                    if (match) {
+                        originalComments.set(match[1], comment);
+                    }
+                }
+            });
+
             // 收集表单数据
             const updatedSettings = { ...this.settings };
-
             for (const key in this.settings) {
                 if (this.excludedSettings.includes(key)) continue;
 
@@ -382,8 +407,17 @@ const SettingsPage = {
             // 生成新的配置文件内容
             let configContent = '';
             for (const key in updatedSettings) {
-                let value = updatedSettings[key];
+                // 如果是排除项，跳过处理
+                if (this.excludedSettings.includes(key)) {
+                    // 找到原始行并保持不变
+                    const originalLine = originalLines.find(line => line.trim().startsWith(`${key}=`));
+                    if (originalLine) {
+                        configContent += originalLine + '\n';
+                    }
+                    continue;
+                }
 
+                let value = updatedSettings[key];
                 // 格式化值
                 if (typeof value === 'boolean') {
                     value = value ? 'true' : 'false';
@@ -391,11 +425,12 @@ const SettingsPage = {
                     value = `"${value}"`;
                 }
 
-                configContent += `${key}=${value}\n`;
+                // 添加原始注释（如果存在）
+                const comment = originalComments.get(key) || '';
+                configContent += `${key}=${value}${comment ? ' ' + comment : ''}\n`;
             }
 
-            // 写入配置文件
-            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+
 
             // 检查是否已取消
             if (this.isCancelled) return;

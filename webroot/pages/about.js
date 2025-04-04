@@ -13,6 +13,17 @@ const AboutPage = {
         try {
             // 加载模块信息
             await this.loadModuleInfo();
+            
+            // 添加语言变化事件监听
+            document.addEventListener('languageChanged', () => {
+                // 重新渲染页面内容
+                const aboutContent = document.querySelector('.about-container');
+                if (aboutContent) {
+                    aboutContent.outerHTML = this.render().trim();
+                    this.afterRender();
+                }
+            });
+            
             return true;
         } catch (error) {
             console.error('初始化关于页面失败:', error);
@@ -63,7 +74,7 @@ const AboutPage = {
                     </h3>
                     <div class="developer-info">
                         <div class="developer-name">
-                            <span>${this.moduleInfo.author || I18n.translate('UNKNOWN_DEVELOPER', '未知')}</span>
+                            <span>${this.moduleInfo.author || I18n.translate('UNKNOWN', '未知')}</span>
                         </div>
                         ${this.moduleInfo.github ? `
                         <a href="#" class="social-link" id="module-github-link">

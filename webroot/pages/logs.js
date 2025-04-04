@@ -181,10 +181,10 @@ const LogsPage = {
             dialog.innerHTML = `
                 <h2>${I18n.translate('CLEAR_LOGS', '清除日志')}</h2>
                 <p>${I18n.translate('CONFIRM_CLEAR_LOG', '确定要清除此日志文件吗？此操作不可撤销。')}</p>
-                <fieldset class="dialog-buttons">
+                <div class="dialog-buttons">
                     <button class="dialog-button" data-action="cancel">${I18n.translate('CANCEL', '取消')}</button>
                     <button class="dialog-button filled" data-action="confirm">${I18n.translate('CONFIRM', '确认')}</button>
-                </fieldset>
+                </div>
             `;
             document.body.appendChild(dialog);
             

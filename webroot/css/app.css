@@ -141,7 +141,7 @@
     width: 100%;
     max-width: 480px;
     margin: 0 auto;
-    padding: 6px 16px; /* 减小内边距 */
+    padding: 6px 4px; /* 减小内边距 */
 }
 
 /* 导航项 */
