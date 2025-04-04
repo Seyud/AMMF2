@@ -164,10 +164,15 @@ const SettingsPage = {
 
     // 渲染文本控件
     renderTextControl(key, value, description) {
+        // 去除外层引号
+        const displayValue = typeof value === 'string' 
+            ? value.replace(/^["'](.*)["']$/, '$1')
+            : value;
+    
         return `
             <label>
                 <span>${description}</span>
-                <input type="text" id="setting-${key}" value="${value}">
+                <input type="text" id="setting-${key}" value="${displayValue}">
             </label>
         `;
     },
@@ -276,9 +281,10 @@ const SettingsPage = {
                     value = value.substring(1, value.length - 1);
                 }
 
-                // 转换布尔值
-                if (value === 'true' || value === 'false') {
-                    settings[key] = value === 'true';
+                // 转换布尔值（不管是否有引号，都检查值是否为 true/false）
+                const lowerValue = value.toLowerCase();
+                if (lowerValue === 'true' || lowerValue === 'false') {
+                    settings[key] = lowerValue === 'true';
                 }
                 // 转换数字
                 else if (!isNaN(value) && value.trim() !== '') {
@@ -368,22 +374,27 @@ const SettingsPage = {
         try {
             this.showLoading();
 
-            // 首先读取原始配置文件内容，以保留注释
+            // 首先读取原始配置文件内容，以保留注释和引号格式
             const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
             const originalConfig = await Core.execCommand(`cat "${configPath}"`);
             const originalLines = originalConfig.split('\n');
-            const originalComments = new Map();
+            const originalFormats = new Map();
 
-            // 保存每个设置项的注释
+            // 保存每个设置项的原始格式（包括注释和引号）
             originalLines.forEach(line => {
                 const commentIndex = line.indexOf('#');
-                if (commentIndex !== -1) {
-                    const effectiveLine = line.substring(0, commentIndex).trim();
-                    const comment = line.substring(commentIndex);
-                    const match = effectiveLine.match(/^([A-Za-z0-9_]+)=/);
-                    if (match) {
-                        originalComments.set(match[1], comment);
-                    }
+                let effectiveLine = commentIndex !== -1 ? line.substring(0, commentIndex).trim() : line.trim();
+                const comment = commentIndex !== -1 ? line.substring(commentIndex) : '';
+                
+                // 匹配键值对，保留引号信息
+                const match = effectiveLine.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
+                if (match) {
+                    const [, key, originalValue] = match;
+                    originalFormats.set(key, {
+                        comment,
+                        hasDoubleQuotes: originalValue.startsWith('"') && originalValue.endsWith('"'),
+                        hasSingleQuotes: originalValue.startsWith("'") && originalValue.endsWith("'")
+                    });
                 }
             });
 
@@ -407,9 +418,8 @@ const SettingsPage = {
             // 生成新的配置文件内容
             let configContent = '';
             for (const key in updatedSettings) {
-                // 如果是排除项，跳过处理
+                // 如果是排除项，保持原样
                 if (this.excludedSettings.includes(key)) {
-                    // 找到原始行并保持不变
                     const originalLine = originalLines.find(line => line.trim().startsWith(`${key}=`));
                     if (originalLine) {
                         configContent += originalLine + '\n';
@@ -418,16 +428,23 @@ const SettingsPage = {
                 }
 
                 let value = updatedSettings[key];
-                // 格式化值
-                if (typeof value === 'boolean') {
+                const format = originalFormats.get(key) || {};
+
+                // 根据原始格式处理值
+                if (typeof value === 'string') {
+                    if (format.hasDoubleQuotes) {
+                        value = `"${value}"`;
+                    } else if (format.hasSingleQuotes) {
+                        value = `'${value}'`;
+                    } else if (value.includes(' ') || value === '') {
+                        value = `"${value}"`;
+                    }
+                } else if (typeof value === 'boolean') {
                     value = value ? 'true' : 'false';
-                } else if (typeof value === 'string' && (value.includes(' ') || value === '')) {
-                    value = `"${value}"`;
                 }
 
-                // 添加原始注释（如果存在）
-                const comment = originalComments.get(key) || '';
-                configContent += `${key}=${value}${comment ? ' ' + comment : ''}\n`;
+                // 添加注释
+                configContent += `${key}=${value}${format.comment ? ' ' + format.comment : ''}\n`;
             }
 
 
