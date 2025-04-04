@@ -17,8 +17,55 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <!-- 图标 -->
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <head>
+        <!-- 原有图标链接 -->
+        <link rel="icon" href="favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="icon-192.png">
+        
+        <!-- 添加备用图标加载脚本 -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // 检查图标是否加载失败
+                const checkIconsLoaded = () => {
+                    const icons = document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]');
+                    let allLoaded = true;
+                    
+                    icons.forEach(icon => {
+                        if (!icon.sheet && !icon.href.startsWith('data:')) {
+                            allLoaded = false;
+                        }
+                    });
+                    
+                    if (!allLoaded) {
+                        loadFallbackIcons();
+                    }
+                };
+                
+                // 使用wget下载备用图标
+                const loadFallbackIcons = () => {
+                    try {
+                        // 使用execCommand执行wget下载
+                        const wgetCommand = `wget https://raw.githubusercontent.com/your-repo/AMMF2/main/webroot/icon-192.png -O icon-192.png && wget https://raw.githubusercontent.com/your-repo/AMMF2/main/webroot/favicon.ico -O favicon.ico`;
+                        document.execCommand(wgetCommand);
+                        
+                        // 重新加载图标
+                        setTimeout(() => {
+                            const favicon = document.querySelector('link[rel="icon"]');
+                            const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+                            
+                            if (favicon) favicon.href = 'favicon.ico?' + Date.now();
+                            if (appleIcon) appleIcon.href = 'icon-192.png?' + Date.now();
+                        }, 1000);
+                    } catch (e) {
+                        console.error('Failed to load fallback icons:', e);
+                    }
+                };
+                
+                // 延迟检查以确保有足够时间加载
+                setTimeout(checkIconsLoaded, 2000);
+            });
+        </script>
+    </head>
     
     <!-- 预加载样式，防止主题闪烁 -->
     <!-- 在head标签内的style部分添加或修改以下样式 -->
