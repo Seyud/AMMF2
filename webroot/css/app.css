@@ -311,8 +311,8 @@
 }
 
 .language-selector-header {
-    padding: 24px 24px 16px;
-    border-bottom: 1px solid var(--outline-variant);
+    padding: 24px 24px 24px;
+    /* 移除底部边框 */
 }
 
 .language-selector-header h3 {
@@ -325,10 +325,9 @@
 }
 
 .language-options {
-    padding: 16px 0;
+    padding: 8px 0;
     max-height: 60vh;
     overflow-y: auto;
-    min-width: 280px; /* 防止内容挤压 */
 }
 
 .language-option {
@@ -336,7 +335,7 @@
     cursor: pointer;
     transition: background-color var(--tra);
     display: flex;
-    align-items: center;
+    align-items: center;  /* 确保垂直居中 */
     gap: 12px;
     min-height: 12px;
 }
@@ -346,8 +345,8 @@
 }
 
 .language-option.selected {
+    color: var(--primary);
     background-color: var(--primary-container);
-    color: var(--on-primary-container);
 }
 
 .language-selector-footer {
@@ -373,8 +372,7 @@
     background-color: var(--on-primary-container);
 }
 
-/* ===== 表单元素 ===== */
-/* MD3单选按钮 */
+/* 调整单选按钮对齐 */
 .md-radio {
     appearance: none;
     -webkit-appearance: none;
@@ -382,9 +380,10 @@
     height: 20px;
     border: 2px solid var(--outline);
     border-radius: 50%;
-    margin-right: 12px;
+    margin: 0 12px 0 0;  /* 调整右边距 */
     position: relative;
     transition: all var(--tra);
+    align-self: center;  /* 确保单选按钮垂直居中 */
 }
 
 .md-radio:checked {

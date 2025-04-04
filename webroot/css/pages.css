@@ -440,11 +440,13 @@ input[type="range"] + output {
 /* 对话框按钮样式 */
 .dialog-buttons {
     display: flex;
+    justify-content: flex-end; /* 确保按钮右对齐 */
     gap: 8px;
-    margin: 24px -24px -24px;
+    margin: 24px 0 0; /* 调整边距 */
     padding: 16px 24px;
-    justify-content: flex-end;
     border-top: 1px solid var(--outline-variant);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .dialog-button {
@@ -458,13 +460,12 @@ input[type="range"] + output {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color var(--tra), box-shadow var(--tra);
+    transition: background-color var(--tra);
 }
 
 .dialog-button.filled {
     background-color: var(--primary);
     color: var(--on-primary);
-    box-shadow: var(--ele1);
 }
 
 .dialog-button.filled:hover {
