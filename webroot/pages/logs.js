@@ -181,9 +181,9 @@ const LogsPage = {
             dialog.innerHTML = `
                 <h2>${I18n.translate('CLEAR_LOGS', '清除日志')}</h2>
                 <p>${I18n.translate('CONFIRM_CLEAR_LOG', '确定要清除此日志文件吗？此操作不可撤销。')}</p>
-                <fieldset>
-                    <button class="icon-button" data-action="cancel">${I18n.translate('CANCEL', '取消')}</button>
-                    <button class="icon-button filled" data-action="confirm">${I18n.translate('CONFIRM', '确认')}</button>
+                <fieldset class="dialog-buttons">
+                    <button class="dialog-button" data-action="cancel">${I18n.translate('CANCEL', '取消')}</button>
+                    <button class="dialog-button filled" data-action="confirm">${I18n.translate('CONFIRM', '确认')}</button>
                 </fieldset>
             `;
             document.body.appendChild(dialog);
@@ -352,16 +352,13 @@ const LogsPage = {
                                     ${this.renderLogFileOptions()}
                                 </select>
                             </label>
-                            
-                            <label class="switches">
-                                <span data-i18n="AUTO_REFRESH">${I18n.translate('AUTO_REFRESH', '自动刷新')}</span>
-                                <input type="checkbox" id="auto-refresh-checkbox" ${this.autoRefresh ? 'checked' : ''} ${!hasLogFiles ? 'disabled' : ''}>
-                            </label>
                         </div>
                     </div>
                     
                     <div id="logs-display-container" class="card-content">
-                        <pre id="logs-display" class="logs-content">${this.formatLogContent()}</pre>
+                        <div class="logs-scroll-container">
+                            <pre id="logs-display" class="logs-content">${this.formatLogContent()}</pre>
+                        </div>
                     </div>
                 </div>
             </div>
