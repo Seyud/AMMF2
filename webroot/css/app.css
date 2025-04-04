@@ -96,6 +96,7 @@
     overflow-x: hidden;
     position: relative;
     transition: opacity var(--tra);
+    min-height: 100%;
 }
 
 /* 页面头部 */

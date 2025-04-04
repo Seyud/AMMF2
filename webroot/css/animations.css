@@ -16,15 +16,21 @@
 
 /* 页面容器过渡效果 */
 .page-container {
-  opacity: 0;
-  animation: fadeIn 180ms ease-out forwards;
-  will-change: opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
+    position: absolute;  /* 添加绝对定位 */
+    top: 0;             /* 固定在顶部 */
+    left: 0;
+    width: 100%;
+    min-height: 100%;   /* 确保最小高度占满容器 */
+    opacity: 0;
+    animation: fadeIn 180ms ease-out forwards;
+    will-change: opacity, transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 .page-container.fade-out {
-  animation: fadeOut 120ms ease-out forwards;
+    position: absolute;  /* 确保淡出时也是绝对定位 */
+    animation: fadeOut 120ms ease-out forwards;
 }
 
 /* 加载动画 */
