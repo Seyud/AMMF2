@@ -134,6 +134,21 @@
     <!-- 样式表 -->
     <link rel="stylesheet" href="style.css">
     <!-- 移除 animations.css 的引用 -->
+    <script>
+        // 检查是否有权限加载 Eruda
+        if (window.Core && Core.hasPermission && Core.hasPermission('webui.permission.ERUDA')) {
+            // 动态加载 Eruda
+            (function() {
+                var script = document.createElement('script');
+                script.src = "https://cdn.jsdelivr.net/npm/eruda";
+                document.head.appendChild(script);
+                script.onload = function() {
+                    eruda.init();
+                    console.log('Eruda 调试工具已加载');
+                }
+            })();
+        }
+    </script>
 </head>
 <body>
     <div id="app">
@@ -214,6 +229,17 @@
     <script src="core.js"></script>
     <script src="theme.js"></script>
     <script src="i18n.js"></script>
+    
+    <!-- 条件加载MMRL API -->
+    <script>
+        // 检测是否为MMRL环境
+        if (window.MMRL) {
+            // 如果是MMRL环境，加载MMRL相关脚本
+            const mmrlScript = document.createElement('script');
+            mmrlScript.src = 'mmrl.js';
+            document.head.appendChild(mmrlScript);
+        }
+    </script>
     
     <!-- 页面模块 -->
     <script src="pages/status.js"></script>

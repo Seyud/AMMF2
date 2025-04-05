@@ -18,6 +18,14 @@ class App {
         await I18n.init();
         ThemeManager.init();
 
+        // 检测是否为MMRL环境并初始化
+        const isMMRLEnvironment = !!window.MMRL;
+        if (isMMRLEnvironment) {
+            MMRL.init();
+            // 降低顶栏高度以适应手机状态栏
+            document.body.classList.add('mmrl-environment');
+        }
+        
         // 添加应用加载完成标记
         requestAnimationFrame(() => document.body.classList.add('app-loaded'));
 
@@ -27,7 +35,7 @@ class App {
         } else {
             document.addEventListener('i18nReady', () => I18n.initLanguageSelector());
         }
-
+        
         // 加载初始页面
         const initialPage = Router.getCurrentPage();
         await Router.navigate(initialPage, false);

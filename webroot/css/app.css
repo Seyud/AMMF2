@@ -20,13 +20,19 @@
     z-index: 10;
     display: flex;
     align-items: center;
-    height:64px;
+    height: 64px;
     padding-inline: 16px;
     background-color: var(--surface-container);
     color: var(--on-surface);
     transition: all var(--tra);
     border-radius: 0 0 24px 24px;
     border: none;
+}
+
+/* MMRL环境下的顶栏样式调整 */
+.mmrl-environment .app-header {
+    height: 48px; /* 降低顶栏高度 */
+    padding-top: env(safe-area-inset-top); /* 添加顶部安全区域内边距 */
 }
 
 .app-header::after,
