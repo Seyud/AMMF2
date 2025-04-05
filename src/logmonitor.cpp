@@ -49,9 +49,9 @@ private:
 
 public:
     Logger(const std::string& dir, int level = 3, size_t size_limit = 102400)
-        : log_dir(dir), log_level(level), log_size_limit(size_limit), 
-          log_files(), log_buffers(), buffer_max_size(8192), 
-          max_idle_time(30000), low_power_mode(false), running(true) {
+        : log_mutex(), cv(), running(true), log_dir(dir), log_level(level), 
+          log_size_limit(size_limit), log_files(), log_buffers(), buffer_max_size(8192), 
+          max_idle_time(30000), low_power_mode(false) {
         
         // 创建日志目录 - 使用递归创建
         std::string cmd = "mkdir -p " + log_dir;
