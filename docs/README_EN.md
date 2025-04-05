@@ -9,70 +9,81 @@
 
 ## 📋 Project Overview
 
-AMMF2 (Aurora Modular Magisk Framework 2) is a powerful Magisk module development framework designed to simplify the module development process, providing a standardized structure and rich functional components. The framework supports features such as multi-language, WebUI configuration interface, custom scripts, and more, suitable for various types of Magisk module development.
+AMMF2 (Aurora Modular Magisk Framework 2) is a powerful Magisk module development framework designed to simplify the module development process by providing standardized structures and rich functional components. The framework supports multiple languages, WebUI configuration interface, custom scripts, and other features, making it suitable for various types of Magisk module development.
 
 ## ✨ Key Features
 
-- **Multi-language Support**: Built-in support for Chinese, English, Japanese, Russian, and more
-- **WebUI Configuration Interface**: Beautiful Material Design style web configuration interface
+- **Multi-language Support**: Built-in support for Chinese, English, Japanese, Russian, and other languages
+- **WebUI Configuration Interface**: Beautiful Material Design-style web configuration interface
 - **Custom Script System**: Flexible script system supporting installation-time and runtime scripts
-- **File Monitoring Service**: Built-in filewatch tool, supporting file change triggered operations
-- **Logging Tools**: Complete logging system supporting log recording and error handling
-- **User Interaction Functions**: Various user interaction methods such as menu selection and key detection
-- **GitHub Action Support**: Built-in GitHub Action workflows for automatic building and publishing
-- **Comprehensive Error Handling**: Provides comprehensive error handling and logging mechanisms
+- **File Monitoring Service**: Built-in filewatch tool supporting file change-triggered operations
+- **Logging Tools**: Complete logging system with log recording and error handling
+- **User Interaction Features**: Various user interaction methods such as menu selection and key detection
+- **GitHub Action Support**: Built-in GitHub Action workflows supporting automatic building and publishing
+- **Comprehensive Error Handling**: Provides complete error handling and logging mechanisms
 
 ## 🚀 Quick Start
 
-### Get the Framework
+### Getting the Framework
 
 ```bash
 # Method 1: Clone the repository using Git
 git clone https://github.com/Aurora-Nasa-1/AMMF2.git
+cd AMMF2
 
-# Method 2: Download ZIP archive directly
+# Method 2: Download ZIP archive
 # Visit https://github.com/Aurora-Nasa-1/AMMF2/archive/refs/heads/main.zip
+
+# Other methods...
 ```
 
 ### Basic Configuration
 
-1. **Edit Module Information**:
-   Modify the basic information in the `module_settings/config.sh` file:
+**Note: This framework requires GitHub Action for module building**
+
+1. **Edit Module Information (for building module.prop)**:
+   Modify basic information in `module_settings/config.sh`:
+
    ```bash
-   action_id="your_module_id"            # Module ID
-   action_name="Your Module Name"       # Module name
-   action_author="Your Name"            # Author name
-   action_description="Description"     # Module description
+   action_id="your_module_id"           # Module ID
+   action_name="Your Module Name"       # Module Name
+   action_author="Your Name"            # Author Name
+   action_description="Description"     # Module Description
    ```
 
 2. **Configure Environment Requirements**:
-   Set the module's environment requirements in `module_settings/config.sh`:
+   Set module environment requirements in `module_settings/config.sh`:
+
    ```bash
-   magisk_min_version="25400"          # Minimum Magisk version
-   ksu_min_version="11300"             # Minimum KernelSU version
-   ANDROID_API="26"                    # Minimum Android API level
+   magisk_min_version="25400"          # Minimum Magisk Version
+   ksu_min_version="11300"             # Minimum KernelSU Version
+   ANDROID_API="26"                    # Minimum Android API Level
    ```
 
-3. **Multi-language Configuration**:
-   Edit the `files/languages.sh` file to add or modify multi-language support.
+3. **Configure Release Upload**:
+   Action uses `softprops/action-gh-release@v2` for Release upload, requires repository settings configuration
+
+4. **Commit or Push Tag(v*) to Trigger Build, Enjoy**:
 
 ### Custom Script Development
 
+**To ensure future updateability, it's recommended not to modify service.sh and customize.sh**
+
 1. **Installation Script**:
-   Write custom scripts to be executed during module installation in `files/scripts/install_custom_script.sh`.
+   Write custom scripts executed during module installation in `files/scripts/install_custom_script.sh`.
 
 2. **Service Script**:
-   Write service scripts for module runtime in `files/scripts/service_script.sh`.
+   Write service scripts executed during module runtime in `files/scripts/service_script.sh`.
 
 ## 📚 More Documentation
 
-- [Directory Structure](DIRECTORY_STRUCTURE_EN.md) - Detailed project directory structure description
+- [Directory Structure Guide](DIRECTORY_STRUCTURE_EN.md) - Detailed project directory structure explanation
 - [Script Development Guide](SCRIPT_EN.md) - Script development and function usage instructions
 - [WebUI Development Guide](WEBUI_GUIDE_EN.md) - WebUI development and customization instructions
 
-## 🤝 Contribution
+## 🤝 Contributing
 
-PRs and Issues are welcome to improve this framework! If you find this project useful, please give it a Star ⭐
+Welcome to submit PRs or Issues to improve this framework! If you find this project useful, please give it a Star ⭐
 
 ## 📄 License
 

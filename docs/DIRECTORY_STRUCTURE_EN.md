@@ -99,11 +99,10 @@ Contains WebUI related files, used to provide a graphical configuration interfac
 - `theme.js` - WebUI theme handling
 - **css/** - CSS style files directory
   - `animations.css` - Animation effects styles
-  - `base.css` - Base styles
-  - `components-base.css` - Component base styles
-  - `components-page.css` - Page component styles
-  - `layout.css` - Layout styles
-  - `utilities.css` - Utility styles
+  - `app.css` - Base styles
+  - `page.css` - Page component styles
+  - `md3.css` - MD3 layout framework (https://github.com/jogemu/md3css)
+  - `main-color.css` - MD3 theme color configuration
 - **pages/** - Page components directory
   - `about.js` - About page
   - `logs.js` - Logs page
@@ -140,76 +139,6 @@ Not recommended to modify, please use `install_custom_script.sh` for custom scri
 Service script, executed by Magisk after system boot. Responsible for starting the module's background services and monitoring functions.
 Not recommended to modify, please use `service_script.sh` for custom scripts.
 
-## 🔧 Special Tool Description
-
-### filewatch
-
-`bin/filewatch.c` is a file monitoring tool used to monitor changes to specified files and execute specified scripts when changes occur.
-
-**Compilation**:
-Automatically compiled in GitHub Action.
-
-**Usage**:
-```bash
-./filewatch [options] <monitored_file> <execution_script>
-```
-
-**Options**:
-- `-d` - Run in daemon mode
-- `-v` - Enable verbose output
-- `-i <seconds>` - Set check interval (default 1 second)
-- `-s <status_file>` - Specify status file path
-
-**Example**:
-```bash
-# Monitor configuration file changes, execute reload script when changed
-./filewatch -s /path/to/status.txt /path/to/config.sh /path/to/reload.sh
-
-# Run in daemon mode, check every 5 seconds
-./filewatch -d -i 5 /path/to/watch.txt /path/to/script.sh
-```
-
-## 📝 File Templates
-
-### Custom Installation Script Template (install_custom_script.sh)
-
-```bash
-#!/system/bin/sh
-
-# Custom installation script
-# Executed during module installation
-
-# Example: Create necessary directories
-mkdir -p "$MODPATH/data"
-
-# Example: Download additional files
-download_file "https://example.com/extra_file.zip"
-
-# Example: User interaction selection
-select_on_magisk "$MODPATH/options.txt"
-echo "User selected: $SELECT_OUTPUT"
-```
-
-### Service Script Template (service_script.sh)
-
-```bash
-#!/system/bin/sh
-
-# Service script
-# Executed when the module service starts
-
-# Example: Start background service
-start_my_service() {
-    # Service start logic
-    echo "Service started"
-}
-
-# Example: Monitor configuration file changes
-enter_pause_mode "$MODPATH/module_settings/config.sh" "$MODPATH/scripts/reload_config.sh"
-
-# Execute functions
-start_my_service
-```
 
 ## 🔄 Version Compatibility
 

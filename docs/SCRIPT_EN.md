@@ -4,46 +4,48 @@
 
 ## 📋 Overview
 
-This document provides detailed instructions for developing custom scripts within the AMMF framework. It covers the available functions, variables, and best practices for creating installation scripts, service scripts, and user scripts. The AMMF2 version has completely updated the scripting system, enhancing the logging system and file monitoring capabilities.
+This document provides detailed instructions for developing custom scripts within the AMMF framework. It covers available functions, variables, and best practices for creating installation scripts, service scripts, and user scripts. AMMF2 version has comprehensively updated the script system, enhancing the logging system and file monitoring capabilities.
 
 ## 🛠️ Script Types
 
-AMMF supports two main types of scripts (you can add more as needed):
-
-1. **Installation Scripts** (`files/scripts/install_custom_script.sh`)
+1. **Installation Script** (`files/scripts/install_custom_script.sh`)
    - Executed during module installation
    - Used for setup tasks, file extraction, and initial configuration
    - Can access all AMMF core functions
 
-2. **Service Scripts** (`files/scripts/service_script.sh`)
-   - Executed when the device boots
+2. **Service Script** (`files/scripts/service_script.sh`)
+   - Executed at device startup
    - Used for background services, monitoring, and runtime operations
    - Supports file monitoring and status management
 
+3. **Action Script**
+   - Executed on user tap
+   - Used for user interaction and custom functionality
+
 ## 📚 Available Functions
 
-The AMMF framework provides several useful functions that can be used in your scripts:
+AMMF framework provides several useful functions that you can use in your scripts:
 
 ### User Interaction Functions
 
 #### `select_on_magisk [input_path]`
 
-Presents a selection menu to the user using volume keys for navigation (first letter selection).
+Presents a selection menu to users using volume key navigation (first letter selection).
 
 **Parameters:**
-- `input_path`: Path to a text file containing options (one per line)
+- `input_path`: Path to a text file containing options (one option per line)
 
 **Returns:**
 - Selected option in the `$SELECT_OUTPUT` variable
 
 **Compatibility:**
-- Can be used in installation scripts and user scripts (use with caution in user scripts)
+- Can be used in installation and user scripts (use with caution in user scripts)
 - Does not support special characters or Chinese (compatible with `/][{};:><?!()_-+=.`)
 
 **Example:**
 ```bash
 # Create a file with options
-echo "Option 1\nOption 2\nOption 3" > "$MODPATH/options.txt"
+echo "option1\noption2\noption3" > "$MODPATH/options.txt"
 
 # Call the function
 select_on_magisk "$MODPATH/options.txt"
@@ -54,22 +56,22 @@ echo "User selected: $SELECT_OUTPUT"
 
 #### `list_select [input_path] [TITLE]`
 
-Presents a selection menu to the user using volume keys for navigation.
+Presents a selection menu to users using volume key navigation.
 
 **Parameters:**
-- `input_path`: Path to a text file containing options (one per line)
+- `input_path`: Path to a text file containing options (one option per line)
 - `TITLE`: Menu title
 
 **Returns:**
 - Selected option in the `$SELECT_OUTPUT` variable
 
 **Compatibility:**
-- Can be used in installation scripts and user scripts (use with caution in user scripts)
+- Can be used in installation and user scripts (use with caution in user scripts)
 
 **Example:**
 ```bash
 # Create a file with options
-echo "Option 1\nOption 2\nOption 3" > "$MODPATH/options.txt"
+echo "option1\noption2\noption3" > "$MODPATH/options.txt"
 
 # Call the function
 list_select "$MODPATH/options.txt" "Text Selection"
@@ -80,10 +82,10 @@ echo "User selected: $SELECT_OUTPUT"
 
 #### `number_select [input_path]`
 
-Presents a numbered selection menu to the user.
+Presents a numbered selection menu to users.
 
 **Parameters:**
-- `input_path`: Path to a text file containing options (one per line)
+- `input_path`: Path to a text file containing options (one option per line)
 
 **Returns:**
 - Selected number in the `$SELECT_OUTPUT` variable
@@ -94,28 +96,28 @@ Presents a numbered selection menu to the user.
 **Example:**
 ```bash
 # Create a file with options
-echo "Option 1\nOption 2\nOption 3" > "$MODPATH/options.txt"
+echo "option1\noption2\noption3" > "$MODPATH/options.txt"
 
 # Call the function
 number_select "$MODPATH/options.txt"
 
 # Use the selected number
-echo "User selected option number: $SELECT_OUTPUT"
+echo "User selected number: $SELECT_OUTPUT"
 ```
 
 #### `key_select`
 
-Waits for the user to press a volume key (up/down).
+Waits for user to press a volume key (up/down).
 
 **Returns:**
 - Pressed key in the `$key_pressed` variable (`KEY_VOLUMEUP` or `KEY_VOLUMEDOWN`)
 
 **Compatibility:**
-- Can be used in installation scripts and user scripts (use with caution in user scripts)
+- Can be used in installation and user scripts (use with caution in user scripts)
 
 **Example:**
 ```bash
-echo "Press Volume Up to continue or Volume Down to cancel"
+echo "Press volume up to continue or volume down to cancel"
 key_select
 
 if [ "$key_pressed" = "KEY_VOLUMEUP" ]; then
@@ -136,19 +138,19 @@ Downloads a file from the specified URL.
 - `url`: URL of the file to download
 
 **Behavior:**
-- Downloads the file to the directory specified by `$download_destination` in `settings.sh`
-- Creates the directory if it doesn't exist
+- Downloads file to directory specified by `$download_destination` in `settings.sh`
+- Creates directory if it doesn't exist
 - Supports download retry and user interaction on failure
 
 **Compatibility:**
-- Can be used in installation scripts and user scripts
+- Can be used in installation and user scripts
 
 **Example:**
 ```bash
 # Set download destination
 download_destination="/storage/emulated/0/Download/AMMF"
 
-# Download a file
+# Download file
 download_file "https://example.com/file.zip"
 ```
 
@@ -156,24 +158,26 @@ download_file "https://example.com/file.zip"
 
 #### `enter_pause_mode [monitored_file] [execution_script]`
 
-Enters pause mode and monitors a file for changes using the `filewatch` tool.
+Enters pause mode and monitors file changes using the `filewatch` tool.
 
 **Parameters:**
 - `monitored_file`: Path to the file to monitor
-- `execution_script`: Path to the script to execute when the file changes
+- `execution_script`: Path to script to execute when file changes
 
 **Behavior:**
 - Updates status to "PAUSED"
-- Uses efficient inotify mechanism to monitor the specified file for changes
-- Executes the specified script when changes are detected
+- Uses efficient inotify mechanism to monitor file changes
+- Executes specified script or custom command on change detection
 
 **Compatibility:**
-- Primarily used in service scripts
+- Used in service scripts
 
 **Example:**
 ```bash
-# Monitor configuration file for changes
+# Monitor config file changes
 enter_pause_mode "$MODPATH/module_settings/config.sh" "$MODPATH/scripts/reload_config.sh"
+# or
+enter_pause_mode "$MODPATH/module_settings/config.sh" -c "cp $MODPATH/module_settings/config.sh $MODPATH/module_settings/config.sh.bak"
 ```
 
 ### Logging System
@@ -186,7 +190,7 @@ Sets the log file name for the current script.
 - `log_name`: Log file name (without extension)
 
 **Behavior:**
-- Sets the target file for subsequent log entries
+- Sets target file for subsequent log entries
 
 **Example:**
 ```bash
@@ -196,7 +200,7 @@ set_log_file "custom_script"
 
 #### `log_info [message]`
 
-Logs an info-level message.
+Logs an info level message.
 
 **Parameters:**
 - `message`: Message to log
@@ -208,7 +212,7 @@ log_info "Starting custom operation"
 
 #### `log_error [message]`
 
-Logs an error-level message.
+Logs an error level message.
 
 **Parameters:**
 - `message`: Error message to log
@@ -220,19 +224,19 @@ log_error "Operation failed: Cannot access file"
 
 #### `log_warn [message]`
 
-Logs a warning-level message.
+Logs a warning level message.
 
 **Parameters:**
 - `message`: Warning message to log
 
 **Example:**
 ```bash
-log_warn "Configuration file format may be incorrect"
+log_warn "Config file format may be incorrect"
 ```
 
 #### `log_debug [message]`
 
-Logs a debug-level message.
+Logs a debug level message.
 
 **Parameters:**
 - `message`: Debug message to log
@@ -256,10 +260,10 @@ flush_log
 
 #### `Aurora_ui_print [message]`
 
-Prints a formatted message to the console and logs it.
+Prints formatted message to console and logs it.
 
 **Parameters:**
-- `message`: The message to print
+- `message`: Message to print
 
 **Example:**
 ```bash
@@ -268,7 +272,7 @@ Aurora_ui_print "Starting installation..."
 
 #### `Aurora_abort [message] [error_code]`
 
-Aborts the script with an error message and code, and logs it.
+Aborts script with error message and code, logging to file.
 
 **Parameters:**
 - `message`: Error message
@@ -281,10 +285,10 @@ Aurora_abort "Installation failed" 1
 
 #### `check_network`
 
-Checks network connectivity status.
+Checks network connection status.
 
 **Returns:**
-- Network status in the `$Internet_CONN` variable (0=no connection, 1=China-only network, 2=GitHub accessible, 3=Google accessible)
+- Connection status in `$Internet_CONN` variable (0=no connection, 1=China network only, 2=GitHub accessible, 3=Google accessible)
 
 **Example:**
 ```bash
@@ -296,11 +300,11 @@ fi
 
 #### `replace_module_id [file_path] [file_description]`
 
-Replaces module ID placeholders in the specified file.
+Replaces module ID placeholders in specified file.
 
 **Parameters:**
-- `file_path`: Path to the file
-- `file_description`: Description of the file (for logging)
+- `file_path`: File path
+- `file_description`: File description (for logging)
 
 **Example:**
 ```bash
@@ -309,15 +313,15 @@ replace_module_id "$MODPATH/files/languages.sh" "languages.sh"
 
 ## 🌐 Available Variables
 
-The following variables are available for use in your scripts:
+The following variables are available in your scripts:
 
 ### Path Variables
 
-- `$MODPATH`: Path to the module directory
+- `$MODPATH`: Module directory path
 - `$MODDIR`: Same as `$MODPATH`
 - `$NOW_PATH`: Current script execution path
 - `$TMP_FOLDER`: Temporary folder path (`$MODPATH/TEMP`)
-- `$SDCARD`: Path to the internal storage (`/storage/emulated/0`)
+- `$SDCARD`: Internal storage path (`/storage/emulated/0`)
 - `$download_destination`: Default directory for downloaded files
 - `$LOG_DIR`: Log directory path
 
@@ -342,7 +346,7 @@ The following variables are available for use in your scripts:
 ```bash
 #!/system/bin/sh
 
-# Custom Installation Script
+# Custom installation script
 # Executed during module installation
 
 # Set log file
@@ -362,7 +366,7 @@ fi
 
 # Example: User interaction
 echo "Enable advanced features?"
-echo "Press Volume Up for Yes, Volume Down for No"
+echo "Press volume up for yes, volume down for no"
 key_select
 
 if [ "$key_pressed" = "KEY_VOLUMEUP" ]; then
@@ -377,7 +381,7 @@ else
     log_info "User chose to disable advanced features"
 fi
 
-# Ensure log is written
+# Ensure logs are written
 flush_log
 ```
 
@@ -386,8 +390,8 @@ flush_log
 ```bash
 #!/system/bin/sh
 
-# Service Script
-# Executed when the device boots
+# Service script
+# Executed at device startup
 
 # Set log file
 set_log_file "service_custom"
@@ -411,7 +415,7 @@ monitor_config() {
 start_background_service
 monitor_config
 
-# Ensure log is written
+# Ensure logs are written
 flush_log
 ```
 
@@ -420,25 +424,25 @@ flush_log
 1. **Error Handling**
    - Always check for errors and provide meaningful error messages
    - Use `Aurora_abort` for critical errors
-   - Use the logging system to record error details
+   - Log error details using the logging system
 
 2. **File Paths**
    - Use absolute paths with variables like `$MODPATH`
    - Create temporary files in `$TMP_FOLDER`
-   - Check if files exist before accessing them
+   - Check file existence before access
 
 3. **User Interaction**
    - Provide clear instructions when requesting user input
    - Use appropriate functions based on script type
-   - Log user choices to the log file
+   - Log user choices
 
 4. **Logging**
-   - Set a unique log file name for each script
+   - Set unique log file names for each script
    - Use appropriate log levels (error, warn, info, debug)
-   - Use `flush_log` after critical operations to ensure logs are written
+   - Use `flush_log` after critical operations
 
 5. **Cleanup**
-   - Delete temporary files when no longer needed
+   - Remove temporary files when no longer needed
    - Handle service termination properly
    - Avoid leaving unused resources
 
@@ -449,45 +453,45 @@ flush_log
 
 ## 📋 Debugging Tips
 
-1. **Use the Logging System**
+1. **Using the Logging System**
    - Use `log_debug` to record variable values and execution flow
-   - Set `LOG_LEVEL=4` to enable verbose debug logging
-   - Check log files in the `$LOG_DIR` directory
+   - Set `LOG_LEVEL=4` for verbose debug logging
+   - Check log files in `$LOG_DIR` directory
 
-2. **Check Status**
+2. **Checking Status**
    - Monitor status file: `cat "$STATUS_FILE"`
-   - Use `Aurora_ui_print` to output key status information
+   - Use `Aurora_ui_print` for key status information
 
-3. **Test Functions**
+3. **Testing Functions**
    - Test individual functions with sample inputs
-   - Add log markers before and after testing
+   - Add log markers before and after tests
 
-4. **Check Permissions**
+4. **Checking Permissions**
    - Ensure scripts have proper execution permissions: `chmod +x script.sh`
    - Check file access permissions
 
-5. **Verify Paths**
-   - Verify file paths exist before accessing them
+5. **Verifying Paths**
+   - Verify file paths exist before access
    - Use `ls -la` to check file attributes
 
 ## 🔄 Version Compatibility
 
-When upgrading the AMMF framework, pay attention to changes in these files:
+When upgrading the AMMF framework, note changes in these files:
 
 1. `files/scripts/default_scripts/main.sh` - Core functions may change
 2. `files/scripts/default_scripts/logger.sh` - Logging system may be updated
 3. `files/languages.sh` - Language strings may be updated
 
-After upgrading, check if your custom scripts are compatible with the new version, especially for scripts that use internal framework functions.
+After upgrading, check your custom scripts for compatibility with the new version, especially those using framework internal functions.
 
 ## 🔍 Advanced Features
 
 ### File Monitoring System
 
-AMMF2 introduces an efficient inotify-based file monitoring system through the `filewatch` tool. This tool supports:
+AMMF2 introduces an efficient file monitoring system based on inotify, implemented through the `filewatch` tool. This tool supports:
 
 - Real-time file change monitoring
-- Low power mode option
+- Low power mode options
 - Daemon mode
 - Custom execution scripts or commands
 
@@ -500,25 +504,25 @@ AMMF2 introduces an efficient inotify-based file monitoring system through the `
 
 ### Enhanced Logging System
 
-AMMF2 includes a powerful logging system implemented through the `logmonitor` tool. This system provides:
+AMMF2 includes a powerful logging system implemented through the `logmonitor` tool. The system provides:
 
 - Multi-level logging (ERROR, WARN, INFO, DEBUG)
 - Automatic log rotation
-- Buffered writing for performance
-- Separate log files per module
+- Buffered writes for performance
+- Per-module log file separation
 
 **Advanced Usage Example:**
 
 ```bash
-# Manually control the logging system
+# Manual control of logging system
 "$MODPATH/bin/logmonitor" -c write -n "custom_module" -l 3 -m "Custom log message"
 ```
 
-## 📚 Reference Resources
+## 📚 References
 
-- [AMMF GitHub Repository](https://github.com/AuroraProject/AMMF)
+- [AMMF GitHub Repository](https://github.com/Aurora-Nasa-1/AMMF2)
 - [Magisk Module Development Documentation](https://topjohnwu.github.io/Magisk/guides.html)
-- [Shell Scripting Guide](https://www.gnu.org/software/bash/manual/bash.html)
+- [Shell Script Programming Guide](https://www.gnu.org/software/bash/manual/bash.html)
 
 ---
 

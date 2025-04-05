@@ -8,8 +8,6 @@
 
 ## 🛠️ 脚本类型
 
-AMMF支持两种主要类型的脚本（可以根据需要自行添加）：
-
 1. **安装脚本** (`files/scripts/install_custom_script.sh`)
    - 在模块安装过程中执行
    - 用于设置任务、文件提取和初始配置
@@ -19,6 +17,10 @@ AMMF支持两种主要类型的脚本（可以根据需要自行添加）：
    - 在设备启动时执行
    - 用于后台服务、监控和运行时操作
    - 支持文件监控和状态管理
+
+3. **Action脚本**
+   - 用户点按执行
+   - 用于用户交互和自定义功能
 
 ## 📚 可用函数
 
@@ -165,15 +167,17 @@ download_file "https://example.com/file.zip"
 **行为：**
 - 将状态更新为"PAUSED"
 - 使用高效的inotify机制监控指定文件的变化
-- 检测到变化时执行指定脚本
+- 检测到变化时执行指定脚本或自定义命令
 
 **兼容性：**
-- 主要用于服务脚本
+- 用于服务脚本
 
 **示例：**
 ```bash
 # 监控配置文件变化
 enter_pause_mode "$MODPATH/module_settings/config.sh" "$MODPATH/scripts/reload_config.sh"
+# 或
+enter_pause_mode "$MODPATH/module_settings/config.sh" -c "cp $MODPATH/module_settings/config.sh $MODPATH/module_settings/config.sh.bak"
 ```
 
 ### 日志系统
@@ -516,7 +520,7 @@ AMMF2包含了一个强大的日志系统，通过`logmonitor`工具实现。该
 
 ## 📚 参考资源
 
-- [AMMF GitHub 仓库](https://github.com/AuroraProject/AMMF)
+- [AMMF GitHub 仓库](https://github.com/Aurora-Nasa-1/AMMF2)
 - [Magisk 模块开发文档](https://topjohnwu.github.io/Magisk/guides.html)
 - [Shell 脚本编程指南](https://www.gnu.org/software/bash/manual/bash.html)
 
