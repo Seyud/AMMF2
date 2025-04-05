@@ -1,9 +1,13 @@
 #!/system/bin/sh
-# 简化的日志系统 - 调用 logmonitor 可执行文件
+# 简化的日志系统 - 使用缓冲区减少进程调用
 
 # 全局变量
 LOGGER_INITIALIZED=0
 LOG_FILE_NAME=""
+LOG_BUFFER=""
+LOG_BUFFER_SIZE=0
+MAX_BUFFER_SIZE=4096  # 约4KB的缓冲区大小
+LAST_FLUSH_TIME=0
 
 # 初始化日志系统
 init_logger() {
@@ -34,9 +38,12 @@ init_logger() {
         echo "${WARN_TEXT}: ${SERVICE_FILE_NOT_FOUND}: $LOGMONITOR_BIN" >&2
         echo "${INFO_TEXT}: ${LOG_FALLBACK:-将使用简化的日志功能}" >&2
     else
-        # 启动 logmonitor 守护进程
-        "$LOGMONITOR_BIN" -c start -d "$LOG_DIR" -l "$LOG_LEVEL" >/dev/null 2>&1 &
+        # 启动 logmonitor 守护进程 - 使用 daemon 模式
+        "$LOGMONITOR_BIN" -c daemon -d "$LOG_DIR" -l "$LOG_LEVEL" >/dev/null 2>&1 &
     fi
+    
+    # 记录当前时间作为初始刷新时间
+    LAST_FLUSH_TIME=$(date +%s)
     
     # 标记为已初始化
     LOGGER_INITIALIZED=1
@@ -56,13 +63,56 @@ set_log_file() {
         init_logger || return 1
     fi
 
+    # 如果切换日志文件，先刷新当前缓冲区
+    if [ -n "$LOG_FILE_NAME" ] && [ "$LOG_FILE_NAME" != "$1" ] && [ "$LOG_BUFFER_SIZE" -gt 0 ]; then
+        _flush_buffer
+    fi
+
     LOG_FILE_NAME="$1"
     log_info "${LOG_FILE_SET}: $1"
     return 0
 }
 
+# 内部缓冲区刷新函数
+_flush_buffer() {
+    if [ "$LOG_BUFFER_SIZE" -eq 0 ]; then
+        return 0
+    fi
+    
+    if [ -f "$LOGMONITOR_BIN" ]; then
+            # 创建临时批处理文件
+            local batch_file="$TMP_FOLDER/log_batch.tmp"
+            echo "$LOG_BUFFER" > "$batch_file"
+            # 使用批量写入功能
+            "$LOGMONITOR_BIN" -c batch -d "$LOG_DIR" -n "${LOG_FILE_NAME:-system}" -b "$batch_file" -p 2>/dev/null
+            rm -f "$batch_file"
+    else
+        # 简化的日志写入（备用方案）
+        echo "$LOG_BUFFER" | while IFS="|" read -r level_num message; do
+            local level="INFO"
+            case "$level_num" in
+                1) level="${ERROR_TEXT:-ERROR}" ;;
+                2) level="${WARN_TEXT:-WARN}" ;;
+                3) level="${INFO_TEXT:-INFO}" ;;
+                4) level="${DEBUG_TEXT:-DEBUG}" ;;
+            esac
+            local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+            echo "${timestamp} [${level}] ${message}" >> "$LOG_DIR/${LOG_FILE_NAME:-system}.log"
+        done
+    fi
+    
+    # 清空缓冲区
+    LOG_BUFFER=""
+    LOG_BUFFER_SIZE=0
+    LAST_FLUSH_TIME=$(date +%s)
+    
+    return 0
+}
+
 # 刷新日志缓冲区
 flush_log() {
+    _flush_buffer
+    
     if [ -f "$LOGMONITOR_BIN" ]; then
         "$LOGMONITOR_BIN" -c flush -d "$LOG_DIR" >/dev/null 2>&1
     fi
@@ -71,41 +121,40 @@ flush_log() {
 
 # 日志函数
 log_error() {
-    [ "$LOG_LEVEL" -ge 1 ] && _write_log "${ERROR_TEXT:-ERROR}" "$1"
+    [ "$LOG_LEVEL" -ge 1 ] && _write_log 1 "$1"
 }
 
 log_warn() {
-    [ "$LOG_LEVEL" -ge 2 ] && _write_log "${WARN_TEXT:-WARN}" "$1"
+    [ "$LOG_LEVEL" -ge 2 ] && _write_log 2 "$1"
 }
 
 log_info() {
-    [ "$LOG_LEVEL" -ge 3 ] && _write_log "${INFO_TEXT:-INFO}" "$1"
+    [ "$LOG_LEVEL" -ge 3 ] && _write_log 3 "$1"
 }
 
 log_debug() {
-    [ "$LOG_LEVEL" -ge 4 ] && _write_log "${DEBUG_TEXT:-DEBUG}" "$1"
+    [ "$LOG_LEVEL" -ge 4 ] && _write_log 4 "$1"
 }
 
-# 内部写日志函数
+# 内部写日志函数 - 使用缓冲区
 _write_log() {
-    local level="$1"
+    local level_num="$1"
     local message="$2"
-    local level_num=3
     
-    case "$level" in
-        "${ERROR_TEXT:-ERROR}") level_num=1 ;;
-        "${WARN_TEXT:-WARN}") level_num=2 ;;
-        "${INFO_TEXT:-INFO}") level_num=3 ;;
-        "${DEBUG_TEXT:-DEBUG}") level_num=4 ;;
-    esac
+    # 添加到缓冲区
+    LOG_BUFFER="${LOG_BUFFER}${level_num}|${message}
+"
+    LOG_BUFFER_SIZE=$((LOG_BUFFER_SIZE + 1))
     
-    if [ -f "$LOGMONITOR_BIN" ]; then
-        # 使用 logmonitor 写日志
-        "$LOGMONITOR_BIN" -c write -d "$LOG_DIR" -l "$level_num" -n "${LOG_FILE_NAME:-system}" -m "$message" 2>> "$LOG_DIR/logmonitor_error.log"
-    else
-        # 简化的日志写入（备用方案）
-        local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
-        echo "${timestamp} [${level}] ${message}" >> "$LOG_DIR/${LOG_FILE_NAME:-system}.log"
+    # 检查是否需要刷新缓冲区
+    # 1. 缓冲区大小达到阈值
+    # 2. 错误级别日志
+    # 3. 距离上次刷新超过30秒
+    local current_time=$(date +%s)
+    local time_diff=$((current_time - LAST_FLUSH_TIME))
+    
+    if [ "$LOG_BUFFER_SIZE" -ge "$MAX_BUFFER_SIZE" ] || [ "$level_num" -eq 1 ] || [ "$time_diff" -ge 30 ]; then
+        _flush_buffer
     fi
 }
 
@@ -125,6 +174,9 @@ log_to_file() {
 
 # 清理所有日志
 clean_logs() {
+    # 先刷新缓冲区
+    _flush_buffer
+    
     if [ -f "$LOGMONITOR_BIN" ]; then
         "$LOGMONITOR_BIN" -c clean -d "$LOG_DIR" >/dev/null 2>&1
     else
@@ -135,6 +187,9 @@ clean_logs() {
     log_info "${LOG_CLEANED}"
     return 0
 }
+
+# 在脚本退出时自动刷新缓冲区
+trap flush_log EXIT
 
 # 自动初始化日志系统
 init_logger

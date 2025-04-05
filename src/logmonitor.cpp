@@ -7,7 +7,6 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <sys/inotify.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -23,11 +22,9 @@ enum LogLevel {
     LOG_DEBUG = 4
 };
 
-// Log Monitor class
-class LogMonitor {
+// 优化的 Logger 类
+class Logger {
 private:
-    int inotify_fd;
-    std::map<int, std::string> watch_descriptors;
     std::mutex log_mutex;
     std::condition_variable cv;
     bool running;
@@ -36,17 +33,24 @@ private:
     size_t log_size_limit;
     std::map<std::string, std::ofstream> log_files;
     
-    // Buffer management
+    // 优化的缓冲区管理
     struct LogBuffer {
         std::string content;
         size_t size;
+        std::chrono::steady_clock::time_point last_write;
     };
     std::map<std::string, LogBuffer> log_buffers;
     size_t buffer_max_size;
+    
+    // 新增：最大空闲时间（毫秒）
+    unsigned int max_idle_time;
+    // 新增：低功耗模式标志
+    bool low_power_mode;
 
 public:
-    LogMonitor(const std::string& dir, int level = 3, size_t size_limit = 102400)
-        : log_dir(dir), log_level(level), log_size_limit(size_limit), buffer_max_size(4096), running(true) {
+    Logger(const std::string& dir, int level = 3, size_t size_limit = 102400)
+        : log_dir(dir), log_level(level), log_size_limit(size_limit), 
+          buffer_max_size(8192), running(true), max_idle_time(30000), low_power_mode(false) {
         
         // 创建日志目录 - 使用递归创建
         std::string cmd = "mkdir -p " + log_dir;
@@ -61,17 +65,13 @@ public:
             system(("mkdir -p " + log_dir).c_str());
         }
         
-        // 初始化 inotify
-        inotify_fd = inotify_init();
-        if (inotify_fd == -1) {
-            std::cerr << "Failed to initialize inotify: " << strerror(errno) << std::endl;
-            exit(1);
-        }
+        // 启动优化的定期刷新线程
+        std::thread flush_thread(&Logger::flush_thread_func, this);
+        flush_thread.detach();
     }
     
-    ~LogMonitor() {
+    ~Logger() {
         stop();
-        close(inotify_fd);
         
         // Close all log files
         for (auto& file : log_files) {
@@ -81,38 +81,44 @@ public:
         }
     }
     
-    // Start monitoring
-    void start() {
-        std::thread monitor_thread(&LogMonitor::monitor_loop, this);
-        monitor_thread.detach();
-    }
-    
-    // Stop monitoring
+    // 停止日志系统
     void stop() {
         running = false;
         cv.notify_all();
         
         // Flush all buffers
+        std::lock_guard<std::mutex> lock(log_mutex);
         for (const auto& buffer_pair : log_buffers) {
             flush_buffer(buffer_pair.first);
         }
     }
     
-    // Add watch for a file or directory
-    bool add_watch(const std::string& path) {
-        int wd = inotify_add_watch(inotify_fd, path.c_str(), IN_MODIFY | IN_CREATE);
-        if (wd == -1) {
-            std::cerr << "Failed to add watch: " << path << " - " << strerror(errno) << std::endl;
-            return false;
-        }
-        watch_descriptors[wd] = path;
-        return true;
+    // 设置最大空闲时间（毫秒）
+    void set_max_idle_time(unsigned int ms) {
+        max_idle_time = ms;
     }
     
-    // Write log entry
-    // 修复 write_log 函数
+    // 设置缓冲区大小
+    void set_buffer_size(size_t size) {
+        buffer_max_size = size;
+    }
+    
+    // 设置低功耗模式
+    void set_low_power_mode(bool enabled) {
+        low_power_mode = enabled;
+        // 在低功耗模式下，增加刷新间隔和缓冲区大小
+        if (enabled) {
+            max_idle_time = 60000; // 1分钟
+            buffer_max_size = 16384; // 16KB
+        } else {
+            max_idle_time = 30000; // 30秒
+            buffer_max_size = 8192; // 8KB
+        }
+    }
+    
+    // Write log entry - 优化版本
     void write_log(const std::string& log_name, LogLevel level, const std::string& message) {
-        // 修改判断逻辑，确保日志级别正确处理
+        // 判断日志级别
         if (static_cast<int>(level) > log_level) return;
         
         std::string level_str;
@@ -127,29 +133,103 @@ public:
         // 获取当前时间
         auto now = std::chrono::system_clock::now();
         std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-        char time_str[64];
+        char time_str[32]; // 减小缓冲区大小
         std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", std::localtime(&now_time));
         
-        // 格式化日志消息
-        std::string log_entry = std::string(time_str) + " [" + level_str + "] " + message + "\n";
+        // 格式化日志消息 - 使用预分配的字符串减少内存分配
+        std::string log_entry;
+        log_entry.reserve(message.size() + 50); // 预分配足够空间
+        log_entry.append(time_str).append(" [").append(level_str).append("] ").append(message).append("\n");
         
         std::lock_guard<std::mutex> lock(log_mutex);
         
         // Add to buffer
         if (log_buffers.find(log_name) == log_buffers.end()) {
-            log_buffers[log_name] = {"", 0};
+            log_buffers[log_name] = {"", 0, std::chrono::steady_clock::now()};
         }
         
-        log_buffers[log_name].content += log_entry;
-        log_buffers[log_name].size += log_entry.size();
+        auto& buffer = log_buffers[log_name];
+        buffer.content += log_entry;
+        buffer.size += log_entry.size();
+        buffer.last_write = std::chrono::steady_clock::now();
         
-        // If buffer reaches threshold, flush to file
-        if (log_buffers[log_name].size >= buffer_max_size) {
+        // 如果是错误级别日志或缓冲区达到阈值，立即刷新
+        // 在低功耗模式下，只有错误日志才立即刷新
+        if ((level == LOG_ERROR) || (!low_power_mode && buffer.size >= buffer_max_size)) {
             flush_buffer(log_name);
         }
     }
     
-    // Flush specific log buffer
+    // 批量写入日志 - 新增方法，更省电
+    void batch_write(const std::string& log_name, const std::vector<std::pair<LogLevel, std::string>>& entries) {
+        if (entries.empty()) return;
+        
+        std::lock_guard<std::mutex> lock(log_mutex);
+        
+        // 确保缓冲区存在
+        if (log_buffers.find(log_name) == log_buffers.end()) {
+            log_buffers[log_name] = {"", 0, std::chrono::steady_clock::now()};
+        }
+        
+        auto& buffer = log_buffers[log_name];
+        bool has_error = false;
+        
+        // 获取当前时间
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+        char time_str[32];
+        std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", std::localtime(&now_time));
+        
+        // 预分配足够的空间
+        size_t total_size = 0;
+        for (const auto& entry : entries) {
+            if (static_cast<int>(entry.first) <= log_level) {
+                total_size += entry.second.size() + 50; // 估计每条日志的额外字符
+            }
+        }
+        
+        if (total_size == 0) return;
+        
+        // 预分配内存以减少重新分配
+        std::string batch_content;
+        batch_content.reserve(total_size);
+        
+        // 处理每条日志
+        for (const auto& entry : entries) {
+            LogLevel level = entry.first;
+            const std::string& message = entry.second;
+            
+            // 跳过超出日志级别的条目
+            if (static_cast<int>(level) > log_level) continue;
+            
+            // 检查是否有错误级别日志
+            if (level == LOG_ERROR) has_error = true;
+            
+            std::string level_str;
+            switch (level) {
+                case LOG_ERROR: level_str = "ERROR"; break;
+                case LOG_WARN:  level_str = "WARN";  break;
+                case LOG_INFO:  level_str = "INFO";  break;
+                case LOG_DEBUG: level_str = "DEBUG"; break;
+                default:        level_str = "INFO";  break;
+            }
+            
+            // 添加到批量内容
+            batch_content.append(time_str).append(" [").append(level_str).append("] ").append(message).append("\n");
+        }
+        
+        // 添加到缓冲区
+        buffer.content += batch_content;
+        buffer.size += batch_content.size();
+        buffer.last_write = std::chrono::steady_clock::now();
+        
+        // 如果有错误日志、缓冲区达到阈值或批量内容较大，立即刷新
+        if (has_error || (!low_power_mode && buffer.size >= buffer_max_size)) {
+            flush_buffer(log_name);
+        }
+    }
+    
+    // Flush specific log buffer - 优化版本
     void flush_buffer(const std::string& log_name) {
         if (log_buffers.find(log_name) == log_buffers.end() || log_buffers[log_name].size == 0) {
             return;
@@ -157,35 +237,37 @@ public:
         
         std::string log_path = log_dir + "/" + log_name + ".log";
         
-        // Check log file size
+        // 检查文件大小并处理轮转
+        bool need_reopen = false;
         struct stat st;
         if (stat(log_path.c_str(), &st) == 0) {
             if (st.st_size > log_size_limit) {
                 // Rotate log file
                 std::string old_log = log_path + ".old";
                 rename(log_path.c_str(), old_log.c_str());
+                need_reopen = true;
                 
-                // Close and reopen log file
+                // Close log file if open
                 if (log_files.find(log_name) != log_files.end() && log_files[log_name].is_open()) {
                     log_files[log_name].close();
                 }
             }
         }
         
-        // Ensure log file is open
-        if (log_files.find(log_name) == log_files.end() || !log_files[log_name].is_open()) {
-            log_files[log_name].open(log_path, std::ios::app);
+        // 确保日志文件已打开
+        if (need_reopen || log_files.find(log_name) == log_files.end() || !log_files[log_name].is_open()) {
+            log_files[log_name].open(log_path, std::ios::app | std::ios::binary);
             if (!log_files[log_name].is_open()) {
                 std::cerr << "Failed to open log file: " << log_path << std::endl;
                 return;
             }
         }
         
-        // Write buffer content
-        log_files[log_name] << log_buffers[log_name].content;
+        // 写入缓冲区内容
+        log_files[log_name].write(log_buffers[log_name].content.c_str(), log_buffers[log_name].content.size());
         log_files[log_name].flush();
         
-        // Clear buffer
+        // 清空缓冲区
         log_buffers[log_name].content.clear();
         log_buffers[log_name].size = 0;
     }
@@ -219,62 +301,55 @@ public:
     }
     
 private:
-    // Monitor loop
-    void monitor_loop() {
-        const size_t event_size = sizeof(struct inotify_event);
-        const size_t buffer_size = (event_size + 16) * 1024;
-        char buffer[buffer_size];
-        
+    // 优化的定期刷新线程函数
+    void flush_thread_func() {
         while (running) {
-            // Periodically flush buffers
-            flush_all();
-            
-            // Wait for events
-            fd_set read_fds;
-            FD_ZERO(&read_fds);
-            FD_SET(inotify_fd, &read_fds);
-            
-            struct timeval timeout;
-            timeout.tv_sec = 5;  // 5 second timeout
-            timeout.tv_usec = 0;
-            
-            int ret = select(inotify_fd + 1, &read_fds, NULL, NULL, &timeout);
-            if (ret == -1) {
-                if (errno == EINTR) continue;  // Interrupted by signal
-                std::cerr << "Select error: " << strerror(errno) << std::endl;
-                break;
-            } else if (ret == 0) {
-                // Timeout, continue loop
-                continue;
-            }
-            
-            // Read events
-            int length = read(inotify_fd, buffer, buffer_size);
-            if (length <= 0) continue;
-            
-            int i = 0;
-            while (i < length) {
-                struct inotify_event* event = (struct inotify_event*)&buffer[i];
+            // 使用条件变量等待，可以被提前唤醒
+            {
+                std::unique_lock<std::mutex> lock(log_mutex);
+                // 低功耗模式下增加等待时间
+                auto wait_time = low_power_mode ? std::chrono::seconds(30) : std::chrono::seconds(15);
+                cv.wait_for(lock, wait_time, [this] { return !running; });
                 
-                if (watch_descriptors.find(event->wd) != watch_descriptors.end()) {
-                    std::string path = watch_descriptors[event->wd];
-                    // Handle file change events
-                    // Specific handling logic can be added here
+                if (!running) break;
+                
+                // 检查每个缓冲区，只刷新需要刷新的
+                auto now = std::chrono::steady_clock::now();
+                for (auto it = log_buffers.begin(); it != log_buffers.end(); ++it) {
+                    // 如果缓冲区有内容且超过最大空闲时间或达到一定大小，则刷新
+                    auto& buffer = it->second;
+                    auto idle_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - buffer.last_write).count();
+                    
+                    if (buffer.size > 0 && (idle_time > max_idle_time || buffer.size > buffer_max_size / 2)) {
+                        flush_buffer(it->first);
+                    }
                 }
                 
-                i += event_size + event->len;
+                // 关闭长时间未使用的文件句柄
+                for (auto it = log_files.begin(); it != log_files.end();) {
+                    if (log_buffers.find(it->first) == log_buffers.end() || 
+                        std::chrono::duration_cast<std::chrono::milliseconds>(
+                            now - log_buffers[it->first].last_write).count() > max_idle_time * 2) {
+                        if (it->second.is_open()) {
+                            it->second.close();
+                        }
+                        it = log_files.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
             }
         }
     }
 };
 
-// Global log monitor instance
-static LogMonitor* g_log_monitor = nullptr;
+// Global logger instance
+static Logger* g_logger = nullptr;
 
 // Signal handler
 void signal_handler(int sig) {
-    if (g_log_monitor) {
-        g_log_monitor->flush_all();
+    if (g_logger) {
+        g_logger->flush_all();
     }
     
     if (sig == SIGTERM || sig == SIGINT) {
@@ -283,13 +358,14 @@ void signal_handler(int sig) {
 }
 
 // Main function
-// 修复 main 函数中的命令行参数处理
 int main(int argc, char* argv[]) {
     std::string log_dir = "/data/adb/modules/AMMF2/logs";
     int log_level = 3;
     std::string command;
     std::string log_name = "system";
     std::string message;
+    std::string batch_file;
+    bool low_power = false;
     
     // 解析命令行参数
     for (int i = 1; i < argc; i++) {
@@ -309,19 +385,27 @@ int main(int argc, char* argv[]) {
             log_name = argv[++i];
         } else if (arg == "-m" && i + 1 < argc) {
             message = argv[++i];
+        } else if (arg == "-b" && i + 1 < argc) {
+            batch_file = argv[++i];
+        } else if (arg == "-p") {
+            low_power = true;
         } else if (arg == "-h" || arg == "--help") {
             std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
             std::cout << "Options:" << std::endl;
             std::cout << "  -d DIR    Specify log directory (default: /data/adb/modules/AMMF2/logs)" << std::endl;
             std::cout << "  -l LEVEL  Set log level (1=error, 2=warning, 3=info, 4=debug, default: 3)" << std::endl;
-            std::cout << "  -c CMD    Execute command (start, stop, write, flush, clean)" << std::endl;
+            std::cout << "  -c CMD    Execute command (daemon, write, batch, flush, clean)" << std::endl;
             std::cout << "  -n NAME   Specify log name (for write command, default: system)" << std::endl;
             std::cout << "  -m MSG    Log message content (for write command)" << std::endl;
+            std::cout << "  -b FILE   Batch input file with format: LEVEL|MESSAGE per line" << std::endl;
+            std::cout << "  -p        Enable low power mode (less frequent writes)" << std::endl;
             std::cout << "  -h        Show help information" << std::endl;
             std::cout << "Examples:" << std::endl;
-            std::cout << "  Start monitoring: " << argv[0] << " -c start" << std::endl;
+            std::cout << "  Start daemon: " << argv[0] << " -c daemon" << std::endl;
             std::cout << "  Write log: " << argv[0] << " -c write -n main -m \"Test message\" -l 3" << std::endl;
+            std::cout << "  Batch write: " << argv[0] << " -c batch -n main -b batch_logs.txt" << std::endl;
             std::cout << "  Flush logs: " << argv[0] << " -c flush" << std::endl;
+            std::cout << "  Clean logs: " << argv[0] << " -c clean" << std::endl;
             return 0;
         }
     }
@@ -331,9 +415,12 @@ int main(int argc, char* argv[]) {
         command = "daemon";
     }
     
-    // Create log monitor
-    if (!g_log_monitor) {
-        g_log_monitor = new LogMonitor(log_dir, log_level);
+    // Create logger
+    if (!g_logger) {
+        g_logger = new Logger(log_dir, log_level);
+        if (low_power) {
+            g_logger->set_low_power_mode(true);
+        }
     }
     
     // Execute command
@@ -343,31 +430,19 @@ int main(int argc, char* argv[]) {
         signal(SIGINT, signal_handler);
         signal(SIGUSR1, signal_handler);  // Can be used to trigger log flush
         
-        // Start monitoring
-        g_log_monitor->start();
-        
-        // Add watch directory
-        g_log_monitor->add_watch(log_dir);
-        
         // Write startup log
-        g_log_monitor->write_log("system", LOG_INFO, "Log monitoring system started");
+        g_logger->write_log("system", LOG_INFO, "Log system started" + (low_power ? " (low power mode)" : ""));
         
-        // Main loop
+        // 优化的主循环 - 使用条件变量等待而不是频繁唤醒
+        std::mutex main_mutex;
+        std::condition_variable main_cv;
+        std::unique_lock<std::mutex> lock(main_mutex);
         while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(60));
-            g_log_monitor->flush_all();
+            // 低功耗模式下减少唤醒频率
+            auto wait_time = low_power ? std::chrono::minutes(10) : std::chrono::minutes(5);
+            main_cv.wait_for(lock, wait_time);
+            g_logger->flush_all();
         }
-    } else if (command == "start") {
-        // Start monitoring
-        g_log_monitor->start();
-        g_log_monitor->add_watch(log_dir);
-        g_log_monitor->write_log("system", LOG_INFO, "Log monitoring started");
-        return 0;
-    } else if (command == "stop") {
-        // Stop monitoring
-        g_log_monitor->write_log("system", LOG_INFO, "Log monitoring stopped");
-        g_log_monitor->stop();
-        return 0;
     } else if (command == "write") {
         // Write log
         if (message.empty()) {
@@ -376,22 +451,88 @@ int main(int argc, char* argv[]) {
         }
         
         LogLevel level = static_cast<LogLevel>(log_level);
-        g_log_monitor->write_log(log_name, level, message);
-        g_log_monitor->flush_all(); // 立即刷新，确保写入
+        g_logger->write_log(log_name, level, message);
+        
+        // 在非低功耗模式下立即刷新
+        if (!low_power) {
+            g_logger->flush_all();
+        }
+        return 0;
+    } else if (command == "batch") {
+        // 批量写入日志
+        if (batch_file.empty()) {
+            std::cerr << "Error: Batch writing requires input file (-b)" << std::endl;
+            return 1;
+        }
+        
+        // 读取批量文件
+        std::ifstream batch_in(batch_file);
+        if (!batch_in.is_open()) {
+            std::cerr << "Error: Cannot open batch file: " << batch_file << std::endl;
+            return 1;
+        }
+        
+        std::vector<std::pair<LogLevel, std::string>> entries;
+        std::string line;
+        
+        // 从文件读取日志条目
+        while (std::getline(batch_in, line)) {
+            // 跳过空行和注释
+            if (line.empty() || line[0] == '#') continue;
+            
+            // 查找分隔符
+            size_t pos = line.find('|');
+            if (pos == std::string::npos) continue;
+            
+            // 解析日志级别
+            std::string level_str = line.substr(0, pos);
+            LogLevel level;
+            
+            if (level_str == "ERROR" || level_str == "1") {
+                level = LOG_ERROR;
+            } else if (level_str == "WARN" || level_str == "2") {
+                level = LOG_WARN;
+            } else if (level_str == "INFO" || level_str == "3") {
+                level = LOG_INFO;
+            } else if (level_str == "DEBUG" || level_str == "4") {
+                level = LOG_DEBUG;
+            } else {
+                level = LOG_INFO;
+            }
+            
+            // 获取消息内容
+            std::string message = line.substr(pos + 1);
+            
+            // 添加到条目列表
+            entries.emplace_back(level, message);
+        }
+        
+        batch_in.close();
+        
+        // 批量写入日志
+        if (!entries.empty()) {
+            g_logger->batch_write(log_name, entries);
+            
+            // 在非低功耗模式下立即刷新
+            if (!low_power) {
+                g_logger->flush_all();
+            }
+        }
+        
         return 0;
     } else if (command == "flush") {
         // Flush logs
-        g_log_monitor->flush_all();
+        g_logger->flush_all();
         return 0;
     } else if (command == "clean") {
         // Clean logs
-        g_log_monitor->clean_logs();
+        g_logger->clean_logs();
         return 0;
     } else {
         std::cerr << "Error: Unknown command '" << command << "'" << std::endl;
         return 1;
     }
     
-    delete g_log_monitor;
+    delete g_logger;
     return 0;
 }
