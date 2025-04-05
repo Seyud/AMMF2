@@ -407,9 +407,8 @@ const SettingsPage = {
             // 收集表单数据，过滤掉 quote_type 设置项
             const updatedSettings = {};
             for (const key in this.settings) {
-                // 跳过 quote_type 设置项
-                if (key.endsWith('_quote_type')) continue;
-                if (this.excludedSettings.includes(key)) continue;
+                // 跳过 quote_type 设置项和排除项
+                if (key.endsWith('_quote_type') || this.excludedSettings.includes(key)) continue;
 
                 const element = document.getElementById(`setting-${key}`);
                 if (!element) continue;
@@ -425,16 +424,17 @@ const SettingsPage = {
 
             // 生成新的配置文件内容
             let configContent = '';
-            for (const key in updatedSettings) {
-                // 如果是排除项，保持原样
-                if (this.excludedSettings.includes(key)) {
-                    const originalLine = originalLines.find(line => line.trim().startsWith(`${key}=`));
-                    if (originalLine) {
-                        configContent += originalLine + '\n';
-                    }
-                    continue;
+            
+            // 首先处理原始配置中的排除项，保持它们原样
+            for (const line of originalLines) {
+                const match = line.match(/^([A-Za-z0-9_]+)\s*=/);
+                if (match && this.excludedSettings.includes(match[1])) {
+                    configContent += line + '\n';
                 }
-
+            }
+            
+            // 然后处理更新的设置项
+            for (const key in updatedSettings) {
                 let value = updatedSettings[key];
                 const format = originalFormats.get(key) || {};
 
@@ -460,8 +460,6 @@ const SettingsPage = {
                 configContent += `${key}=${value}${format.comment ? `${format.commentSpacing || ' '}${format.comment}` : ''}\n`;
             }
 
-
-
             // 检查是否已取消
             if (this.isCancelled) return;
 
@@ -470,8 +468,14 @@ const SettingsPage = {
             // 再次检查是否已取消
             if (this.isCancelled) return;
 
-            // 更新本地设置
-            this.settings = updatedSettings;
+            // 更新本地设置 - 过滤掉 quote_type 设置项
+            const cleanSettings = {};
+            for (const key in updatedSettings) {
+                if (!key.endsWith('_quote_type')) {
+                    cleanSettings[key] = updatedSettings[key];
+                }
+            }
+            this.settings = cleanSettings;
 
             // 更新备份
             this.createSettingsBackup();
