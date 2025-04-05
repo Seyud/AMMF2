@@ -16,7 +16,7 @@
 
 /* 页面容器过渡效果 */
 .page-container {
-    position: absolute;  /* 添加绝对定位 */
+    position: relative;  /* 改为相对定位 */
     top: 0;             /* 固定在顶部 */
     left: 0;
     width: 100%;

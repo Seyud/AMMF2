@@ -389,26 +389,26 @@ const SettingsPage = {
             originalLines.forEach(line => {
                 const commentIndex = line.indexOf('#');
                 let effectiveLine = commentIndex !== -1 ? line.substring(0, commentIndex).trim() : line.trim();
-                // 保存注释前的空格
                 const commentSpacing = commentIndex !== -1 ? line.substring(0, commentIndex).match(/\s*$/)[0] : '';
                 const comment = commentIndex !== -1 ? line.substring(commentIndex) : '';
                 
-                // 匹配键值对，保留引号信息
                 const match = effectiveLine.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
                 if (match) {
                     const [, key, originalValue] = match;
                     originalFormats.set(key, {
                         comment,
-                        commentSpacing,  // 添加注释前的空格信息
+                        commentSpacing,
                         hasDoubleQuotes: originalValue.startsWith('"') && originalValue.endsWith('"'),
                         hasSingleQuotes: originalValue.startsWith("'") && originalValue.endsWith("'")
                     });
                 }
             });
 
-            // 收集表单数据
-            const updatedSettings = { ...this.settings };
+            // 收集表单数据，过滤掉 quote_type 设置项
+            const updatedSettings = {};
             for (const key in this.settings) {
+                // 跳过 quote_type 设置项
+                if (key.endsWith('_quote_type')) continue;
                 if (this.excludedSettings.includes(key)) continue;
 
                 const element = document.getElementById(`setting-${key}`);
@@ -426,9 +426,6 @@ const SettingsPage = {
             // 生成新的配置文件内容
             let configContent = '';
             for (const key in updatedSettings) {
-                // 跳过引号类型标记
-                if (key.endsWith('_quote_type')) continue;
-                
                 // 如果是排除项，保持原样
                 if (this.excludedSettings.includes(key)) {
                     const originalLine = originalLines.find(line => line.trim().startsWith(`${key}=`));
@@ -440,7 +437,6 @@ const SettingsPage = {
 
                 let value = updatedSettings[key];
                 const format = originalFormats.get(key) || {};
-                const quoteType = updatedSettings[`${key}_quote_type`];
 
                 // 根据原始格式和设置类型处理值
                 if (typeof value === 'string') {
@@ -449,9 +445,9 @@ const SettingsPage = {
                         value = `"${value}"`;
                     }
                     // 否则按原有逻辑处理
-                    else if (quoteType === 'double' || format.hasDoubleQuotes) {
+                    else if (format.hasDoubleQuotes) {
                         value = `"${value}"`;
-                    } else if (quoteType === 'single' || format.hasSingleQuotes) {
+                    } else if (format.hasSingleQuotes) {
                         value = `'${value}'`;
                     } else if (value.includes(' ') || value === '') {
                         value = `"${value}"`;
