@@ -50,7 +50,8 @@ private:
 public:
     Logger(const std::string& dir, int level = 3, size_t size_limit = 102400)
         : log_dir(dir), log_level(level), log_size_limit(size_limit), 
-          buffer_max_size(8192), running(true), max_idle_time(30000), low_power_mode(false) {
+          log_files(), log_buffers(), buffer_max_size(8192), 
+          max_idle_time(30000), low_power_mode(false), running(true) {
         
         // 创建日志目录 - 使用递归创建
         std::string cmd = "mkdir -p " + log_dir;
@@ -241,7 +242,7 @@ public:
         bool need_reopen = false;
         struct stat st;
         if (stat(log_path.c_str(), &st) == 0) {
-            if (st.st_size > log_size_limit) {
+            if (static_cast<size_t>(st.st_size) > log_size_limit) {
                 // Rotate log file
                 std::string old_log = log_path + ".old";
                 rename(log_path.c_str(), old_log.c_str());
@@ -431,7 +432,11 @@ int main(int argc, char* argv[]) {
         signal(SIGUSR1, signal_handler);  // Can be used to trigger log flush
         
         // Write startup log
-        g_logger->write_log("system", LOG_INFO, "Log system started" + (low_power ? " (low power mode)" : ""));
+        std::string startup_msg = "Log system started";
+        if (low_power) {
+            startup_msg += " (low power mode)";
+        }
+        g_logger->write_log("system", LOG_INFO, startup_msg);
         
         // 优化的主循环 - 使用条件变量等待而不是频繁唤醒
         std::mutex main_mutex;
