@@ -1,7 +1,6 @@
 /* https://github.com/jogemu/md3css */
 
 :root {
-  --hue: 300;
   --rhw: 16rem; /* read-optimized half width */
   --fnt: "Roboto", sans-serif;
   --tra: .2s ease-in-out;
