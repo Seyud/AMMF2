@@ -6,7 +6,7 @@
 const AboutPage = {
     // 模块信息
     moduleInfo: {},
-    version: '7.0.3',
+    version: '7.0.4',
     
     // 初始化
     async init() {
