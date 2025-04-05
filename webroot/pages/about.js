@@ -114,8 +114,7 @@ const AboutPage = {
         const infoItems = [
             { key: 'module_name', label: 'MODULE_NAME', icon: 'tag' },
             { key: 'version', label: 'MODULE_VERSION', icon: 'new_releases' },
-            { key: 'versionCode', label: 'VERSION_DATE', icon: 'update' },
-            { key: 'author', label: 'DEVELOPER', icon: 'person' }
+            { key: 'versionCode', label: 'VERSION_DATE', icon: 'update' }
         ];
         
         let html = '';
