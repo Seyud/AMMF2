@@ -63,7 +63,7 @@ cd AMMF2
 3. **配置 Release 上传**：
    Action 使用`softprops/action-gh-release@v2`上传 Release，需要在仓库设置中配置
 
-4. **提交或提交 Tag(v\*)触发构建,Enjoy**：
+4. **提交或提交 Tag(v\*)触发构建,Enjoy**
 
 ### 自定义脚本开发
 
@@ -88,3 +88,7 @@ cd AMMF2
 ## 📄 许可证
 
 本项目采用 [MIT LICENSE](../LICENSE) 许可证。
+
+## 🙏 感谢
+
+[Pure CSS Material 3 Design](https://github.com/jogemu/md3css)

@@ -63,7 +63,7 @@ cd AMMF2
 3. **Configure Release Upload**:
    Action uses `softprops/action-gh-release@v2` for Release upload, requires repository settings configuration
 
-4. **Commit or Push Tag(v*) to Trigger Build, Enjoy**:
+4. **Commit or Push Tag(v*) to Trigger Build, Enjoy**
 
 ### Custom Script Development
 
@@ -88,3 +88,7 @@ Welcome to submit PRs or Issues to improve this framework! If you find this proj
 ## 📄 License
 
 This project is licensed under the [MIT LICENSE](../LICENSE).
+
+## 🙏 Thanks
+
+[Pure CSS Material 3 Design](https://github.com/jogemu/md3css)
