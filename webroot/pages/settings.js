@@ -48,7 +48,14 @@ const SettingsPage = {
 
     // 创建设置备份
     createSettingsBackup() {
-        this.settingsBackup = JSON.parse(JSON.stringify(this.settings));
+        // 创建深拷贝，但排除内部使用的属性
+        const cleanSettings = {};
+        for (const key in this.settings) {
+            if (!key.startsWith('_')) {
+                cleanSettings[key] = this.settings[key];
+            }
+        }
+        this.settingsBackup = JSON.parse(JSON.stringify(cleanSettings));
     },
 
     // 渲染页面
@@ -69,7 +76,7 @@ const SettingsPage = {
 
     // 渲染设置项
     renderSettings() {
-        if (!this.settings || Object.keys(this.settings).length === 0) {
+        if (!this.settings || Object.keys(this.settings).filter(key => !key.startsWith('_')).length === 0) {
             // 如果没有可用设置，提供测试数据
             this.settings = this.getTestSettings();
             this.createSettingsBackup();
@@ -77,15 +84,12 @@ const SettingsPage = {
 
         let html = '';
 
-        // 按字母顺序排序设置项
-        const sortedSettings = Object.keys(this.settings).sort();
+        // 按字母顺序排序设置项，过滤掉内部属性和排除项
+        const sortedSettings = Object.keys(this.settings)
+            .filter(key => !key.startsWith('_') && !this.excludedSettings.includes(key))
+            .sort();
 
         for (const key of sortedSettings) {
-            // 跳过被排除的设置项
-            if (this.excludedSettings.includes(key)) {
-                continue;
-            }
-
             const value = this.settings[key];
             const description = this.getSettingDescription(key);
 
@@ -164,17 +168,27 @@ const SettingsPage = {
 
     // 渲染文本控件
     renderTextControl(key, value, description) {
-        // 去除外层引号
-        const displayValue = typeof value === 'string' 
-            ? value.replace(/^["'](.*)["']$/, '$1')
+        // 确保值是字符串并进行HTML转义
+        const safeValue = typeof value === 'string' 
+            ? this.escapeHtml(value)
             : value;
     
         return `
             <label>
                 <span>${description}</span>
-                <input type="text" id="setting-${key}" value="${displayValue}">
+                <input type="text" id="setting-${key}" value="${safeValue}">
             </label>
         `;
+    },
+
+    // HTML转义函数，防止XSS
+    escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     },
 
     // 渲染选择控件
@@ -221,7 +235,7 @@ const SettingsPage = {
             this.showLoading();
 
             // 如果已经有缓存的设置数据,直接使用
-            if (this.settings && Object.keys(this.settings).length > 0) {
+            if (this.settings && Object.keys(this.settings).filter(key => !key.startsWith('_')).length > 0) {
                 return;
             }
 
@@ -257,6 +271,12 @@ const SettingsPage = {
     parseConfigFile(content) {
         const settings = {};
         const lines = content.split('\n');
+        
+        // 存储原始配置信息，用于保存时恢复格式
+        settings._configInfo = {
+            lines: lines,
+            formats: {}
+        };
 
         for (const line of lines) {
             // 跳过空行
@@ -265,6 +285,8 @@ const SettingsPage = {
             // 提取注释之前的实际内容
             const commentIndex = line.indexOf('#');
             const effectiveLine = commentIndex !== -1 ? line.substring(0, commentIndex) : line;
+            const comment = commentIndex !== -1 ? line.substring(commentIndex) : '';
+            const commentSpacing = commentIndex !== -1 ? line.substring(0, commentIndex).match(/\s*$/)[0] : '';
 
             // 如果去除注释后是空行则跳过
             if (effectiveLine.trim() === '') continue;
@@ -276,14 +298,18 @@ const SettingsPage = {
                 const originalValue = match[2].trim();
                 let value = originalValue;
 
-                // 如果值带有引号，记录引号类型并去除引号用于内部处理
-                const hasDoubleQuotes = value.startsWith('"') && value.endsWith('"');
-                const hasSingleQuotes = value.startsWith("'") && value.endsWith("'");
-                
-                if (hasDoubleQuotes || hasSingleQuotes) {
+                // 记录格式信息
+                settings._configInfo.formats[key] = {
+                    comment,
+                    commentSpacing,
+                    hasDoubleQuotes: value.startsWith('"') && value.endsWith('"'),
+                    hasSingleQuotes: value.startsWith("'") && value.endsWith("'")
+                };
+
+                // 如果值带有引号，去除引号用于内部处理
+                if (settings._configInfo.formats[key].hasDoubleQuotes || 
+                    settings._configInfo.formats[key].hasSingleQuotes) {
                     value = value.substring(1, value.length - 1);
-                    // 在值中存储引号信息
-                    settings[`${key}_quote_type`] = hasDoubleQuotes ? 'double' : 'single';
                 }
 
                 // 转换布尔值
@@ -292,7 +318,7 @@ const SettingsPage = {
                     settings[key] = lowerValue === 'true';
                 }
                 // 转换数字
-                else if (!isNaN(value) && value.trim() !== '') {
+                else if (!isNaN(value) && value.trim() !== '' && !isNaN(parseFloat(value))) {
                     settings[key] = Number(value);
                 }
                 // 保留字符串
@@ -379,36 +405,11 @@ const SettingsPage = {
         try {
             this.showLoading();
 
-            // 首先读取原始配置文件内容，以保留注释和引号格式
-            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
-            const originalConfig = await Core.execCommand(`cat "${configPath}"`);
-            const originalLines = originalConfig.split('\n');
-            const originalFormats = new Map();
-
-            // 保存每个设置项的原始格式（包括注释和引号）
-            originalLines.forEach(line => {
-                const commentIndex = line.indexOf('#');
-                let effectiveLine = commentIndex !== -1 ? line.substring(0, commentIndex).trim() : line.trim();
-                const commentSpacing = commentIndex !== -1 ? line.substring(0, commentIndex).match(/\s*$/)[0] : '';
-                const comment = commentIndex !== -1 ? line.substring(commentIndex) : '';
-                
-                const match = effectiveLine.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
-                if (match) {
-                    const [, key, originalValue] = match;
-                    originalFormats.set(key, {
-                        comment,
-                        commentSpacing,
-                        hasDoubleQuotes: originalValue.startsWith('"') && originalValue.endsWith('"'),
-                        hasSingleQuotes: originalValue.startsWith("'") && originalValue.endsWith("'")
-                    });
-                }
-            });
-
-            // 收集表单数据，过滤掉 quote_type 设置项
+            // 收集表单数据
             const updatedSettings = {};
             for (const key in this.settings) {
-                // 跳过 quote_type 设置项和排除项
-                if (key.endsWith('_quote_type') || this.excludedSettings.includes(key)) continue;
+                // 跳过内部属性和排除项
+                if (key.startsWith('_') || this.excludedSettings.includes(key)) continue;
 
                 const element = document.getElementById(`setting-${key}`);
                 if (!element) continue;
@@ -422,21 +423,45 @@ const SettingsPage = {
                 }
             }
 
+            // 获取配置文件路径
+            const configPath = `${Core.MODULE_PATH}module_settings/config.sh`;
+
+            // 检查是否有配置信息
+            if (!this.settings._configInfo) {
+                // 如果没有配置信息，先读取原始配置
+                const originalConfig = await Core.execCommand(`cat "${configPath}"`);
+                if (originalConfig) {
+                    // 解析原始配置以获取格式信息
+                    const tempSettings = this.parseConfigFile(originalConfig);
+                    this.settings._configInfo = tempSettings._configInfo;
+                } else {
+                    // 如果无法读取原始配置，创建一个空的配置信息
+                    this.settings._configInfo = {
+                        lines: [],
+                        formats: {}
+                    };
+                }
+            }
+
             // 生成新的配置文件内容
             let configContent = '';
             
-            // 首先处理原始配置中的排除项，保持它们原样
-            for (const line of originalLines) {
-                const match = line.match(/^([A-Za-z0-9_]+)\s*=/);
-                if (match && this.excludedSettings.includes(match[1])) {
-                    configContent += line + '\n';
+            // 首先处理排除项，保持它们原样
+            const excludedLines = new Set();
+            if (this.settings._configInfo.lines) {
+                for (const line of this.settings._configInfo.lines) {
+                    const match = line.match(/^([A-Za-z0-9_]+)\s*=/);
+                    if (match && this.excludedSettings.includes(match[1])) {
+                        configContent += line + '\n';
+                        excludedLines.add(line);
+                    }
                 }
             }
             
             // 然后处理更新的设置项
             for (const key in updatedSettings) {
                 let value = updatedSettings[key];
-                const format = originalFormats.get(key) || {};
+                const format = this.settings._configInfo.formats[key] || {};
 
                 // 根据原始格式和设置类型处理值
                 if (typeof value === 'string') {
@@ -444,7 +469,7 @@ const SettingsPage = {
                     if (this.settingsOptions[key]) {
                         value = `"${value}"`;
                     }
-                    // 否则按原有逻辑处理
+                    // 否则按原有格式处理
                     else if (format.hasDoubleQuotes) {
                         value = `"${value}"`;
                     } else if (format.hasSingleQuotes) {
@@ -463,19 +488,29 @@ const SettingsPage = {
             // 检查是否已取消
             if (this.isCancelled) return;
 
+            // 保存配置文件
             await Core.execCommand(`echo '${configContent.replace(/'/g, "'\\''")}' > "${configPath}"`);
 
             // 再次检查是否已取消
             if (this.isCancelled) return;
 
-            // 更新本地设置 - 过滤掉 quote_type 设置项
-            const cleanSettings = {};
-            for (const key in updatedSettings) {
-                if (!key.endsWith('_quote_type')) {
-                    cleanSettings[key] = updatedSettings[key];
+            // 更新本地设置
+            const configInfo = this.settings._configInfo;
+            
+            // 更新设置对象，保留内部属性
+            for (const key in this.settings) {
+                if (!key.startsWith('_')) {
+                    delete this.settings[key];
                 }
             }
-            this.settings = cleanSettings;
+            
+            // 添加更新后的设置
+            for (const key in updatedSettings) {
+                this.settings[key] = updatedSettings[key];
+            }
+            
+            // 保留配置信息
+            this.settings._configInfo = configInfo;
 
             // 更新备份
             this.createSettingsBackup();
@@ -507,8 +542,16 @@ const SettingsPage = {
             return;
         }
 
+        // 保存配置信息
+        const configInfo = this.settings._configInfo;
+
         // 恢复设置
         this.settings = JSON.parse(JSON.stringify(this.settingsBackup));
+        
+        // 恢复配置信息
+        if (configInfo) {
+            this.settings._configInfo = configInfo;
+        }
 
         // 更新设置显示
         this.updateSettingsDisplay();
@@ -528,10 +571,10 @@ const SettingsPage = {
         if (!this.settings || !this.settingsBackup) return false;
 
         // 收集当前表单数据
-        const currentSettings = { ...this.settings };
-
+        const currentSettings = {};
         for (const key in this.settings) {
-            if (this.excludedSettings.includes(key)) continue;
+            // 跳过内部属性和排除项
+            if (key.startsWith('_') || this.excludedSettings.includes(key)) continue;
 
             const element = document.getElementById(`setting-${key}`);
             if (!element) continue;
@@ -649,7 +692,8 @@ const SettingsPage = {
         const tempSettings = { ...this.settings };
 
         for (const key in this.settings) {
-            if (this.excludedSettings.includes(key)) continue;
+            // 跳过内部属性和排除项
+            if (key.startsWith('_') || this.excludedSettings.includes(key)) continue;
 
             const element = document.getElementById(`setting-${key}`);
             if (!element) continue;
@@ -724,7 +768,7 @@ const SettingsPage = {
             const refreshButton = document.getElementById('refresh-settings');
             if (refreshButton) {
                 refreshButton.addEventListener('click', () => {
-                    this.refreshSettings().finally
+                    this.refreshSettings();
                 });
             }
             
@@ -805,8 +849,21 @@ const SettingsPage = {
             container.parentNode.replaceChild(newContainer, container);
         }
 
-        // 确保加载覆盖层被隐藏
-        this.hideLoading();
+        // 移除页面操作按钮的事件监听器
+        const restoreButton = document.getElementById('restore-settings');
+        if (restoreButton) {
+            restoreButton.replaceWith(restoreButton.cloneNode(true));
+        }
+
+        const refreshButton = document.getElementById('refresh-settings');
+        if (refreshButton) {
+            refreshButton.replaceWith(refreshButton.cloneNode(true));
+        }
+
+        const saveButton = document.getElementById('save-settings');
+        if (saveButton) {
+            saveButton.replaceWith(saveButton.cloneNode(true));
+        }
     }
 };
 
