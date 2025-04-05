@@ -572,24 +572,45 @@ select option {
     min-width: 100%;
     display: inline-block;
 }
-
-/* 可选：添加滚动条样式 */
-.logs-scroll-container::-webkit-scrollbar {
-    height: 8px;
-}
-
-.logs-scroll-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-.logs-scroll-container::-webkit-scrollbar-thumb {
-    background: #888;
+/* 日志级别样式 */
+.log-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
     border-radius: 4px;
+    font: var(--label-m);
+    margin-right: 8px;
 }
 
-.logs-scroll-container::-webkit-scrollbar-thumb:hover {
-    background: #555;
+.log-level .material-symbols-rounded {
+    font-size: 16px;
 }
+
+/* 错误级别 */
+.log-level.error {
+    background-color: var(--error-container);
+    color: var(--on-error-container);
+}
+
+/* 警告级别 */
+.log-level.warn {
+    background-color: var(--secondary-container);
+    color: var(--on-secondary-container);
+}
+
+/* 信息级别 */
+.log-level.info {
+    background-color: var(--primary-container);
+    color: var(--on-primary-container);
+}
+
+/* 调试级别 */
+.log-level.debug {
+    background-color: var(--tertiary-container);
+    color: var(--on-tertiary-container);
+}
+
 /* ===== 响应式布局调整 ===== */
 @media (min-width: 768px) {
     .about-container,
