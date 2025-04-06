@@ -1,10 +1,10 @@
-# AMMF Directory Structure Guide
+# AMMF Directory Structure Explained
 
-[简体中文](DIRECTORY_STRUCTURE.md) | [English](DIRECTORY_STRUCTURE_EN.md)
+[简体中文](../zh/directory.md) | [English](../en/directory.md)
 
 ## 📂 Overview
 
-This document provides a detailed description of the directory structure of AMMF (Aurora Magisk Module Framework), helping developers understand the purpose of each file and directory for module development and customization.
+This document describes in detail the directory structure of AMMF (Aurora Magisk Module Framework), helping developers understand the purpose of each file and directory for module development and customization.
 
 ## 🗂️ Root Directory Structure
 
@@ -22,7 +22,7 @@ This document provides a detailed description of the directory structure of AMMF
 ├── src/                   # Source code directory
 ├── webroot/               # WebUI files
 ├── action.sh              # User action script
-├── customize.sh           # Installation custom script
+├── customize.sh           # Installation customization script
 ├── LICENSE                # License file
 └── service.sh             # Service script
 ```
@@ -34,19 +34,20 @@ This document provides a detailed description of the directory structure of AMMF
 Contains GitHub related configurations for automated builds and issue management.
 
 - **ISSUE_TEMPLATE/**
+
   - `bug_report.yml` - Bug report template
   - `feature_request.yml` - Feature request template
 
 - **workflows/**
-  - `build_module_commit.yml` - Workflow for building the module on commit
-  - `build_module_release_tag.yml` - Workflow for building the module on release tag
+  - `build_module_commit.yml` - Workflow for building module on commit
+  - `build_module_release_tag.yml` - Workflow for building module on release tag
 
 ### bin/
 
 Contains binary tools for special module functions.
 
-- `filewatch` - File monitoring tool, used to monitor file changes and trigger actions
-- `logmonitor` - Log monitoring tool, used to manage module logs
+- `filewatch` - File monitoring tool for watching file changes and triggering actions
+- `logmonitor` - Log monitoring tool for managing module logs
 
 ### docs/
 
@@ -63,19 +64,19 @@ Contains project documentation, providing usage guides and development instructi
 
 ### files/
 
-Contains the core files and scripts of the module.
+Contains core files and scripts for the module.
 
-- `languages.sh` - Multi-language support configuration file, defines text strings for various languages
+- `languages.sh` - Multi-language support configuration file, defining text strings for various languages
 
 - **scripts/**
   - `default_scripts/` - Default scripts directory
-    - `main.sh` - Main function script, provides core functions and variables
+    - `main.sh` - Main functionality script, providing core functions and variables
   - `install_custom_script.sh` - Custom script executed during installation
-  - `service_script.sh` - Script executed when the service runs
+  - `service_script.sh` - Script executed when service is running
 
 ### module_settings/
 
-Contains module configuration files.
+Contains configuration files for the module.
 
 - `config.sh` - Basic module configuration, such as module ID, name, author, description, etc.
 - `settings.json` - Settings JSON file used by WebUI
@@ -89,7 +90,7 @@ Contains source code files for the module, used to compile binary tools.
 
 ### webroot/
 
-Contains WebUI related files, used to provide a graphical configuration interface.
+Contains WebUI related files for providing a graphical configuration interface.
 
 - `index.html` - WebUI main page
 - `app.js` - WebUI main application logic
@@ -98,10 +99,10 @@ Contains WebUI related files, used to provide a graphical configuration interfac
 - `style.css` - WebUI stylesheet
 - `theme.js` - WebUI theme handling
 - **css/** - CSS style files directory
-  - `animations.css` - Animation effects styles
+  - `animations.css` - Animation effect styles
   - `app.css` - Base styles
   - `page.css` - Page component styles
-  - `md3.css` - MD3 layout framework (https://github.com/jogemu/md3css)
+  - `md3.css` - MD3 layout styles (https://github.com/jogemu/md3css)
   - `main-color.css` - MD3 theme color configuration
 - **pages/** - Page components directory
   - `about.js` - About page
@@ -109,11 +110,11 @@ Contains WebUI related files, used to provide a graphical configuration interfac
   - `settings.js` - Settings page
   - `status.js` - Status page
 
-## 📄 Core File Description
+## 📄 Core Files Description
 
 ### action.sh
 
-User action script, used to perform specific operations after module installation. This script can be manually executed by the user to trigger specific module functions.
+User action script, used to execute specific operations after module installation. This script can be manually executed by users to trigger specific module functions.
 
 ```bash
 #!/system/bin/sh
@@ -131,20 +132,21 @@ MODPATH="$MODDIR"
 
 ### customize.sh
 
-Installation custom script, executed during the Magisk module installation process. Responsible for initializing the module, checking version compatibility, replacing module ID, etc.
-Not recommended to modify, please use `install_custom_script.sh` for custom scripts.
+Installation customization script, executed during the Magisk module installation process. Responsible for initializing the module, checking version compatibility, replacing module ID, and other operations.
+Not recommended to modify; use `install_custom_script.sh` for custom scripts.
 
 ### service.sh
 
-Service script, executed by Magisk after system boot. Responsible for starting the module's background services and monitoring functions.
-Not recommended to modify, please use `service_script.sh` for custom scripts.
-
+Service script, executed by Magisk after system startup. Responsible for starting the module's background services and monitoring functions.
+Not recommended to modify; use `service_script.sh` for custom scripts.
 
 ## 🔄 Version Compatibility
 
 When upgrading the AMMF framework version, pay attention to changes in the following files:
 
-1. `files/scripts/default_scripts/main.sh` - Core functions may change
-2. `files/languages.sh` - Language strings may be updated
+1. `files/languages.sh` - Multi-language support may be updated
+2. `files/scripts/default_scripts/main.sh` - Core functions may change
+3. `module_settings/config.sh` - Configuration options may be added or removed
+4. `webroot/` directory - WebUI related files may be updated
 
-It's recommended to back up your custom scripts before upgrading and then carefully merge any changes.
+It is recommended to back up custom content before upgrading, then merge changes.

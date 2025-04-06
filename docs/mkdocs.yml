@@ -1,0 +1,38 @@
+site_name: AMMF2 文档 | AMMF2 Documentation
+site_url: https://aurora-nasa-1.github.io/AMMF2/
+theme:
+  name: material
+  language: zh
+  features:
+    - content.code.copy
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - search.share
+    - navigation.footer
+    - navigation.indexes
+
+nav:
+  - 中文文档:
+    - zh/index.md
+    - 目录结构: zh/directory.md
+    - 使用指南: zh/script.md
+    - WebUI 指南: zh/webui.md
+  - English Docs:
+    - en/index.md
+    - Directory Structure: en/directory.md
+    - Script Guide: en/script.md
+    - WebUI Guide: en/webui.md
+
+extra:
+  alternate:
+    - name: 中文
+      link: /zh/
+      lang: zh
+    - name: English
+      link: /en/
+      lang: en
+
+use_directory_urls: true
+
+docs_dir: docs

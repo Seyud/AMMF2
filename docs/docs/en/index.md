@@ -1,6 +1,6 @@
 # AMMF2 - Aurora Modular Magisk Framework
 
-[简体中文](README.md) | [English](README_EN.md)
+[简体中文](../zh/index.md) | [English](../en/index.md)
 
 <div align="center">
     <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
@@ -48,47 +48,4 @@ cd AMMF2
    action_id="your_module_id"           # Module ID
    action_name="Your Module Name"       # Module Name
    action_author="Your Name"            # Author Name
-   action_description="Description"     # Module Description
    ```
-
-2. **Configure Environment Requirements**:
-   Set module environment requirements in `module_settings/config.sh`:
-
-   ```bash
-   magisk_min_version="25400"          # Minimum Magisk Version
-   ksu_min_version="11300"             # Minimum KernelSU Version
-   ANDROID_API="26"                    # Minimum Android API Level
-   ```
-
-3. **Configure Release Upload**:
-   Action uses `softprops/action-gh-release@v2` for Release upload, requires repository settings configuration
-
-4. **Commit or Push Tag(v*) to Trigger Build, Enjoy**
-
-### Custom Script Development
-
-**To ensure future updateability, it's recommended not to modify service.sh and customize.sh**
-
-1. **Installation Script**:
-   Write custom scripts executed during module installation in `files/scripts/install_custom_script.sh`.
-
-2. **Service Script**:
-   Write service scripts executed during module runtime in `files/scripts/service_script.sh`.
-
-## 📚 More Documentation
-
-- [Directory Structure Guide](DIRECTORY_STRUCTURE_EN.md) - Detailed project directory structure explanation
-- [Script Development Guide](SCRIPT_EN.md) - Script development and function usage instructions
-- [WebUI Development Guide](WEBUI_GUIDE_EN.md) - WebUI development and customization instructions
-
-## 🤝 Contributing
-
-Welcome to submit PRs or Issues to improve this framework! If you find this project useful, please give it a Star ⭐
-
-## 📄 License
-
-This project is licensed under the [MIT LICENSE](../LICENSE).
-
-## 🙏 Thanks
-
-[Pure CSS Material 3 Design](https://github.com/jogemu/md3css)
