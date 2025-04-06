@@ -48,4 +48,47 @@ cd AMMF2
    action_id="your_module_id"           # Module ID
    action_name="Your Module Name"       # Module Name
    action_author="Your Name"            # Author Name
+   action_description="Description"     # Module Description
    ```
+
+2. **Environment Requirements**:
+   Set module environment requirements in `module_settings/config.sh`:
+
+   ```bash
+   magisk_min_version="25400"          # Minimum Magisk version
+   ksu_min_version="11300"             # Minimum KernelSU version
+   ANDROID_API="26"                    # Minimum Android API level
+   ```
+
+3. **Release Upload Configuration**:
+   Action uses `softprops/action-gh-release@v2` to upload Release, needs to be configured in repository settings
+
+4. **Commit or create Tag(v*) to trigger build, Enjoy**
+
+### Custom Script Development
+
+**To ensure future updatability, it is recommended not to modify service.sh and customize.sh**
+
+1. **Installation Script**:
+   Write custom scripts executed during module installation in `files/scripts/install_custom_script.sh`.
+
+2. **Service Script**:
+   Write runtime service scripts for the module in `files/scripts/service_script.sh`.
+
+## 📚 More Documentation
+
+- [Directory Structure](../directory.md) - Detailed project directory structure description
+- [Script Development Guide](../script.md) - Script development and function usage instructions
+- [WebUI Development Guide](../webui.md) - WebUI development and customization instructions
+
+## 🤝 Contribution
+
+Welcome to submit PR or Issue to improve this framework! If you find this project useful, please give it a Star ⭐
+
+## 📄 License
+
+This project is licensed under the [MIT LICENSE](../../LICENSE).
+
+## 🙏 Acknowledgments
+
+[Pure CSS Material 3 Design](https://github.com/jogemu/md3css)

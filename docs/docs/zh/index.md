@@ -1,6 +1,6 @@
 # AMMF2 - Aurora Modular Magisk Framework
 
-[简体中文](../zh/index.md) | [English](../en/index.md)
+[简体中文](README.md) | [English](README_EN.md)
 
 <div align="center">
     <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
@@ -48,4 +48,47 @@ cd AMMF2
    action_id="your_module_id"           # 模块ID
    action_name="Your Module Name"       # 模块名称
    action_author="Your Name"            # 作者名称
+   action_description="Description"     # 模块描述
    ```
+
+2. **配置环境要求**：
+   在 `module_settings/config.sh` 中设置模块的环境要求：
+
+   ```bash
+   magisk_min_version="25400"          # 最低Magisk版本
+   ksu_min_version="11300"             # 最低KernelSU版本
+   ANDROID_API="26"                    # 最低Android API级别
+   ```
+
+3. **配置 Release 上传**：
+   Action 使用`softprops/action-gh-release@v2`上传 Release，需要在仓库设置中配置
+
+4. **提交或提交 Tag(v\*)触发构建,Enjoy**
+
+### 自定义脚本开发
+
+**为确保后期可更新性，建议不要修改 service.sh 和 customize.sh**
+
+1. **安装脚本**：
+   在 `files/scripts/install_custom_script.sh` 中编写模块安装时执行的自定义脚本。
+
+2. **服务脚本**：
+   在 `files/scripts/service_script.sh` 中编写模块运行时的服务脚本。
+
+## 📚 更多文档
+
+- [目录结构说明](DIRECTORY_STRUCTURE.md) - 详细的项目目录结构说明
+- [脚本开发指南](SCRIPT.md) - 脚本开发和函数使用说明
+- [WebUI 开发指南](WEBUI_GUIDE.md) - WebUI 开发和自定义说明
+
+## 🤝 贡献
+
+欢迎提交 PR 或 Issue 来改进这个框架！如果您觉得这个项目有用，请给它一个 Star ⭐
+
+## 📄 许可证
+
+本项目采用 [MIT LICENSE](../LICENSE) 许可证。
+
+## 🙏 感谢
+
+[Pure CSS Material 3 Design](https://github.com/jogemu/md3css)

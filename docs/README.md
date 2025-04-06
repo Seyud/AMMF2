@@ -1,51 +1,94 @@
 # AMMF2 - Aurora Modular Magisk Framework
 
-[简体中文](docs/zh/index.md) | [English](docs/en/index.md)
+[简体中文](docs/docs/zh/index.md) | [English](docs/docs/en/index.md)
 
 <div align="center">
     <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
     <img src="https://img.shields.io/github/license/Aurora-Nasa-1/AMMF2" alt="GitHub License">
 </div>
 
-## 📋 项目概述
+## 📋 Project Overview
 
-AMMF2 (Aurora Modular Magisk Framework 2) 是一个功能强大的 Magisk 模块开发框架，旨在简化模块开发流程，提供标准化的结构和丰富的功能组件。该框架支持多语言、WebUI 配置界面、自定义脚本等特性，适用于各种类型的 Magisk 模块开发。
+AMMF2 (Aurora Modular Magisk Framework 2) is a powerful Magisk module development framework designed to simplify the module development process by providing standardized structures and rich functional components. The framework supports multiple languages, WebUI configuration interface, custom scripts, and other features, making it suitable for various types of Magisk module development.
 
-## ✨ 主要特性
+## ✨ Key Features
 
-- **多语言支持**：内置中文、英文、日语、俄语等多种语言支持
-- **WebUI 配置界面**：提供美观的 Material Design 风格 Web 配置界面
-- **自定义脚本系统**：灵活的脚本系统，支持安装时和运行时脚本
-- **文件监控服务**：内置 filewatch 工具，支持文件变化触发操作
-- **日志操作工具**：完整的日志系统，支持日志记录和错误处理
-- **用户交互功能**：提供多种用户交互方式，如菜单选择、按键检测等
-- **GitHub Action 支持**：内置 GitHub Action 工作流，支持自动构建和发布
-- **完善的错误处理**：提供全面的错误处理和日志记录机制
+- **Multi-language Support**: Built-in support for Chinese, English, Japanese, Russian, and other languages
+- **WebUI Configuration Interface**: Beautiful Material Design-style web configuration interface
+- **Custom Script System**: Flexible script system supporting installation-time and runtime scripts
+- **File Monitoring Service**: Built-in filewatch tool supporting file change-triggered operations
+- **Logging Tools**: Complete logging system with log recording and error handling
+- **User Interaction Features**: Various user interaction methods such as menu selection and key detection
+- **GitHub Action Support**: Built-in GitHub Action workflows supporting automatic building and publishing
+- **Comprehensive Error Handling**: Provides complete error handling and logging mechanisms
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 获取框架
+### Getting the Framework
 
 ```bash
-# 方法1：使用Git克隆仓库
+# Method 1: Clone the repository using Git
 git clone https://github.com/Aurora-Nasa-1/AMMF2.git
 cd AMMF2
 
-# 方法2：直接下载ZIP压缩包
-# 访问 https://github.com/Aurora-Nasa-1/AMMF2/archive/refs/heads/main.zip
+# Method 2: Download ZIP archive
+# Visit https://github.com/Aurora-Nasa-1/AMMF2/archive/refs/heads/main.zip
 
-# 其他方法...
+# Other methods...
 ```
 
-### 基本配置
+### Basic Configuration
 
-**注意: 本框架构建模块必须使用 Github Action**
+**Note: This framework requires GitHub Action for module building**
 
-1. **编辑模块信息(为构建 module.prop 使用)**：
-   修改 `module_settings/config.sh` 文件中的基本信息：
+1. **Edit Module Information (for building module.prop)**:
+   Modify basic information in `module_settings/config.sh`:
 
    ```bash
-   action_id="your_module_id"           # 模块ID
-   action_name="Your Module Name"       # 模块名称
-   action_author="Your Name"            # 作者名称
+   action_id="your_module_id"           # Module ID
+   action_name="Your Module Name"       # Module Name
+   action_author="Your Name"            # Author Name
+   action_description="Description"     # Module Description
    ```
+
+2. **Environment Requirements**:
+   Set module environment requirements in `module_settings/config.sh`:
+
+   ```bash
+   magisk_min_version="25400"          # Minimum Magisk version
+   ksu_min_version="11300"             # Minimum KernelSU version
+   ANDROID_API="26"                    # Minimum Android API level
+   ```
+
+3. **Release Upload Configuration**:
+   Action uses `softprops/action-gh-release@v2` to upload Release, needs to be configured in repository settings
+
+4. **Commit or create Tag(v*) to trigger build, Enjoy**
+
+### Custom Script Development
+
+**To ensure future updatability, it is recommended not to modify service.sh and customize.sh**
+
+1. **Installation Script**:
+   Write custom scripts executed during module installation in `files/scripts/install_custom_script.sh`.
+
+2. **Service Script**:
+   Write runtime service scripts for the module in `files/scripts/service_script.sh`.
+
+## 📚 More Documentation
+
+- [Directory Structure](docs/docs/en/directory.md) - Detailed project directory structure description
+- [Script Development Guide](docs/docs/en/script.md) - Script development and function usage instructions
+- [WebUI Development Guide](docs/docs/en/webui.md) - WebUI development and customization instructions
+
+## 🤝 Contribution
+
+Welcome to submit PR or Issue to improve this framework! If you find this project useful, please give it a Star ⭐
+
+## 📄 License
+
+This project is licensed under the [MIT LICENSE](LICENSE).
+
+## 🙏 Acknowledgments
+
+[Pure CSS Material 3 Design](https://github.com/jogemu/md3css)
