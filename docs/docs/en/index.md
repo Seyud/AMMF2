@@ -77,9 +77,9 @@ cd AMMF2
 
 ## 📚 More Documentation
 
-- [Directory Structure](../directory.md) - Detailed project directory structure description
-- [Script Development Guide](../script.md) - Script development and function usage instructions
-- [WebUI Development Guide](../webui.md) - WebUI development and customization instructions
+- [Directory Structure](directory.md) - Detailed project directory structure description
+- [Script Development Guide](script.md) - Script development and function usage instructions
+- [WebUI Development Guide](webui.md) - WebUI development and customization instructions
 
 ## 🤝 Contribution
 
