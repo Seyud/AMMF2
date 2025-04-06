@@ -1,6 +1,6 @@
 # AMMF2 - Aurora Modular Magisk Framework
 
-[简体中文](docs/docs/zh/index.md) | [English](docs/docs/en/index.md)
+[简体中文](docs/zh/index.md) | [English](docs/en/index.md)
 
 <div align="center">
     <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
@@ -77,9 +77,9 @@ cd AMMF2
 
 ## 📚 More Documentation
 
-- [Directory Structure](docs/docs/en/directory.md) - Detailed project directory structure description
-- [Script Development Guide](docs/docs/en/script.md) - Script development and function usage instructions
-- [WebUI Development Guide](docs/docs/en/webui.md) - WebUI development and customization instructions
+- [Directory Structure](docs/en/directory.md) - Detailed project directory structure description
+- [Script Development Guide](docs/en/script.md) - Script development and function usage instructions
+- [WebUI Development Guide](docs/en/webui.md) - WebUI development and customization instructions
 
 ## 🤝 Contribution
 
