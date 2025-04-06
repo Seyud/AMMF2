@@ -1,6 +1,6 @@
 # AMMF2 - Aurora Modular Magisk Framework
 
-[简体中文](README.md) | [English](README_EN.md)
+[简体中文](..zh/index.md) | [English](..en/index.md)
 
 <div align="center">
     <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
@@ -77,9 +77,9 @@ cd AMMF2
 
 ## 📚 更多文档
 
-- [目录结构说明](DIRECTORY_STRUCTURE.md) - 详细的项目目录结构说明
-- [脚本开发指南](SCRIPT.md) - 脚本开发和函数使用说明
-- [WebUI 开发指南](WEBUI_GUIDE.md) - WebUI 开发和自定义说明
+- [目录结构说明](directory.md) - 详细的项目目录结构说明
+- [脚本开发指南](script.md) - 脚本开发和函数使用说明
+- [WebUI 开发指南](webui.md) - WebUI 开发和自定义说明
 
 ## 🤝 贡献
 
@@ -87,7 +87,7 @@ cd AMMF2
 
 ## 📄 许可证
 
-本项目采用 [MIT LICENSE](../LICENSE) 许可证。
+本项目采用 MIT LICENSE 许可证。
 
 ## 🙏 感谢
 
