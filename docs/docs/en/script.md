@@ -1,7 +1,5 @@
 # AMMF Script Development Guide
 
-[简体中文](SCRIPT.md) | [English](SCRIPT_EN.md)
-
 ## 📋 Overview
 
 This document provides detailed instructions for developing custom scripts within the AMMF framework. It covers available functions, variables, and best practices for creating installation scripts, service scripts, and user scripts. AMMF2 version has comprehensively updated the script system, enhancing the logging system and file monitoring capabilities.
