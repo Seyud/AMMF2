@@ -1,7 +1,5 @@
 # AMMF Directory Structure Explained
 
-[简体中文](../zh/directory.md) | [English](../en/directory.md)
-
 ## 📂 Overview
 
 This document describes in detail the directory structure of AMMF (Aurora Magisk Module Framework), helping developers understand the purpose of each file and directory for module development and customization.

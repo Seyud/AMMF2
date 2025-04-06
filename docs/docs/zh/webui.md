@@ -1,7 +1,5 @@
 # AMMF WebUI 开发指南
 
-[简体中文](WEBUI_GUIDE.md) | [English](WEBUI_GUIDE_EN.md)
-
 ## 📋 概述
 
 AMMF WebUI是一个基于浏览器的配置界面，提供了模块设置、状态监控和常用操作的图形化管理功能。本指南将帮助你了解WebUI的结构和开发方法。

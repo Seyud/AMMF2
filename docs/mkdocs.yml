@@ -13,12 +13,12 @@ theme:
     - navigation.indexes
 
 nav:
-  - 中文文档:
+  - 快速开始:
     - zh/index.md
     - 目录结构: zh/directory.md
     - 使用指南: zh/script.md
     - WebUI 指南: zh/webui.md
-  - English Docs:
+  - Quick Start:
     - en/index.md
     - Directory Structure: en/directory.md
     - Script Guide: en/script.md
@@ -27,10 +27,10 @@ nav:
 extra:
   alternate:
     - name: 中文
-      link: /zh/
+      link: /AMMF2/zh/
       lang: zh
     - name: English
-      link: /en/
+      link: /AMMF2/en/
       lang: en
 
 use_directory_urls: true

@@ -1,7 +1,5 @@
 # AMMF 目录结构详解
 
-[简体中文](DIRECTORY_STRUCTURE.md) | [English](DIRECTORY_STRUCTURE_EN.md)
-
 ## 📂 概述
 
 本文档详细描述了 AMMF (Aurora Magisk Module Framework) 的目录结构，帮助开发者了解每个文件和目录的用途，便于进行模块开发和定制。

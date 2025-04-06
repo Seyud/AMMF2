@@ -1,7 +1,5 @@
 # AMMF WebUI Development Guide
 
-[简体中文](WEBUI_GUIDE.md) | [English](WEBUI_GUIDE_EN.md)
-
 ## 📋 Overview
 
 This document provides development and customization guidelines for the WebUI part of the AMMF framework. WebUI is a browser-based configuration interface that allows users to configure module settings, view status information, and perform common operations through a graphical interface.
