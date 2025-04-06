@@ -1,6 +1,6 @@
 # AMMF2 - Aurora Modular Magisk Framework
 
-[简体中文](..zh/index.md) | [English](..en/index.md)
+[简体中文](../zh/index.md) | [English](../en/index.md)
 
 <div align="center">
     <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
