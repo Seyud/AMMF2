@@ -45,6 +45,26 @@ const StatusPage = {
         `;
         
         // 渲染页面内容
+        // 定义快捷按钮配置
+        const quickActionsEnabled = false; // 设置为false可全部隐藏
+        const quickActions = [
+            {
+                title: '清理缓存',
+                icon: 'delete',
+                command: 'rm -rf /data/local/tmp/*'
+            },
+            {
+                title: '重启服务',
+                icon: 'restart_alt',
+                command: 'sh ${Core.MODULE_PATH}service.sh restart'
+            },
+            {
+                title: '查看日志',
+                icon: 'description',
+                command: 'cat ${Core.MODULE_PATH}logs.txt'
+            }
+        ];
+        
         return `
             <div class="status-page">
                 <!-- 合并的状态卡片 -->
@@ -67,6 +87,18 @@ const StatusPage = {
                             </div>
                         </div>
                     </div>
+                    
+                    ${quickActionsEnabled ? `
+                    <!-- 快捷操作按钮 -->
+                    <div class="quick-actions-container">
+                        ${quickActions.map(action => `
+                            <div class="quick-action" data-command="${action.command}">
+                                <span class="material-symbols-rounded">${action.icon}</span>
+                                <span>${action.title}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
                     
                     <!-- 设备信息部分 -->
                     <div class="device-info-grid">
@@ -96,6 +128,18 @@ const StatusPage = {
             });
             actionBtn.dataset.bound = 'true';
         }
+        // 绑定快捷按钮事件
+        document.querySelectorAll('.quick-action').forEach(button => {
+            button.addEventListener('click', async () => {
+                const command = button.dataset.command;
+                try {
+                    await Core.execCommand(command);
+                    Core.showToast(`${button.textContent.trim()}`);
+                } catch (error) {
+                    Core.showToast(`${button.textContent.trim()}`, 'error');
+                }
+            });
+        });
     },
     
     // 运行Action脚本
