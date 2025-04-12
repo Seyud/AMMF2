@@ -143,7 +143,7 @@ const AboutPage = {
     
         // 创建对话框内容
         const dialog = document.createElement('div');
-        dialog.className = 'md-dialog';
+        dialog.className = 'md-dialog color-picker-dialog';
         dialog.style.position = 'relative';
         dialog.style.top = '0';
         dialog.innerHTML = `
@@ -168,19 +168,35 @@ const AboutPage = {
         // 添加滑块事件
         const slider = document.getElementById('hue-slider');
         const output = document.getElementById('hue-value');
+        const preview = dialog.querySelector('.hue-preview');
+    
         slider.addEventListener('input', () => {
-            output.textContent = slider.value;
+            const value = slider.value;
+            output.textContent = value + '°';
+            preview.style.setProperty('--preview-hue', value);
         });
     
+        // 添加关闭动画
+        const closeDialog = () => {
+            dialogContainer.classList.add('closing');
+            dialog.classList.add('closing');
+            setTimeout(() => dialogContainer.remove(), 200);
+        };
+    
         // 添加按钮事件
-        document.getElementById('cancel-color').addEventListener('click', () => {
-            dialogContainer.remove();
-        });
+        document.getElementById('cancel-color').addEventListener('click', closeDialog);
     
         document.getElementById('apply-color').addEventListener('click', () => {
             this.setHueValue(slider.value);
-            dialogContainer.remove();
+            closeDialog();
             Core.showToast(I18n.translate('COLOR_CHANGED', '颜色已更新'));
+        });
+    
+        // 点击遮罩层关闭
+        dialogContainer.addEventListener('click', (e) => {
+            if (e.target === dialogContainer) {
+                closeDialog();
+            }
         });
     },
     

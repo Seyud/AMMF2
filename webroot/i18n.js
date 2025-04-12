@@ -448,6 +448,26 @@ const I18n = {
             }
         });
 
+        // 添加点击遮罩关闭功能
+        languageSelector.addEventListener('click', (event) => {
+            // 如果点击的是语言选择器容器本身（即遮罩层），而不是其子元素
+            if (event.target === languageSelector) {
+                if (window.UI && window.UI.hideOverlay) {
+                    window.UI.hideOverlay(languageSelector);
+                } else {
+                    languageSelector.classList.add('closing');
+                    setTimeout(() => {
+                        languageSelector.classList.remove('active');
+                        languageSelector.classList.remove('closing');
+                        languageSelector.style.display = 'none';
+                        setTimeout(() => {
+                            languageSelector.style.display = '';
+                        }, 50);
+                    }, 200);
+                }
+            }
+        });
+
         // 设置取消按钮点击事件
         const cancelButton = document.getElementById('cancel-language');
         if (cancelButton) {

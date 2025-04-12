@@ -798,26 +798,66 @@ select option {
     color: var(--primary);
 }
 
-/* 在文件末尾添加 */
-.color-picker-content {
-    padding: 16px;
+/* 颜色选择器样式 */
+.color-picker-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: oklch(0 0 0 / .4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
-.color-picker-content label {
+.color-picker-dialog {
+    background-color: var(--surface-container);
+    border-radius: 28px;
+    width: min(90%, 400px);
+    overflow: hidden;
+    margin: 24px;
+}
+
+.color-picker-content {
+    padding: 24px;
+}
+
+.hue-slider-container {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-top: 8px;
 }
 
-.color-picker-content input[type="range"] {
+.hue-slider-container input[type="range"] {
     flex: 1;
-    padding: 1.25rem 0;
+    height: 40px;
+    border-radius: 20px;
+    background: linear-gradient(to right,
+        hsl(0, 100%, 50%),
+        hsl(60, 100%, 50%),
+        hsl(120, 100%, 50%),
+        hsl(180, 100%, 50%),
+        hsl(240, 100%, 50%),
+        hsl(300, 100%, 50%),
+        hsl(360, 100%, 50%)
+    );
+}
+
+.hue-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    background-color: hsl(var(--preview-hue), 100%, 50%);
+    border: 2px solid var(--outline);
+    transition: background-color 0.2s;
 }
 
 #hue-value {
-    min-width: 40px;
+    min-width: 48px;
     text-align: center;
-    font: var(--label-m);
-    color: var(--on-surface-variant);
+    font: var(--label-l);
+    color: var(--on-surface);
 }
