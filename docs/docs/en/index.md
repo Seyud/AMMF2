@@ -65,7 +65,15 @@ cd AMMF2
 
 4. **Commit or create Tag(v*) to trigger build, Enjoy**
 
+### Build Module
+
+1. **Local Build Module**:  
+   Run the `build.sh` script to build the module:  
+   ```bash
+   ./build.sh
 ### Custom Script Development
+2. **GitHub Action Automatic Build**:
+   Trigger the build by committing or pushing a tag (v*).
 
 **To ensure future updatability, it is recommended not to modify service.sh and customize.sh**
 

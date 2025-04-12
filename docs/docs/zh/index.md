@@ -39,8 +39,6 @@ cd AMMF2
 
 ### 基本配置
 
-**注意: 本框架构建模块必须使用 Github Action**
-
 1. **编辑模块信息(为构建 module.prop 使用)**：
    修改 `module_settings/config.sh` 文件中的基本信息：
 
@@ -65,6 +63,17 @@ cd AMMF2
 
 4. **提交或提交 Tag(v\*)触发构建,Enjoy**
 
+### 构建模块
+
+1. **本地构建模块**：
+   运行 `build.sh` 脚本来构建模块：
+   ```bash
+   ./build.sh
+   ```
+
+2. **Github Action自动构建**:
+   提交或提交 Tag(v\*)触发构建
+   
 ### 自定义脚本开发
 
 **为确保后期可更新性，建议不要修改 service.sh 和 customize.sh**
