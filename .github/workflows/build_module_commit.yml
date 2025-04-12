@@ -88,8 +88,8 @@ jobs:
 
       - name: Remove c files
         run: |
-          rm -f src/filewatch.cpp
-          rm -f src/logmonitor.cpp
+          rm -f src/*.cpp
+          rm build.sh
 
       - name: Upload zip files as artifacts
         uses: actions/upload-artifact@v4
