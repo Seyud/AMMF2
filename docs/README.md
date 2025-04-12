@@ -71,7 +71,7 @@ cd AMMF2
    Run the `build.sh` script to build the module:  
    ```bash
    ./build.sh
-### Custom Script Development
+   ```
 2. **GitHub Action Automatic Build**:
    Trigger the build by committing or pushing a tag (v*).
    
