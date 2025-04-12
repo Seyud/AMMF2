@@ -45,6 +45,9 @@ const AboutPage = {
             <button id="refresh-about" class="icon-button" title="${I18n.translate('REFRESH', '刷新')}">
                 <span class="material-symbols-rounded">refresh</span>
             </button>
+            <button id="color-picker" class="icon-button" title="${I18n.translate('COLOR_PICKER', '颜色选择器')}">
+                <span class="material-symbols-rounded">palette</span>
+            </button>
         `];
         
         // 根据配置决定是否显示主题切换按钮
@@ -123,7 +126,84 @@ const AboutPage = {
         </div>
     `;
     },
+    showColorPicker() {
+        // 创建对话框容器
+        const dialogContainer = document.createElement('div');
+        dialogContainer.className = 'color-picker-overlay';
+        dialogContainer.style.position = 'fixed';
+        dialogContainer.style.top = '0';
+        dialogContainer.style.left = '0';
+        dialogContainer.style.width = '100%';
+        dialogContainer.style.height = '100%';
+        dialogContainer.style.backgroundColor = 'rgba(0,0,0,0.4)';
+        dialogContainer.style.display = 'flex';
+        dialogContainer.style.justifyContent = 'center';
+        dialogContainer.style.alignItems = 'center';
+        dialogContainer.style.zIndex = '1000';
     
+        // 创建对话框内容
+        const dialog = document.createElement('div');
+        dialog.className = 'md-dialog';
+        dialog.style.position = 'relative';
+        dialog.style.top = '0';
+        dialog.innerHTML = `
+            <h2>${I18n.translate('COLOR_PICKER', '颜色选择器')}</h2>
+            <div class="color-picker-content">
+                <label>
+                    <span>${I18n.translate('HUE_VALUE', '色调值 (0-9000)')}</span>
+                    <input type="range" id="hue-slider" min="0" max="9000" value="${this.getCurrentHue()}">
+                    <output id="hue-value">${this.getCurrentHue()}</output>
+                </label>
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-button" id="cancel-color">${I18n.translate('CANCEL', '取消')}</button>
+                <button class="dialog-button filled" id="apply-color">${I18n.translate('APPLY', '应用')}</button>
+            </div>
+        `;
+    
+        // 添加到文档
+        dialogContainer.appendChild(dialog);
+        document.body.appendChild(dialogContainer);
+    
+        // 添加滑块事件
+        const slider = document.getElementById('hue-slider');
+        const output = document.getElementById('hue-value');
+        slider.addEventListener('input', () => {
+            output.textContent = slider.value;
+        });
+    
+        // 添加按钮事件
+        document.getElementById('cancel-color').addEventListener('click', () => {
+            dialogContainer.remove();
+        });
+    
+        document.getElementById('apply-color').addEventListener('click', () => {
+            this.setHueValue(slider.value);
+            dialogContainer.remove();
+            Core.showToast(I18n.translate('COLOR_CHANGED', '颜色已更新'));
+        });
+    },
+    
+    getCurrentHue() {
+        // 从CSS变量获取当前色调值
+        const root = document.documentElement;
+        const hue = getComputedStyle(root).getPropertyValue('--hue').trim();
+        return hue || '300'; // 默认值300
+    },
+    
+    setHueValue(hue) {
+        // 更新CSS变量
+        const root = document.documentElement;
+        root.style.setProperty('--hue', hue);
+        
+        // 保存到localStorage
+        localStorage.setItem('ammf_color_hue', hue);
+        
+        // 触发颜色变化事件
+        document.dispatchEvent(new CustomEvent('colorChanged', {
+            detail: { hue: hue }
+        }));
+    },
     // 修改模块信息渲染方法，只保留模块名称和版本信息
     renderModuleInfo() {
         const infoItems = [
@@ -251,7 +331,12 @@ const AboutPage = {
                 this.refreshModuleInfo();
             });
         }
-        
+        const colorPickerButton = document.getElementById('color-picker');
+        if (colorPickerButton) {
+            colorPickerButton.addEventListener('click', () => {
+                this.showColorPicker();
+            });
+        }
         // 添加切换CSS样式按钮点击事件
         const toggleCssButton = document.getElementById('toggle-css');
         if (toggleCssButton) {

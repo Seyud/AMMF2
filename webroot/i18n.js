@@ -129,6 +129,10 @@ const I18n = {
             ACTION_COMPLETED: 'Action运行完成',
             ACTION_ERROR: '运行Action失败',
             ROOT_IMPLEMENTATION: 'Root实现',
+            HUE_VALUE: 'Hue值',
+            APPLY: '应用',
+            COLOR_PICKER: '颜色选择器',
+            COLOR_CHANGED: '颜色已更改',
         };
         this.translations.en = {
             NAV_STATUS: 'Status',
@@ -228,6 +232,10 @@ const I18n = {
             ACTION_COMPLETED: 'Action Completed',
             ACTION_ERROR: 'Action Failed',
             ROOT_IMPLEMENTATION: 'Root Implementation',
+            HUE_VALUE: 'Hue value',
+            APPLY: 'Apply',
+            COLOR_PICKER: 'Color Picker',
+            COLOR_CHANGED: 'Color changed',
         };
         this.translations.ru = {
             NAV_STATUS: 'Статус',
@@ -327,6 +335,10 @@ const I18n = {
             ACTION_COMPLETED: 'Action завершен',
             ACTION_ERROR: 'Ошибка выполнения Action',
             ROOT_IMPLEMENTATION: 'Реализация Root',
+            HUE_VALUE: 'Значение оттенка',
+            APPLY: 'Применить',
+            COLOR_PICKER: 'Выбор цвета',
+            COLOR_CHANGED: 'Цвет изменен',
         };
         console.log('默认翻译已加载');
     },

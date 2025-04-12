@@ -466,32 +466,40 @@ class UI {
         const contentHeight = mainContent.scrollHeight;
         const viewportHeight = mainContent.clientHeight;
         
+        // 跟踪上次滚动位置
+        if (!this.lastScrollPosition) {
+            this.lastScrollPosition = scrollTop;
+        }
+        
+        // 计算滚动方向 (1=向下, -1=向上)
+        const scrollDirection = scrollTop > this.lastScrollPosition ? 1 : -1;
+        this.lastScrollPosition = scrollTop;
+        
         // 当滚动超过顶栏高度时显示背景
         if (scrollTop > headerHeight) {
             header.classList.add('header-solid');
             
-            // 竖屏模式下才隐藏底栏
-            if (!isLandscape && scrollTop > headerHeight * 1.5 && scrollTop + viewportHeight < contentHeight) {
-                if (!nav.classList.contains('hidden')) {
+            // 竖屏模式下根据滚动方向显示/隐藏底栏
+            if (!isLandscape) {
+                // 向下滚动时显示底栏
+                if (scrollDirection === -1) {
+                    nav.classList.remove('hidden');
+                    nav.classList.add('visible');
+                } 
+                // 向上滚动时隐藏底栏
+                else if (scrollDirection === 1 && scrollTop > headerHeight * 1.5) {
                     nav.classList.remove('visible');
                     nav.classList.add('hidden');
                 }
             }
         } else {
             header.classList.remove('header-solid');
-            if (nav.classList.contains('hidden')) {
-                nav.classList.remove('hidden');
-                nav.classList.add('visible');
-            }
+            // 顶部区域总是显示底栏
+            nav.classList.remove('hidden');
+            nav.classList.add('visible');
         }
         
-        // 如果滚动到底部，显示底栏
-        if (scrollTop + viewportHeight >= contentHeight - 10) {
-            if (nav.classList.contains('hidden')) {
-                nav.classList.remove('hidden');
-                nav.classList.add('visible');
-            }
-        }
+        // 移除滚动到底部的检测逻辑
     }
 }
 
