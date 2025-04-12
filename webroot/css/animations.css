@@ -216,3 +216,73 @@
     opacity: 0;
   }
 }
+
+
+/* 底栏显示隐藏动画 */
+@keyframes navSlideOut {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes navSlideIn {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.app-nav.hidden {
+    animation: navSlideOut 0.3s ease-out forwards;
+}
+
+.app-nav.visible {
+    animation: navSlideIn 0.3s ease-out forwards;
+}
+
+/* 导航项文字动画 */
+@keyframes navTextSlideIn {
+    from {
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        max-height: 20px;
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes navTextSlideOut {
+    from {
+        max-height: 20px;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}
+
+/* 导航项激活状态动画 */
+.nav-item.active span:not(.material-symbols-rounded) {
+    animation: navTextSlideIn 0.3s ease-out forwards;
+    display: block; /* 确保文字始终占据空间 */
+}
+
+.nav-item:not(.active) span:not(.material-symbols-rounded) {
+    animation: navTextSlideOut 0.3s ease-out forwards;
+    display: block; /* 确保文字始终占据空间 */
+}

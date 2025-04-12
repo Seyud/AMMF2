@@ -6,7 +6,11 @@
 const AboutPage = {
     // 模块信息
     moduleInfo: {},
-    version: '7.0.4',
+    version: '7.1.0',
+    // 配置项
+    config: {
+        showThemeToggle: false  // 控制是否显示主题切换按钮
+    },
     
     // 初始化
     async init() {
@@ -36,12 +40,23 @@ const AboutPage = {
         // 设置页面标题
         document.getElementById('page-title').textContent = I18n.translate('NAV_ABOUT', '关于');
         
-        // 添加刷新按钮到页面操作区
-        document.getElementById('page-actions').innerHTML = `
+        // 添加刷新按钮和切换CSS样式按钮到页面操作区
+        const buttons = [`
             <button id="refresh-about" class="icon-button" title="${I18n.translate('REFRESH', '刷新')}">
                 <span class="material-symbols-rounded">refresh</span>
             </button>
-        `;
+        `];
+        
+        // 根据配置决定是否显示主题切换按钮
+        if (this.config.showThemeToggle) {
+            buttons.push(`
+                <button id="toggle-css" class="icon-button" title="${I18n.translate('TOGGLE_CSS', '切换样式')}">
+                    <span class="material-symbols-rounded">palette</span>
+                </button>
+            `);
+        }
+        
+        document.getElementById('page-actions').innerHTML = buttons.join('');
         
         return `
         <div class="about-container">
@@ -236,6 +251,29 @@ const AboutPage = {
                 this.refreshModuleInfo();
             });
         }
+        
+        // 添加切换CSS样式按钮点击事件
+        const toggleCssButton = document.getElementById('toggle-css');
+        if (toggleCssButton) {
+            // 更新按钮标题显示当前样式
+            this.updateCssButtonStatus(toggleCssButton);
+            
+            toggleCssButton.addEventListener('click', () => {
+                // 调用CSS加载器切换样式
+                if (window.CSSLoader && typeof window.CSSLoader.toggleCSS === 'function') {
+                    window.CSSLoader.toggleCSS();
+                    // 更新按钮状态
+                    this.updateCssButtonStatus(toggleCssButton);
+                    // 显示提示
+                    const cssType = window.CSSLoader.getCurrentCSSType();
+                    const message = cssType === 'custom' ? '已切换到自定义样式' : '已切换到默认样式';
+                    Core.showToast(I18n.translate('CSS_SWITCHED', message));
+                } else {
+                    console.error('CSS加载器不可用');
+                    Core.showToast(I18n.translate('CSS_LOADER_ERROR', 'CSS加载器不可用'), 'error');
+                }
+            });
+        }
     },
     
     // 打开GitHub链接
@@ -273,6 +311,21 @@ const AboutPage = {
             console.error('打开模块GitHub链接失败:', error);
             Core.showToast('打开模块GitHub链接失败', 'error');
         }
+    },
+    
+    // 更新CSS切换按钮状态
+    updateCssButtonStatus(button) {
+        if (!button || !window.CSSLoader) return;
+        
+        // 获取当前CSS类型
+        const cssType = window.CSSLoader.getCurrentCSSType();
+        
+        // 更新按钮标题
+        const title = cssType === 'custom' ? 
+            I18n.translate('TOGGLE_CSS_DEFAULT', '切换到默认样式') : 
+            I18n.translate('TOGGLE_CSS_CUSTOM', '切换到自定义样式');
+        
+        button.setAttribute('title', title);
     }
 };
 

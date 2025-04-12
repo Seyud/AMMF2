@@ -4,11 +4,11 @@
  */
 
 /* 导入MD3基础样式系统 */
-@import url('css/main-color.css');
-@import url('css/md3.css');
-@import url('css/pages.css');
-@import url('css/app.css');
-@import url('css/animations.css');
+@import url('main-color.css');
+@import url('md3.css');
+@import url('pages.css');
+@import url('app.css');
+@import url('animations.css');
 
 /* 主题切换支持 */
 :root[data-theme="dark"] {

@@ -28,7 +28,25 @@
     border-radius: 0 0 24px 24px;
     border: none;
 }
-
+.app-header {
+    transition: background-color 0.3s ease;
+    background-color: transparent;
+}
+.app-header.header-solid {
+    --color: var(--on-surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    height: 64px;
+    padding-inline: 16px;
+    background-color: var(--surface-container);
+    color: var(--on-surface);
+    transition: all var(--tra);
+    border-radius: 0 0 24px 24px;
+    border: none;
+}
 /* MMRL环境下的顶栏样式调整 */
 .mmrl-environment .app-header {
     height: 48px; /* 降低顶栏高度 */
@@ -140,9 +158,11 @@
     border-top: none;
     border-radius: 24px 24px 0 0;
     padding-bottom: env(safe-area-inset-bottom); /* 添加底部安全区域内边距 */
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    height: 78px; /* 添加固定高度 */
 }
-
-
 
 /* 导航内容 */
 .nav-content {
@@ -162,31 +182,39 @@
     align-items: center;
     flex: 1;
     justify-content: center;
-    padding: 4px 0; /* 减小内边距 */
+    padding: 4px 0;
     color: var(--color);
     text-decoration: none;
-    transition: background-color var(--tra);
+    transition: all var(--tra);
     position: relative;
+    overflow: hidden; /* 添加此行以限制文字溢出 */
 }
-
-
 
 /* 导航图标 */
 .nav-item .material-symbols-rounded {
-    font-size: 24px; /* 减小图标大小 */
-    margin-bottom: 4px; /* 减小间距 */
-    padding: 2px 16px; /* 减小内边距 */
+    font-size: 24px;
+    padding: 2px 16px;
     border-radius: 20px;
-    transition: background-color var(--tra), font-variation-settings var(--tra);
+    transition: all var(--tra);
 }
 
-.nav-item span {
+/* 导航文字 */
+.nav-item span:not(.material-symbols-rounded) {
     font-size: 12px;
-    font-weight: 400;
-    transition: font-weight var(--tra), color var(--tra);
+    max-height: 0;
+    opacity: 0;
+    transition: all var(--tra);
+    transform: translateY(-8px);
 }
 
-/* 导航项状态 */
+/* 选中状态样式 */
+.nav-item.active span:not(.material-symbols-rounded) {
+    max-height: 20px;
+    opacity: 1;
+    transform: translateY(0);
+    margin-top: 4px;
+}
+
 .nav-item.active .material-symbols-rounded {
     background-color: var(--secondary-container);
     color: var(--primary);
@@ -617,6 +645,11 @@ html, body, #main-content, .language-options, .app-nav {
         flex-direction: row;
     }
 
+    #main-content {
+        margin-left: 80px; /* 添加左边距避开侧边栏 */
+        width: calc(100% - 80px); /* 调整宽度 */
+    }
+
     .app-header {
         display: none !important;
     }
@@ -637,75 +670,40 @@ html, body, #main-content, .language-options, .app-nav {
     }
 
     .nav-content {
-        height: 100%;
+        height: 100vh;
         display: flex;
         flex-direction: column;
-        padding: 16px 0;
+        padding: 8px 0;
         margin: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
+    /* 导航项容器样式 */
     .nav-content ul {
         display: flex;
         flex-direction: column;
         padding: 0;
         margin: 0;
+        gap: 4px;
+        height: 240px; /* 固定高度：4个导航项(56px) + 3个间距(4px) */
+        flex-shrink: 0;
     }
 
     /* 导航项样式调整 */
     .nav-item {
-        flex-direction: column;
+        flex: 0 0 56px; /* 固定高度 */
         padding: 8px 0;
-        height: auto;
-        gap: 2px;
-        width: 100%;
-        align-items: center;
-        justify-content: flex-start; /* 改为顶部对齐 */
-        flex: 0; /* 移除弹性伸缩 */
-    }
-
-    /* 导航内容布局调整 */
-    .nav-content {
-        justify-content: flex-start; /* 改为顶部对齐 */
-        align-items: center;
-        max-width: none; /* 移除最大宽度限制 */
-        margin: 0; /* 移除自动边距 */
-        padding: 16px 0;
-    }
-
-    /* 主内容区域调整 */
-    #main-content {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-        padding: 0;
-        max-width: none;
-    }
-
-    /* 页面容器调整 */
-    .page-container {
-        padding: 24px;
         margin: 0;
         width: 100%;
-        max-width: none;
-        box-sizing: border-box;
+        align-items: center;
+        justify-content: center;
     }
 
-    /* 内容区域最大宽度限制 */
-    .about-container,
-    .status-page,
-    .settings-content,
-    .logs-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0;
-    }
-
-    .nav-content {
-        padding: 8px 0;
-    }
-
+    /* 页面操作按钮区域 */
     .nav-content .page-actions {
-        margin: auto 0;
-        padding: 12px 0;
+        margin: 8px auto; /* 减少上下边距 */
+        padding: 12px 0; /* 调整内边距 */
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -713,17 +711,48 @@ html, body, #main-content, .language-options, .app-nav {
         background-color: var(--surface-container-high);
         border-radius: 16px;
         width: 56px;
-        margin-left: auto;
-        margin-right: auto;
+        height: 144px;
+        overflow-y: auto;
+        flex-shrink: 0;
+        justify-content: center; /* 确保按钮在容器内垂直居中 */
     }
+
+    /* 调整导航项容器 */
+    .nav-content ul {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        gap: 4px;
+        height: 240px;
+        flex-shrink: 0;
+        margin-bottom: 8px; /* 增加与操作按钮区域的间距 */
+    }
+
+    /* 系统操作按钮区域 */
     .nav-content .system-actions {
         margin-top: auto;
         padding: 8px 0;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 8px;
         align-items: center;
         border-top: 1px solid var(--outline-variant);
+        flex-shrink: 0;
+        background-color: var(--surface-container); /* 添加背景色 */
+        width: 100%; /* 确保宽度填满 */
+    }
+
+    /* 导航内容布局调整 */
+    .nav-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* 调整布局分布 */
+        height: 100%;
+    }
+
+    .nav-content > *:not(.system-actions) {
+        flex-shrink: 0; /* 防止内容被压缩 */
     }
 
     /* 侧栏按钮样式调整 */

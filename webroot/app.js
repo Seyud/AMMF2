@@ -9,7 +9,8 @@ class App {
         this.state = {
             isLoading: true,
             currentPage: null,
-            themeChanging: false
+            themeChanging: false,
+            headerTransparent: true  // 添加此行
         };
     }
 
@@ -17,6 +18,11 @@ class App {
     async init() {
         await I18n.init();
         ThemeManager.init();
+        
+        // 初始化CSS加载器
+        if (window.CSSLoader) {
+            CSSLoader.init();
+        }
 
         // 检测是否为MMRL环境并初始化
         const isMMRLEnvironment = !!window.MMRL;
@@ -305,12 +311,23 @@ class UI {
     static updateNavigation(pageName) {
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
-            if (item.dataset.page === pageName) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
+        // 移除之前的动画类
+        item.classList.remove('nav-entering', 'nav-exiting');
+        
+        if (item.dataset.page === pageName) {
+            // 如果之前未激活,添加进入动画
+            if (!item.classList.contains('active')) {
+                item.classList.add('nav-entering');
             }
-        });
+            item.classList.add('active');
+        } else {
+            // 如果之前已激活,添加退出动画
+            if (item.classList.contains('active')) {
+                item.classList.add('nav-exiting');
+            }
+            item.classList.remove('active');
+        }
+    });
     }
 
     static updateLayout() {
@@ -436,6 +453,46 @@ class UI {
 
         return toast;
     }
+
+    static updateHeaderTransparency() {
+        const header = this.elements.header;
+        const mainContent = this.elements.mainContent;
+        const nav = document.querySelector('.app-nav');
+        if (!header || !mainContent || !nav) return;
+    
+        const isLandscape = window.innerWidth >= 768;
+        const scrollTop = mainContent.scrollTop;
+        const headerHeight = header.offsetHeight;
+        const contentHeight = mainContent.scrollHeight;
+        const viewportHeight = mainContent.clientHeight;
+        
+        // 当滚动超过顶栏高度时显示背景
+        if (scrollTop > headerHeight) {
+            header.classList.add('header-solid');
+            
+            // 竖屏模式下才隐藏底栏
+            if (!isLandscape && scrollTop > headerHeight * 1.5 && scrollTop + viewportHeight < contentHeight) {
+                if (!nav.classList.contains('hidden')) {
+                    nav.classList.remove('visible');
+                    nav.classList.add('hidden');
+                }
+            }
+        } else {
+            header.classList.remove('header-solid');
+            if (nav.classList.contains('hidden')) {
+                nav.classList.remove('hidden');
+                nav.classList.add('visible');
+            }
+        }
+        
+        // 如果滚动到底部，显示底栏
+        if (scrollTop + viewportHeight >= contentHeight - 10) {
+            if (nav.classList.contains('hidden')) {
+                nav.classList.remove('hidden');
+                nav.classList.add('visible');
+            }
+        }
+    }
 }
 
 // 初始化应用
@@ -482,7 +539,16 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    // 添加滚动监听
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+        mainContent.addEventListener('scroll', () => {
+            UI.updateHeaderTransparency();
+        });
+    }
 
+    // 初始化顶栏状态
+    UI.updateHeaderTransparency();
     // 初始化所有底栏覆盖层
     document.querySelectorAll('.bottom-overlay').forEach(overlay => {
         // 点击背景时隐藏

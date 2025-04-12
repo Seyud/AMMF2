@@ -131,9 +131,9 @@
     <!-- 主题脚本 - 在样式表之前加载，防止闪烁 -->
     <script src="theme.js"></script>
     
-    <!-- 样式表 -->
-    <link rel="stylesheet" href="style.css">
-    <!-- 移除 animations.css 的引用 -->
+    <!-- CSS加载器 - 用于动态加载CSS -->
+    <script src="css-loader.js"></script>
+    <!-- 样式表将由CSS加载器动态加载 -->
     <script>
         // 检查是否有权限加载 Eruda
         if (window.Core && Core.hasPermission && Core.hasPermission('webui.permission.ERUDA')) {
