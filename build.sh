@@ -4,26 +4,10 @@ echo "Current directory: $(pwd)"
 OLDPWD=$(pwd)
 echo "OS Type: $OSTYPE"
 echo "Current shell: $SHELL"
-
-# Check and fix 7z alias
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    if [ -f ~/.bashrc ] && grep -q "alias 7z=" ~/.bashrc; then
-        # Check if existing alias points to valid path
-        if ! 7z &>/dev/null; then
-            echo "Detected invalid 7z alias, fixing..."
-            # Remove incorrect alias
-            sed -i '/alias 7z=/d' ~/.bashrc
-
-            echo "Please rerun the script"
-            exit 1
-        fi
-    fi
-fi
-
 # Add tool check function at script beginning
 check_tools() {
     local missing=()
-    local tools=(unzip git 7z cp find sed)
+    local tools=(unzip git cp find sed)
     local required_commands=() # Add required commands check
 
     # Add special handling for Windows environment
@@ -246,8 +230,6 @@ if ! check_ndk; then
             echo "Unzipping NDK..."
             if command -v bsdtar &>/dev/null; then
                 bsdtar -xf "$TEMP_NDK_DIR/ndk.zip" -C "$TEMP_NDK_DIR"
-            elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-                7z x "$TEMP_NDK_DIR/ndk.zip" -o"$TEMP_NDK_DIR" -y -bsp0 >/dev/null
             else
                 unzip -q -o "$TEMP_NDK_DIR/ndk.zip" -d "$TEMP_NDK_DIR"
             fi
@@ -355,27 +337,21 @@ if [ -n "$TEMP_NDK_DIR" ]; then
 fi
 echo "Build completed"
 rm -rf src
-# Modified compression commands, different for Windows and Linux
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    # Windows uses full path to 7z.exe
-    if command -v 7z &>/dev/null; then
-        echo "Using Windows 7z..."
-        "$(command -v 7z)" a -r -mx9 "${action_name}_${LATEST_TAG}.zip" * -x!*.git* || {
-            echo "7z failed, trying PowerShell fallback..."
-            powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Compress-Archive -Path (Get-ChildItem -Exclude '*.git*') -DestinationPath '${action_name}_${LATEST_TAG}.zip' -CompressionLevel Optimal"
-        }
-    else
-        echo "7z not found, using PowerShell fallback..."
-        powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Compress-Archive -Path (Get-ChildItem -Exclude '*.git*') -DestinationPath '${action_name}_${LATEST_TAG}.zip' -CompressionLevel Optimal"
-    fi
+    echo "Using PowerShell for compression..."
+    powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Compress-Archive -Path (Get-ChildItem -Exclude '*.git*') -DestinationPath '${action_name}_${LATEST_TAG}.zip' -CompressionLevel Optimal" || {
+        echo "PowerShell compression failed"
+        exit 1
+    }
 else
-    # Linux/Mac uses standard 7z command
-    echo "Using Linux 7z..."
-    7z a -r -mx9 "${action_name}_${LATEST_TAG}.zip" * -x!*.git* || {
-        echo "7z failed, trying zip fallback..."
-        zip -r -9 "${action_name}_${LATEST_TAG}.zip" . -x "*.git*"
+    # Linux/Mac环境保持不变
+    echo "Using Linux zip..."
+    zip -r -9 "${action_name}_${LATEST_TAG}.zip" . -x "*.git*" || {
+        echo "zip failed"
+        exit 1
     }
 fi
+
 # Get original working directory path
 ORIGINAL_DIR="$OLDPWD"
 echo "Original directory: $ORIGINAL_DIR"
