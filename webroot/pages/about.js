@@ -110,7 +110,7 @@ const AboutPage = {
                     </h3>
                     <div class="developer-info">
                         <div class="developer-name">
-                            <span>Aurora星空</span>
+                            <span>AuroraNasa</span>
                         </div>
                         <a href="#" class="social-link" id="github-link">
                             <span class="material-symbols-rounded">code</span>

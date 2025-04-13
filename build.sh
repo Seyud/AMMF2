@@ -5,7 +5,17 @@ restart_ovo=0
 IS_WINDOWS=0
 [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]] && IS_WINDOWS=1
 readonly IS_WINDOWS
+get_current_user() {
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+        # Windows系统获取用户名
+        echo "$USERNAME"  # Windows环境变量
+    else
+        # Linux/Mac系统获取用户名
+        echo "$USER"
+    fi
+}
 
+USER=$(get_current_user)
 # 获取CPU核心数
 get_cpu_cores() {
     local cores=4
