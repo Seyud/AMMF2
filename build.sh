@@ -1,22 +1,28 @@
 #!/bin/bash
 
-# 全局变量定义
+# Global variable definitions
 restart_ovo=0
 IS_WINDOWS=0
 [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]] && IS_WINDOWS=1
 readonly IS_WINDOWS
+
+# Check if running in bash environment on Windows
+if [ $IS_WINDOWS -eq 1 ] && [ -z "$BASH_VERSION" ]; then
+    echo "Error: This script must run in bash environment" >&2
+    exit 1
+fi
 get_current_user() {
     if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-        # Windows系统获取用户名
+        # Get username on Windows
         echo "$USERNAME"  # Windows环境变量
     else
-        # Linux/Mac系统获取用户名
+        # Get username on Linux/Mac
         echo "$USER"
     fi
 }
 
 USER=$(get_current_user)
-# 获取CPU核心数
+# Get CPU core count
 get_cpu_cores() {
     local cores=4
     if [ $IS_WINDOWS -eq 1 ]; then
@@ -33,20 +39,19 @@ declare -r PARALLEL_JOBS=$(get_cpu_cores)
 ORIGINAL_DIR=$(pwd)
 TEMP_BUILD_DIR=""
 TEMP_NDK_DIR=""
-USE_BUSYBOX=0
 
-# 日志函数
+# Logging functions
 log_info() { echo "[INFO] $1"; }
 log_error() { echo "[ERROR] $1" >&2; }
 log_warn() { echo "[WARN] $1"; }
 
-# 清理函数
+# Cleanup function
 cleanup() {
     [ -n "$TEMP_BUILD_DIR" ] && rm -rf "$TEMP_BUILD_DIR"
     [ -n "$TEMP_NDK_DIR" ] && rm -rf "$TEMP_NDK_DIR"
 }
 
-# 错误处理
+# Error handling
 handle_error() {
     log_error "$1"
     cleanup
@@ -54,41 +59,27 @@ handle_error() {
     exit 1
 }
 
-# 工具检查和安装
-# 检查 busybox
-check_busybox() {
-    if command -v busybox &>/dev/null; then
-        log_info "Found busybox, using it for basic tools"
-        USE_BUSYBOX=1
-        log_info "Please run this script again after installation."
-        exit 1
-    fi
-    return 1
-}
-
-# 修改工具检查函数
+# Tool check and installation
+# Modified tool check function
 check_and_install_tools() {
-    # 首先尝试使用 busybox
-    if ! check_busybox; then
-        local tools=(unzip git cp find sed trap)
-        [ $IS_WINDOWS -eq 1 ] || tools+=(wget)
-        for tool in "${tools[@]}"; do
-            if ! command -v $tool &>/dev/null; then
-                if [ $IS_WINDOWS -eq 1 ]; then
-                    install_windows_tool "$tool"
-                else
-                    install_unix_tool "$tool"
-                fi
+    local tools=(unzip git cp find sed trap)
+    [ $IS_WINDOWS -eq 1 ] || tools+=(wget)
+    for tool in "${tools[@]}"; do
+        if ! command -v $tool &>/dev/null; then
+            if [ $IS_WINDOWS -eq 1 ]; then
+                install_windows_tool "$tool"
+            else
+                install_unix_tool "$tool"
             fi
-        done
-    fi
+        fi
+    done
 }
 
 install_windows_tool() {
     local tool=$1
     log_info "Installing $tool on Windows..."
 
-    # 首先尝试使用 winget
+    # First try using winget
     if command -v winget &>/dev/null; then
         case $tool in
         unzip) winget install -e --id GnuWin32.UnZip && return ;;
@@ -97,7 +88,7 @@ install_windows_tool() {
         esac
     fi
 
-    # 如果 winget 失败，使用 PowerShell
+    # If winget fails, use PowerShell
     local temp_dir=$(mktemp -d)
     local temp_dir_win=$(cygpath -w "$temp_dir" | sed 's/\\/\\\\/g')
 
@@ -139,14 +130,14 @@ install_unix_tool() {
 }
 
 check_ndk() {
-    # 首先检查环境变量
+    # First check environment variables
     if [ -n "$ANDROID_NDK_HOME" ] && [ -d "$ANDROID_NDK_HOME" ]; then
         local platform=$([ $IS_WINDOWS -eq 1 ] && echo "windows" || echo "linux")
         local test_tool="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/${platform}-x86_64/bin/aarch64-linux-android21-clang++"
         [ -f "$test_tool" ] && return 0
     fi
 
-    # 检查常见安装路径
+    # Check common installation paths
     local common_paths=(
         "$HOME/android-ndk-r27c"
         "$LOCALAPPDATA/Android/Sdk/ndk/27.2.8937393"
@@ -225,21 +216,19 @@ setup_ndk() {
     esac
 }
 
-# 优化解压函数
+# Optimized archive extraction function
 extract_archive() {
     local archive=$1
     local dest=$2
 
-    if [ $USE_BUSYBOX -eq 1 ]; then
-        busybox unzip -q "$archive" -d "$dest"
-    elif command -v 7z &>/dev/null; then
+    if command -v 7z &>/dev/null; then
         7z x -y -o"$dest" "$archive" >/dev/null
     else
         unzip -q -o "$archive" -d "$dest"
     fi
 }
 
-# 修改路径转换函数
+# Modified path conversion function
 convert_path() {
     if [ $IS_WINDOWS -eq 1 ]; then
         cygpath -w "$1"
@@ -248,7 +237,7 @@ convert_path() {
     fi
 }
 
-# 修改 NDK 安装函数中的相关部分
+# Modified NDK installation function
 install_ndk() {
     TEMP_NDK_DIR=$(mktemp -d)
     local ndk_platform
@@ -364,7 +353,7 @@ install_ndk() {
     check_ndk || handle_error "NDK installation failed"
 }
 
-# 修改打包函数
+# Modified packaging function
 package_module() {
     local version=$1
     local output_file="${action_name}_${version}.zip"
@@ -388,7 +377,7 @@ package_module() {
     cp "$output_file" "$ORIGINAL_DIR/" || handle_error "Failed to copy zip file"
 }
 
-# 编译函数
+# Compilation function
 compile_binaries() {
     local prebuilt_path="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$([ $IS_WINDOWS -eq 1 ] && echo 'windows' || echo 'linux')-x86_64/bin"
     local targets=(aarch64 x86_64)
@@ -425,7 +414,7 @@ compile_binaries() {
     wait || handle_error "Compilation failed"
 }
 
-# 主函数
+# Main function
 main() {
     trap cleanup EXIT
     check_and_install_tools
