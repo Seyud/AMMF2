@@ -44,6 +44,53 @@ WebUI adopts the Material Design 3 design specification and uses a modular CSS s
 - `css/pages.css`: Page component styles
 - `css/animations.css`: Animation effects
 
+### Simple Configuration
+
+The status page provides configuration options:
+
+```javascript
+        const quickActionsEnabled = false; // Set to false to hide all
+        const quickActions = [
+            {
+                title: 'Clear Cache',
+                icon: 'delete',
+                command: 'rm -rf /data/local/tmp/*'
+            },
+            {
+                title: 'Restart Service',
+                icon: 'restart_alt',
+                command: 'sh ${Core.MODULE_PATH}service.sh restart'
+            },
+            {
+                title: 'View Logs',
+                icon: 'description',
+                command: 'cat ${Core.MODULE_PATH}logs.txt'
+            }
+        ];
+```
+
+The about page also provides simple configuration:
+
+```javascript
+    // Configuration options
+    config: {
+        showThemeToggle: false  // Control whether to show the theme toggle button
+    },
+```
+
+### Custom Interface Styling
+
+You can add custom CSS, loaded through css-loader.js:
+
+```javascript
+    // Custom CSS path
+    customCSSPath: 'css/CustomCss/main.css',
+```
+
+**Note**:
+- When using custom CSS, the original styles will be disabled.
+- If you just want to override CSS, simply add styles or modify at the end of the original CSS file.
+
 ### Page Development
 
 Each page is an independent JS module that needs to implement the following interfaces:

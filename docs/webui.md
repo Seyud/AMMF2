@@ -44,6 +44,46 @@ WebUI采用Material Design 3设计规范，使用模块化的CSS结构：
 - `css/pages.css`: 页面组件样式
 - `css/animations.css`: 动画效果
 
+### 简单配置
+状态页面提供了简单配置的选项：
+```javascript
+        const quickActionsEnabled = false; // 设置为false可全部隐藏
+        const quickActions = [
+            {
+                title: '清理缓存',
+                icon: 'delete',
+                command: 'rm -rf /data/local/tmp/*'
+            },
+            {
+                title: '重启服务',
+                icon: 'restart_alt',
+                command: 'sh ${Core.MODULE_PATH}service.sh restart'
+            },
+            {
+                title: '查看日志',
+                icon: 'description',
+                command: 'cat ${Core.MODULE_PATH}logs.txt'
+            }
+        ];
+```
+关于界面也提供了简单配置：
+```javascript
+    // 配置项
+    config: {
+        showThemeToggle: false  // 控制是否显示主题切换按钮
+    },
+```
+
+### 自定义界面样式
+你可以在添加自定义CSS，通过css-loader.js加载：
+```javascript
+    // 自定义CSS路径
+    customCSSPath: 'css/CustomCss/main.css',
+```
+**注意**：
+- 使用自定义CSS时，原有样式将失效。
+- 如果只是想添加覆盖css，只需在原css文件尾添加样式或者修改即可。
+
 ### 页面开发
 
 每个页面都是一个独立的JS模块，需要实现以下接口：
