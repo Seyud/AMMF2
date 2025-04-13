@@ -1,370 +1,463 @@
 #!/bin/bash
-echo "Home: $HOME"
-echo "Current directory: $(pwd)"
-OLDPWD=$(pwd)
-echo "OS Type: $OSTYPE"
-echo "Current shell: $SHELL"
-# Add tool check function at script beginning
-check_tools() {
-    local missing=()
-    local tools=(unzip git cp find sed)
-    local required_commands=() # Add required commands check
 
-    # Add special handling for Windows environment
-    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-        # Windows must check PowerShell download capability
-        if ! powershell.exe -Command "Get-Command Invoke-WebRequest" &>/dev/null; then
-            required_commands+=("PowerShell download capability")
-        fi
-    else
-        tools+=(wget) # Non-Windows environments still need wget
+# 全局变量定义
+restart_ovo=0
+IS_WINDOWS=0
+[[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]] && IS_WINDOWS=1
+readonly IS_WINDOWS
+
+# 获取CPU核心数
+get_cpu_cores() {
+    local cores=4
+    if [ $IS_WINDOWS -eq 1 ]; then
+        cores=$(powershell.exe -NoProfile -NonInteractive -Command "Get-CimInstance Win32_ComputerSystem | Select-Object -ExpandProperty NumberOfLogicalProcessors" 2>/dev/null || echo 4)
+    elif command -v nproc >/dev/null 2>&1; then
+        cores=$(nproc 2>/dev/null || echo 4)
+    elif [ -f /proc/cpuinfo ]; then
+        cores=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 4)
+    fi
+    echo "$cores"
+}
+
+declare -r PARALLEL_JOBS=$(get_cpu_cores)
+ORIGINAL_DIR=$(pwd)
+TEMP_BUILD_DIR=""
+TEMP_NDK_DIR=""
+USE_BUSYBOX=0
+
+# 日志函数
+log_info() { echo "[INFO] $1"; }
+log_error() { echo "[ERROR] $1" >&2; }
+log_warn() { echo "[WARN] $1"; }
+
+# 清理函数
+cleanup() {
+    [ -n "$TEMP_BUILD_DIR" ] && rm -rf "$TEMP_BUILD_DIR"
+    [ -n "$TEMP_NDK_DIR" ] && rm -rf "$TEMP_NDK_DIR"
+}
+
+# 错误处理
+handle_error() {
+    log_error "$1"
+    cleanup
+    sleep 6
+    exit 1
+}
+
+# 工具检查和安装
+# 检查 busybox
+check_busybox() {
+    if command -v busybox &>/dev/null; then
+        log_info "Found busybox, using it for basic tools"
+        USE_BUSYBOX=1
+        log_info "Please run this script again after installation."
+        exit 1
+    fi
+    return 1
+}
+
+# 修改工具检查函数
+check_and_install_tools() {
+    # 首先尝试使用 busybox
+    if ! check_busybox; then
+        local tools=(unzip git cp find sed trap)
+        [ $IS_WINDOWS -eq 1 ] || tools+=(wget)
+        for tool in "${tools[@]}"; do
+            if ! command -v $tool &>/dev/null; then
+                if [ $IS_WINDOWS -eq 1 ]; then
+                    install_windows_tool "$tool"
+                else
+                    install_unix_tool "$tool"
+                fi
+            fi
+        done
+    fi
+}
+
+install_windows_tool() {
+    local tool=$1
+    log_info "Installing $tool on Windows..."
+
+    # 首先尝试使用 winget
+    if command -v winget &>/dev/null; then
+        case $tool in
+        unzip) winget install -e --id GnuWin32.UnZip && return ;;
+        git) winget install -e --id Git.Git && return ;;
+        cp | find | sed) winget install -e --id GnuWin32.CoreUtils && return ;;
+        esac
     fi
 
-    for tool in "${tools[@]}"; do
-        if ! command -v $tool &>/dev/null; then
-            missing+=("$tool")
+    # 如果 winget 失败，使用 PowerShell
+    local temp_dir=$(mktemp -d)
+    local temp_dir_win=$(cygpath -w "$temp_dir" | sed 's/\\/\\\\/g')
+
+    case $tool in
+    unzip)
+        powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; 
+                Invoke-WebRequest -Uri 'https://downloads.sourceforge.net/gnuwin32/unzip-5.51-1-bin.zip' \
+                -OutFile '${temp_dir_win}\\unzip.zip'; 
+                Expand-Archive '${temp_dir_win}\\unzip.zip' '${temp_dir_win}\\unzip'"
+        ;;
+    git)
+        powershell.exe -Command "\$ProgressPreference='SilentlyContinue';
+                Invoke-WebRequest -Uri 'https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe' \
+                -OutFile '${temp_dir_win}\\git.exe';
+                Start-Process -Wait '${temp_dir_win}\\git.exe' -ArgumentList '/VERYSILENT','/NORESTART'"
+        ;;
+    cp | find | sed)
+        powershell.exe -Command "\$ProgressPreference='SilentlyContinue';
+                Invoke-WebRequest -Uri 'https://downloads.sourceforge.net/gnuwin32/coreutils-5.3.0-bin.zip' \
+                -OutFile '${temp_dir_win}\\coreutils.zip';
+                Expand-Archive '${temp_dir_win}\\coreutils.zip' '${temp_dir_win}\\coreutils'"
+        ;;
+    esac
+
+    rm -rf "$temp_dir"
+}
+
+install_unix_tool() {
+    local tool=$1
+    if command -v apt-get &>/dev/null; then
+        sudo apt-get install -y "$tool"
+    elif command -v brew &>/dev/null; then
+        brew install "$tool"
+    elif command -v yum &>/dev/null; then
+        sudo yum install -y "$tool"
+    else
+        handle_error "Unable to install $tool. Please install manually."
+    fi
+}
+
+check_ndk() {
+    # 首先检查环境变量
+    if [ -n "$ANDROID_NDK_HOME" ] && [ -d "$ANDROID_NDK_HOME" ]; then
+        local platform=$([ $IS_WINDOWS -eq 1 ] && echo "windows" || echo "linux")
+        local test_tool="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/${platform}-x86_64/bin/aarch64-linux-android21-clang++"
+        [ -f "$test_tool" ] && return 0
+    fi
+
+    # 检查常见安装路径
+    local common_paths=(
+        "$HOME/android-ndk-r27c"
+        "$LOCALAPPDATA/Android/Sdk/ndk/27.2.8937393"
+        "/c/Users/$USER/AppData/Local/Android/Sdk/ndk/27.2.8937393"
+    )
+
+    for path in "${common_paths[@]}"; do
+        if [ -d "$path" ]; then
+            export ANDROID_NDK_HOME="$path"
+            return 0
         fi
     done
 
-    if [ ${#missing[@]} -gt 0 ]; then
-        echo "Missing required tools: ${missing[*]}"
+    return 1
+}
 
-        if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-            echo "Detected Windows environment, attempting auto-fix..."
-            echo "Detected Windows environment, automatically enabling PowerShell download solution..."
-            USE_POWERSHELL_DOWNLOAD=1
-            # Check if running in Git Bash
-            if [ -f "/git-bash.exe" ]; then
-                # Attempt PowerShell installation (requires admin rights)
-                if ! powershell.exe -Command "Get-Command ${missing[*]}" &>/dev/null; then
-                    echo "Attempting to install missing tools via PowerShell..."
-                    for t in "${missing[@]}"; do
-                        case $t in
-                        wget)
-                            echo "Using PowerShell to download files..."
-                            if ! powershell.exe -Command "Invoke-WebRequest -UseBasicParsing" &>/dev/null; then
-                                echo "Please manually install Git for Windows (includes Unix tools)"
-                                sleep 12
-                                exit 1
-                            fi
-                            ;;
-                        unzip | git | cp | find | sed)
-                            # First try using winget to install
-                            if command -v winget &>/dev/null; then
-                                echo "Attempting to install $t using winget..."
-                                case $t in
-                                unzip)
-                                    winget install -e --id GnuWin32.UnZip && continue || echo "winget unzip installation failed"
-                                    ;;
-                                git)
-                                    winget install -e --id Git.Git && continue || echo "winget git installation failed"
-                                    ;;
-                                cp | find | sed)
-                                    winget install -e --id GnuWin32.CoreUtils && continue || echo "winget coreutils installation failed"
-                                    ;;
-                                esac
-                            fi
-                            
-                            # Ensure temp directory exists
-                            TEMP_DIR=$(mktemp -d)
-                            # Convert path to Windows format
-                            TEMP_DIR_WIN=$(cygpath -w "$TEMP_DIR" | sed 's/\\/\\\\/g')
-                            
-                            # If winget unavailable or installation failed, try PowerShell installation
-                            echo "Attempting to install $t via PowerShell..."
-                            case $t in
-                            unzip)
-                                powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://downloads.sourceforge.net/gnuwin32/unzip-5.51-1-bin.zip' -OutFile '${TEMP_DIR_WIN}\\\\unzip.zip'; Expand-Archive -Path '${TEMP_DIR_WIN}\\\\unzip.zip' -DestinationPath '${TEMP_DIR_WIN}\\\\unzip'; \$env:PATH += ';${TEMP_DIR_WIN}\\\\unzip\\\\bin'" && continue
-                                ;;
-                            git)
-                                powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe' -OutFile '${TEMP_DIR_WIN}\\\\git.exe'; Start-Process -Wait -FilePath '${TEMP_DIR_WIN}\\\\git.exe' -ArgumentList '/VERYSILENT', '/NORESTART', '/NOCANCEL', '/SP-', '/CLOSEAPPLICATIONS', '/RESTARTAPPLICATIONS'" && continue
-                                ;;
-                            cp | find | sed)
-                                powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri 'https://downloads.sourceforge.net/gnuwin32/coreutils-5.3.0-bin.zip' -OutFile '${TEMP_DIR_WIN}\\\\coreutils.zip'; Expand-Archive -Path '${TEMP_DIR_WIN}\\\\coreutils.zip' -DestinationPath '${TEMP_DIR_WIN}\\\\coreutils'; \$env:PATH += ';${TEMP_DIR_WIN}\\\\coreutils\\\\bin'" && continue
-                                ;;
-                            esac
-                            
-                            echo "Unable to automatically install $t, please manually install Git for Windows and ensure it includes $t component"
-                            sleep 12
-                            exit 1
-                            ;;
-                        7z)
-                            echo "Attempting to install 7-Zip..."
-                            # Create temp directory and ensure correct path
-                            TEMP_DIR=$(mktemp -d)
+setup_ndk() {
+    if check_ndk; then
+        return 0
+    fi
 
-                            # Handle path based on system type
-                            if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-                                # Windows path handling
-                                TEMP_INSTALLER=$(cygpath -w "$TEMP_DIR/7zsetup.exe")
-                                DOWNLOAD_URL="https://www.7-zip.org/a/7z2301-x64.exe"
+    log_warn "Android NDK not found. Please choose an option:"
+    echo "1) Install NDK automatically"
+    echo "2) Enter NDK path manually"
+    echo "3) Cancel"
+    read -r choice
 
-                                # Download installer
-                                if ! powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '$DOWNLOAD_URL' -OutFile '$TEMP_INSTALLER' -UseBasicParsing"; then
-                                    echo "Failed to download 7-Zip installer, please download manually: https://www.7-zip.org/"
-                                    rm -rf "$TEMP_DIR"
-                                    sleep 12
-                                    exit 1
-                                fi
-
-                                # Install 7-Zip and check if successful
-                                echo "Installing 7-Zip..."
-                                if ! powershell.exe -Command "Start-Process -Wait -FilePath '$TEMP_INSTALLER' -ArgumentList '/S'"; then
-                                    echo "7-Zip installation failed"
-                                    rm -rf "$TEMP_DIR"
-                                    sleep 12
-                                    exit 1
-                                fi
-
-                                # Set 7z environment variables and alias
-                                echo "Setting 7z environment variables..."
-                                SEVEN_ZIP_PATH="/c/Program Files/7-Zip"
-                                export PATH="$SEVEN_ZIP_PATH:$PATH"
-
-                                if ! command -v 7z &>/dev/null; then
-                                    alias 7z="\"$SEVEN_ZIP_PATH/7z.exe\""
-                                    echo "alias 7z='\"$SEVEN_ZIP_PATH/7z.exe\"'" >>~/.bashrc
-                                    echo "Please rerun the script"
-                                    exit 1
-                                fi
-
-                                # Verify 7z is available
-                                if ! 7z &>/dev/null; then
-                                    echo "7z setup failed, please configure manually"
-                                    sleep 12
-                                    rm -rf "$TEMP_DIR"
-                                    exit 1
-                                fi
-
-                                echo "7-Zip installed and configured successfully"
-                                rm -rf "$TEMP_DIR"
-                            fi
-                            ;;
-                        esac
-                    done
-                fi
-            else
-                echo "Please install Git for Windows and rerun the script"
-                sleep 12
-                exit 1
-            fi
+    case $choice in
+    1)
+        install_ndk
+        ;;
+    2)
+        if [ $IS_WINDOWS -eq 1 ]; then
+            log_info "Windows: /c/folder/ or /d/folder/"
+            log_info "Please enter NDK path:"
         else
-            # Linux/Mac handling
-            echo "Attempting auto-install..."
-            if command -v apt-get &>/dev/null; then
-                sudo apt-get install -y "${missing[@]}" || {
-                    echo "Auto-install failed, please install manually: ${missing[*]}"
-                    exit 1
-                }
-            elif command -v brew &>/dev/null; then
-                brew install "${missing[@]}" || {
-                    echo "Auto-install failed, please install manually: ${missing[*]}"
-                    exit 1
-                }
-            elif command -v yum &>/dev/null; then
-                sudo yum install -y "${missing[@]}" || {
-                    echo "Auto-install failed, please install manually: ${missing[*]}"
-                    exit 1
-                }
-            else
-                echo "Please manually install the following tools: ${missing[*]}"
-                sleep 12
-                exit 1
-            fi
+            log_info "Please enter NDK path:"
         fi
-    fi
-}
-# Call tool check before existing NDK check
-check_tools # Added tool check
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    if [ -z "$USE_POWERSHELL_DOWNLOAD" ]; then
-        echo "Detected Windows environment, attempting auto-fix..."
-        echo "Detected Windows environment, automatically enabling PowerShell download solution..."
-        USE_POWERSHELL_DOWNLOAD=1
-    fi
-fi
-# Original NDK check remains unchanged
-check_ndk() {
-    if [ -z "$ANDROID_NDK_HOME" ]; then
-        return 1
-    fi
-    if [ ! -d "$ANDROID_NDK_HOME" ]; then
-        return 1
-    fi
-    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-        TEST_TOOL="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/windows-x86_64/bin/aarch64-linux-android21-clang++"
-    else
-        TEST_TOOL="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++"
-    fi
-
-    if [ ! -f "$TEST_TOOL" ]; then
-        return 1
-    fi
-
-    return 0
-}
-
-if ! check_ndk; then
-    echo "Android NDK not found or not usable. Please set ANDROID_NDK_HOME environment variable."
-    echo "Android NDK not found. Install temporarily? [Y/n]"
-    read -r answer
-    if [[ "$answer" =~ ^[Yy]$ ]] || [[ -z "$answer" ]]; then
-        echo "Downloading NDK to temp directory..."
-        TEMP_NDK_DIR=$(mktemp -d)
-
-        # Modified NDK download section
-        if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-            echo "Windows system detected, downloading Windows NDK..."
-            NDK_URL="https://dl.google.com/android/repository/android-ndk-r27c-windows.zip"
-
-            if [ -n "$USE_POWERSHELL_DOWNLOAD" ]; then
-                # Ensure temp directory exists
-                mkdir -p "$TEMP_NDK_DIR"
-                # Use PowerShell for download
-                echo "Using PowerShell alternative download..."
-                TEMP_NDK_WINPATH=$(cygpath -w "$TEMP_NDK_DIR" | sed 's/\\/\\\\/g')
-                powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '${NDK_URL}' -OutFile (\"${TEMP_NDK_WINPATH}\" + '\\\\ndk.zip') -UseBasicParsing"
+        read -r ndk_path
+        if [ -d "$ndk_path" ]; then
+            export ANDROID_NDK_HOME="$ndk_path"
+            if [ $IS_WINDOWS -eq 1 ]; then
+                # 添加到 Windows 系统环境变量
+                local win_path=$(convert_path "$ndk_path")
+                powershell.exe -NoProfile -NonInteractive -Command "
+                    [System.Environment]::SetEnvironmentVariable(
+                        'ANDROID_NDK_HOME',
+                        '$win_path',
+                        [System.EnvironmentVariableTarget]::User
+                    )
+                    \$env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+                    if (-not \$env:Path.Contains('$win_path')) {
+                        [System.Environment]::SetEnvironmentVariable(
+                            'Path',
+                            \$env:Path + ';$win_path',
+                            [System.EnvironmentVariableTarget]::User
+                        )
+                    }
+                "
             else
-                wget -q "$NDK_URL" -O "$TEMP_NDK_DIR/ndk.zip"
-            fi
-            echo "Unzipping NDK..."
-            if command -v bsdtar &>/dev/null; then
-                bsdtar -xf "$TEMP_NDK_DIR/ndk.zip" -C "$TEMP_NDK_DIR"
-            else
-                unzip -q -o "$TEMP_NDK_DIR/ndk.zip" -d "$TEMP_NDK_DIR"
-            fi
-
-            # Added permanent installation option
-            echo "Permanently install NDK and set environment variables? [Y/n]"
-            read -r permanent_install
-            if [[ "$permanent_install" =~ ^[Yy]$ ]] || [[ -z "$permanent_install" ]]; then
-                # Set permanent installation path
-                NDK_INSTALL_DIR="$HOME/android-ndk-r27c"
-                mv "$TEMP_NDK_DIR/android-ndk-r27c" "$NDK_INSTALL_DIR"
-                rm -rf "$TEMP_NDK_DIR"
-
-                # Set environment variables
-                echo "Setting environment variables..."
-                export ANDROID_NDK_HOME="$NDK_INSTALL_DIR"
-                echo "export ANDROID_NDK_HOME=\"$NDK_INSTALL_DIR\"" >>~/.bashrc
+                # 添加到 .bashrc
+                echo "export ANDROID_NDK_HOME=\"$ndk_path\"" >>~/.bashrc
                 echo "export PATH=\"\$ANDROID_NDK_HOME:\$PATH\"" >>~/.bashrc
-
-                echo "NDK permanently installed at: $NDK_INSTALL_DIR"
-                echo "Environment variables added to ~/.bashrc"
-            else
-                # Temporary installation handling
-                export ANDROID_NDK_HOME="$TEMP_NDK_DIR/android-ndk-r27c"
-                echo "Temporarily using NDK at $ANDROID_NDK_HOME"
             fi
-
-            # Verify downloaded NDK is usable
-            if ! check_ndk; then
-                echo "Downloaded NDK is not usable. Please install manually."
-                [ -n "$TEMP_NDK_DIR" ] && rm -rf "$TEMP_NDK_DIR"
-                sleep 12
-                exit 1
-            fi
+            check_ndk || handle_error "Invalid NDK path"
         else
-            echo "Build terminated: Android NDK required"
-            sleep 12
-            exit 1
+            handle_error "Invalid NDK path: directory does not exist"
+        fi
+        ;;
+    3)
+        return 1
+        ;;
+    *)
+        handle_error "Invalid choice"
+        ;;
+    esac
+}
+
+# 优化解压函数
+extract_archive() {
+    local archive=$1
+    local dest=$2
+
+    if [ $USE_BUSYBOX -eq 1 ]; then
+        busybox unzip -q "$archive" -d "$dest"
+    elif command -v 7z &>/dev/null; then
+        7z x -y -o"$dest" "$archive" >/dev/null
+    else
+        unzip -q -o "$archive" -d "$dest"
+    fi
+}
+
+# 修改路径转换函数
+convert_path() {
+    if [ $IS_WINDOWS -eq 1 ]; then
+        cygpath -w "$1"
+    else
+        echo "$1"
+    fi
+}
+
+# 修改 NDK 安装函数中的相关部分
+install_ndk() {
+    TEMP_NDK_DIR=$(mktemp -d)
+    local ndk_platform
+    local ndk_suffix
+
+    if [ $IS_WINDOWS -eq 1 ]; then
+        ndk_platform="windows"
+        ndk_suffix="zip"
+    else
+        ndk_platform="linux"
+        ndk_suffix="tar.gz"
+    fi
+
+    local ndk_url="https://dl.google.com/android/repository/android-ndk-r27c-${ndk_platform}.${ndk_suffix}"
+    local ndk_archive="$TEMP_NDK_DIR/ndk.${ndk_suffix}"
+
+    log_info "Downloading NDK for ${ndk_platform}..."
+    if [ $IS_WINDOWS -eq 1 ]; then
+        powershell.exe -NoProfile -NonInteractive -Command "
+            \$ProgressPreference='SilentlyContinue'
+            Invoke-WebRequest -Uri '${ndk_url}' -OutFile '$(convert_path "$ndk_archive")' -UseBasicParsing
+        "
+    else
+        wget -q "$ndk_url" -O "$ndk_archive"
+    fi
+
+    log_info "Extracting NDK..."
+    if [ $IS_WINDOWS -eq 1 ]; then
+        extract_archive "$ndk_archive" "$TEMP_NDK_DIR"
+    else
+        tar xf "$ndk_archive" -C "$TEMP_NDK_DIR"
+    fi
+
+    log_info "Choose installation type:"
+    echo "1) Install to default location"
+    echo "2) Install to custom location"
+    echo "3) Use temporary location"
+    read -r install_type
+
+    case $install_type in
+    1)
+        local install_dir="/c/$USER/android-ndk-r27c"
+        [ $IS_WINDOWS -eq 1 ] || install_dir="$HOME/android-ndk-r27c"
+        ;;
+    2)
+        if [ $IS_WINDOWS -eq 1 ]; then
+            log_info "Windows: /c/folder/ or /d/folder/"
+            log_info "Please enter installation path: ([Input Path]/android-ndk-r27c)"
+        else
+            log_info "Please enter installation path: ([Input Path]/android-ndk-r27c)"
+        fi
+        read -r custom_path
+        if [ ! -d "$custom_path" ]; then
+            log_info "Directory does not exist. Create it? [Y/n]"
+            read -r create_dir
+            if [[ "$create_dir" =~ ^[Yy]$ ]] || [[ -z "$create_dir" ]]; then
+                mkdir -p "$custom_path" || handle_error "Failed to create directory"
+            else
+                handle_error "Installation cancelled"
+            fi
+        fi
+        install_dir="$custom_path/android-ndk-r27c"
+        ;;
+    3)
+        export ANDROID_NDK_HOME="$TEMP_NDK_DIR/android-ndk-r27c"
+        return 0
+        ;;
+    *)
+        handle_error "Invalid choice"
+        ;;
+    esac
+    log_info "Installing NDK to $install_dir..."
+    if [ "$install_type" != "3" ]; then
+        mv "$TEMP_NDK_DIR/android-ndk-r27c" "$install_dir" || handle_error "Failed to move NDK"
+
+        if [ $IS_WINDOWS -eq 1 ]; then
+            # Windows下设置永久环境变量
+            local win_path=$(convert_path "$install_dir")
+            powershell.exe -NoProfile -NonInteractive -Command "
+                [System.Environment]::SetEnvironmentVariable(
+                    'ANDROID_NDK_HOME',
+                    '$win_path',
+                    [System.EnvironmentVariableTarget]::User
+                )
+                \$env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+                if (-not \$env:Path.Contains('$win_path')) {
+                    [System.Environment]::SetEnvironmentVariable(
+                        'Path',
+                        \$env:Path + ';$win_path',
+                        [System.EnvironmentVariableTarget]::User
+                    )
+                }
+            "
+            log_info "NDK installed to: $win_path"
+            log_info "Environment variables added to Windows User Environment"
+            restart_ovo=1
+        else
+            # Unix系统下设置环境变量
+            local shell_rc="$HOME/.bashrc"
+            [ -f "$HOME/.zshrc" ] && shell_rc="$HOME/.zshrc"
+            {
+                echo "export ANDROID_NDK_HOME=\"$install_dir\""
+                echo "export PATH=\"\$ANDROID_NDK_HOME:\$PATH\""
+            } >>"$shell_rc"
+            log_info "NDK installed to: $install_dir"
+            log_info "Environment variables added to: $shell_rc"
+            restart_ovo=1
+        fi
+
+        export ANDROID_NDK_HOME="$install_dir"
+    fi
+
+    check_ndk || handle_error "NDK installation failed"
+}
+
+# 修改打包函数
+package_module() {
+    local version=$1
+    local output_file="${action_name}_${version}.zip"
+    log_info "Packaging module..."
+    if [ $IS_WINDOWS -eq 1 ]; then
+        # 使用 PowerShell 的改进版本
+        powershell.exe -NoProfile -NonInteractive -Command "
+            \$ProgressPreference='SilentlyContinue'
+            \$exclude = @(
+                '.git*',
+                'requirements.txt',
+                'build.sh'
+            )
+            \$items = Get-ChildItem -Exclude \$exclude
+            Compress-Archive -Path \$items -DestinationPath '$(convert_path "$output_file")' -CompressionLevel Optimal -Force
+        " || handle_error "Failed to create zip file"
+    else
+        zip -r -9 "$output_file" . -x "*.git*" -x "build.sh" -x "requirements.txt" || handle_error "Failed to create zip file"
+    fi
+
+    cp "$output_file" "$ORIGINAL_DIR/" || handle_error "Failed to copy zip file"
+}
+
+# 编译函数
+compile_binaries() {
+    local prebuilt_path="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$([ $IS_WINDOWS -eq 1 ] && echo 'windows' || echo 'linux')-x86_64/bin"
+    local targets=(aarch64 x86_64)
+    local sources=(filewatch logmonitor)
+
+    mkdir -p bin
+
+    # 使用并行编译
+    local pids=()
+    for source in "${sources[@]}"; do
+        for target in "${targets[@]}"; do
+            (
+                log_info "Compiling $source for $target..."
+                local output="bin/$source-$target"
+                local cpp_file="src/$source.cpp"
+
+                $prebuilt_path/${target}-linux-android21-clang++ \
+                    -O2 -Wall -Wextra -std=c++11 -static-libstdc++ \
+                    -o "$output" "$cpp_file" || exit 1
+
+                $prebuilt_path/llvm-strip "$output" || log_warn "Failed to strip $output"
+            ) &
+            pids+=($!)
+
+            # 控制并行数量
+            if [ ${#pids[@]} -ge $PARALLEL_JOBS ]; then
+                wait "${pids[0]}"
+                pids=("${pids[@]:1}")
+            fi
+        done
+    done
+
+    # 等待所有编译完成
+    wait || handle_error "Compilation failed"
+}
+
+# 主函数
+main() {
+    trap cleanup EXIT
+    check_and_install_tools
+    setup_ndk || handle_error "NDK setup failed"
+
+    TEMP_BUILD_DIR=$(mktemp -d)
+    cp -r . "$TEMP_BUILD_DIR" || handle_error "Failed to copy files"
+    cd "$TEMP_BUILD_DIR" || handle_error "Failed to change directory"
+
+    # 获取版本信息
+    local version
+    version=$(git describe --tags $(git rev-list --tags --max-count=1))
+    if [[ "$version" != "v"* ]]; then
+        log_info "Please input version:"
+        read -r version
+    fi
+    . ./module_settings/config.sh
+    log_info "Building module: ${action_name} settings from module_settings/config.sh"
+    {
+        echo "id=${action_id}"
+        echo "name=${action_name}"
+        echo "version=${version}"
+        echo "versionCode=$(date +'%Y%m%d')"
+        echo "author=${action_author}"
+        echo "description=${action_description}"
+    } >module.prop
+
+    # 替换标识符
+    find files webroot -type f -name "*.sh" -o -name "*.js" -exec sed -i "s/AMMF/${action_id}/g" {} +
+    find src -name "*.cpp" -exec sed -i "s/AMMF2/${action_id}/g" {} +
+    sed -i "s/AMMF/${action_id}/g" webroot/index.html
+    compile_binaries
+    rm -rf src
+    package_module "$version"
+    log_info "Build completed successfully!"
+    if [ "$restart_ovo" -eq 1 ]; then
+        if [ $IS_WINDOWS -eq 1 ]; then
+            log_info "Windows requires a full system restart to apply Android NDK environment variables"
+        else
+            log_info "Please restart your terminal to apply Android NDK environment variables"
         fi
     fi
-fi
-TEMP_BUILD_DIR=$(mktemp -d)
-echo "Using temporary build directory: $TEMP_BUILD_DIR"
-cp -r . "$TEMP_BUILD_DIR" || {
-    echo "Failed to copy files to temp directory"
-    exit 1
 }
-cd "$TEMP_BUILD_DIR" || {
-    echo "Failed to enter temp directory"
-    exit 1
-}
-CURRENT_TIME="$(date +'%Y%m%d')"
-LATEST_TAG="$(git describe --tags $(git rev-list --tags --max-count=1))"
-if [[ "$LATEST_TAG" == "v"* ]]; then
-    echo "latest tag is ${LATEST_TAG}"
-else
-    echo "please input version:"
-    read -r LATEST_TAG
-fi
-. ./module_settings/config.sh
-echo "id=${action_id}" >module.prop
-echo "name=${action_name}" >>module.prop
-echo "version=${LATEST_TAG}" >>module.prop
-echo "versionCode=${CURRENT_TIME}" >>module.prop
-echo "author=${action_author}" >>module.prop
-echo "description=${action_description}" >>module.prop
-find files -name "*.sh" -exec sed -i "s/AMMF/${action_id}/g" {} \;
-find webroot -name "*.js" -exec sed -i "s/AMMF/${action_id}/g" {} \;
-find src -name "*.cpp" -exec sed -i "s/AMMF2/${action_id}/g" {} \;
-sed -i "s/AMMF/${action_id}/g" webroot/index.html
-echo "Built module.prop successfully"
-# Create binaries directory
-mkdir -p bin
-# Modified compile and strip commands section
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    # Windows environment uses windows-x86_64 path
-    PREBUILT_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/windows-x86_64/bin"
-else
-    # Linux/Mac environment uses linux-x86_64 path
-    PREBUILT_PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
-fi
-echo "Using PREBUILT_PATH: $PREBUILT_PATH"
-# Unified compile commands using PREBUILT_PATH
-$PREBUILT_PATH/aarch64-linux-android21-clang++ \
-    -O2 -Wall -Wextra -static-libstdc++ -o bin/filewatch-aarch64 src/filewatch.cpp
-echo "Compiled aarch64 binary"
-$PREBUILT_PATH/x86_64-linux-android21-clang++ \
-    -O2 -Wall -Wextra -static-libstdc++ -o bin/filewatch-x86_64 src/filewatch.cpp
-echo "Compiled x86_64 binary"
-$PREBUILT_PATH/aarch64-linux-android21-clang++ \
-    -O2 -Wall -Wextra -std=c++11 -static-libstdc++ -o bin/logmonitor-aarch64 src/logmonitor.cpp
-echo "Compiled logmonitor aarch64 binary"
-$PREBUILT_PATH/x86_64-linux-android21-clang++ \
-    -O2 -Wall -Wextra -std=c++11 -static-libstdc++ -o bin/logmonitor-x86_64 src/logmonitor.cpp
-echo "Compiled logmonitor x86_64 binary"
-# Strip commands also use PREBUILT_PATH
-$PREBUILT_PATH/llvm-strip bin/filewatch-aarch64 || echo "Failed to strip aarch64 binary"
-$PREBUILT_PATH/llvm-strip bin/filewatch-x86_64 || echo "Failed to strip x86_64 binary"
-$PREBUILT_PATH/llvm-strip bin/logmonitor-aarch64 || echo "Failed to strip logmonitor aarch64 binary"
-$PREBUILT_PATH/llvm-strip bin/logmonitor-x86_64 || echo "Failed to strip logmonitor x86_64 binary"
-echo "Stripped binaries"
-if [ -n "$TEMP_NDK_DIR" ]; then
-    echo "Cleaning up temporary NDK installation..."
-    rm -rf "$TEMP_NDK_DIR"
-fi
-echo "Build completed"
-rm -rf src
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    echo "Using PowerShell for compression..."
-    powershell.exe -Command "\$ProgressPreference='SilentlyContinue'; Compress-Archive -Path (Get-ChildItem -Exclude '*.git*') -DestinationPath '${action_name}_${LATEST_TAG}.zip' -CompressionLevel Optimal" || {
-        echo "PowerShell compression failed"
-        exit 1
-    }
-else
-    # Linux/Mac环境保持不变
-    echo "Using Linux zip..."
-    zip -r -9 "${action_name}_${LATEST_TAG}.zip" . -x "*.git*" || {
-        echo "zip failed"
-        exit 1
-    }
-fi
 
-# Get original working directory path
-ORIGINAL_DIR="$OLDPWD"
-echo "Original directory: $ORIGINAL_DIR"
-# Move packaged file to original directory
-
-    # Add zip file existence check
-    if [ ! -f "${action_name}_${LATEST_TAG}.zip" ]; then
-        echo "Error: Zip file ${action_name}_${LATEST_TAG}.zip does not exist"
-        exit 1
-    fi
-    
-    cp "${action_name}_${LATEST_TAG}.zip" "$ORIGINAL_DIR/"
-
-# Clean up temporary directory
-echo "Cleaning up temporary build directory..."
-rm -rf "$TEMP_BUILD_DIR"
+main "$@"
