@@ -10,7 +10,10 @@ export default {
     nav: [
       { text: '首页', link: '/' }
     ],
-    
+    ignoreDeadLinks: [
+      /^\.\.\/\.\.\/LICENSE$/,
+      /^\.\.\/README$/
+    ],
     // 修改侧边栏配置，确保路径正确
     sidebar: {
       '/': [

@@ -1,7 +1,7 @@
 
 # AMMF2 - Aurora Modular Magisk Framework
 
-[简体中文](../README.md) | [English](/en/README.md)
+[简体中文](../README.md) | [English](README.md)
 
 <div align="center">
     <img src="https://img.shields.io/github/commit-activity/w/Aurora-Nasa-1/AMMF2" alt="GitHub Commit Activity">
@@ -98,7 +98,7 @@ Welcome to submit PR or Issue to improve this framework! If you find this projec
 
 ## 📄 License
 
-This project is licensed under the [MIT LICENSE](../../LICENSE).
+This project is licensed under the MIT LICENSE.
 
 ## 🙏 Acknowledgments
 
