@@ -9,12 +9,14 @@ This project uses VitePress to build the documentation site. Here are the steps 
 
 ## Local Development and Preview
 
-## Automatic Deployment
+### Automatic Deployment
 
 For local automatic deployment, run the build_docs.sh script:
 ```bash
 build_docs.sh
 ```
+### Manual Deployment
+
 ### 1. Install Dependencies
 
 In the `docs` directory of the project, run:
