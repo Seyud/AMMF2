@@ -9,6 +9,14 @@ This project uses VitePress to build the documentation site. Here are the steps 
 
 ## Local Development and Preview
 
+## Automatic Deployment
+
+This project has configured GitHub Actions workflow that will automatically build and deploy the documentation to GitHub Pages when pushing to the `main` branch.
+
+For local automatic deployment, run the build_docs.sh script:
+```bash
+build_docs.sh
+```
 ### 1. Install Dependencies
 
 In the `docs` directory of the project, run:
