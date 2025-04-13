@@ -6,7 +6,7 @@
 const AboutPage = {
     // 模块信息
     moduleInfo: {},
-    version: '7.1.0',
+    version: '7.1.1',
     // 配置项
     config: {
         showThemeToggle: false  // 控制是否显示主题切换按钮
@@ -130,17 +130,22 @@ const AboutPage = {
         // 创建对话框容器
         const dialogContainer = document.createElement('div');
         dialogContainer.className = 'color-picker-overlay';
-        dialogContainer.style.position = 'fixed';
-        dialogContainer.style.top = '0';
-        dialogContainer.style.left = '0';
-        dialogContainer.style.width = '100%';
-        dialogContainer.style.height = '100%';
-        dialogContainer.style.backgroundColor = 'rgba(0,0,0,0.4)';
-        dialogContainer.style.display = 'flex';
-        dialogContainer.style.justifyContent = 'center';
-        dialogContainer.style.alignItems = 'center';
-        dialogContainer.style.zIndex = '1000';
     
+        // Material Design 3 标准色调值
+        const presetHues = [
+            { value: 0, name: 'color' },
+            { value: 37, name: 'color' },
+            { value: 66, name: 'color' },
+            { value: 97, name: 'color' },
+            { value: 124, name: 'color' },
+            { value: 148, name: 'color' },
+            { value: 176, name: 'color' },
+            { value: 212, name: 'color' },
+            { value: 255, name: 'color' },
+            { value: 300, name: 'color' },
+            { value: 325, name: 'color' }
+        ];
+
         // 创建对话框内容
         const dialog = document.createElement('div');
         dialog.className = 'md-dialog color-picker-dialog';
@@ -149,9 +154,16 @@ const AboutPage = {
         dialog.innerHTML = `
             <h2>${I18n.translate('COLOR_PICKER', '颜色选择器')}</h2>
             <div class="color-picker-content">
+                <div class="preset-colors">
+                    ${presetHues.map(hue => `
+                        <div class="preset-color" data-hue="${hue.value}" title="${hue.name}">
+                            <div class="color-preview" style="--preview-hue: ${hue.value}"></div>
+                        </div>
+                    `).join('')}
+                </div>
                 <label>
-                    <span>${I18n.translate('HUE_VALUE', '色调值 (0-9000)')}</span>
-                    <input type="range" id="hue-slider" min="0" max="9000" value="${this.getCurrentHue()}">
+                    <span>${I18n.translate('HUE_VALUE', '色调值')}</span>
+                    <input type="range" id="hue-slider" min="0" max="360" value="${this.getCurrentHue()}">
                     <output id="hue-value">${this.getCurrentHue()}</output>
                 </label>
             </div>
@@ -160,6 +172,8 @@ const AboutPage = {
                 <button class="dialog-button filled" id="apply-color">${I18n.translate('APPLY', '应用')}</button>
             </div>
         `;
+
+
     
         // 添加到文档
         dialogContainer.appendChild(dialog);
@@ -168,7 +182,25 @@ const AboutPage = {
         // 添加滑块事件
         const slider = document.getElementById('hue-slider');
         const output = document.getElementById('hue-value');
-        const preview = dialog.querySelector('.hue-preview');
+        
+        // 添加预设色调点击事件
+        dialog.querySelectorAll('.preset-color').forEach(preset => {
+            preset.addEventListener('click', () => {
+                const hue = preset.dataset.hue;
+                slider.value = hue;
+                output.textContent = hue + '°';
+                // 实时预览颜色
+                document.documentElement.style.setProperty('--hue', hue);
+            });
+        });
+        
+        // 添加滑块实时预览
+        slider.addEventListener('input', () => {
+            const value = slider.value;
+            output.textContent = value + '°';
+            // 实时预览颜色
+            document.documentElement.style.setProperty('--hue', value);
+        });
     
         slider.addEventListener('input', () => {
             const value = slider.value;

@@ -18,8 +18,9 @@ const CSSLoader = {
     
     // 初始化CSS加载器
     init() {
-        // 从本地存储获取上次使用的CSS类型
+        // 从本地存储获取上次使用的CSS类型和色调值
         const savedCSSType = localStorage.getItem('ammf_css_type') || 'default';
+        const savedHue = localStorage.getItem('ammf_color_hue') || '300';
         
         // 移除index.html中直接引用的CSS
         this.removeDirectCSSLinks();
@@ -27,11 +28,21 @@ const CSSLoader = {
         // 加载保存的CSS类型
         this.loadCSS(savedCSSType);
         
+        // 应用保存的色调值
+        document.documentElement.style.setProperty('--hue', savedHue);
+        
         // 监听主题变更事件，确保CSS与主题兼容
         document.addEventListener('themeChanged', () => {
         });
         
-        console.log('CSS加载器初始化完成，当前CSS类型:', savedCSSType);
+        // 监听颜色变化事件
+        document.addEventListener('colorChanged', (e) => {
+            const hue = e.detail.hue;
+            document.documentElement.style.setProperty('--hue', hue);
+            localStorage.setItem('ammf_color_hue', hue);
+        });
+        
+        console.log('CSS加载器初始化完成，当前CSS类型:', savedCSSType, '当前色调:', savedHue);
     },
     
     // 移除直接在HTML中引用的CSS链接
