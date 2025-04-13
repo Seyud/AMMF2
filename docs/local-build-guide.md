@@ -11,8 +11,6 @@
 
 ## 自动部署
 
-本项目已配置 GitHub Actions 工作流，当推送到 `main` 分支时，会自动构建文档并部署到 GitHub Pages。
-
 本地自动部署，运行build_docs.sh脚本
 ```bash
 build_docs.sh
