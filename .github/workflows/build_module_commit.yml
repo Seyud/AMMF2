@@ -90,7 +90,7 @@ jobs:
         run: |
           rm -f src/*.cpp
           rm build.sh
-          requirements.txt
+          rm requirements.txt
 
       - name: Upload zip files as artifacts
         uses: actions/upload-artifact@v4
