@@ -702,8 +702,8 @@ html, body, #main-content, .language-options, .app-nav {
 
     /* 页面操作按钮区域 */
     .nav-content .page-actions {
-        margin: 8px auto; /* 减少上下边距 */
-        padding: 12px 0; /* 调整内边距 */
+        margin: auto; /* 移除固定边距，使用auto实现垂直居中 */
+        padding: 12px 0;
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -711,10 +711,11 @@ html, body, #main-content, .language-options, .app-nav {
         background-color: var(--surface-container-high);
         border-radius: 16px;
         width: 56px;
-        height: 144px;
+        height: auto; /* 自适应高度 */
+        min-height: 144px; /* 保持最小高度 */
         overflow-y: auto;
         flex-shrink: 0;
-        justify-content: center; /* 确保按钮在容器内垂直居中 */
+        justify-content: center;
     }
 
     /* 调整导航项容器 */
