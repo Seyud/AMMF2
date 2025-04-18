@@ -8,10 +8,11 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
-#include <filesystem>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <memory>
-
-namespace fs = std::filesystem;
+#include <sstream>
 
 // 版本信息
 constexpr const char* VERSION = "2.1.0";
@@ -41,41 +42,30 @@ class Logger {
 private:
     std::mutex mtx;
     std::condition_variable cv;
-    std::atomic<bool> running;
+    std::atomic<bool> running{true};
     std::string log_dir;
     int log_level;
     
     // 文件缓存
-    std::map<std::string, std::ofstream> files;
-    
-    // 日志队列
+    std::map<std::string, std::unique_ptr<std::ofstream>> files;
     std::vector<LogEntry> queue;
     
-    // 配置参数（默认省电模式）
-    const size_t MAX_QUEUE_SIZE = 16384;  // 16KB
-    const size_t MAX_FILE_SIZE = 1048576; // 1MB
-    const auto FLUSH_INTERVAL = std::chrono::minutes(1);
-    const auto WRITE_DELAY = std::chrono::milliseconds(500);
+    // 配置参数（省电模式）
+    static constexpr size_t MAX_QUEUE_SIZE = 16384;  // 16KB
+    static constexpr std::chrono::minutes::rep FLUSH_INTERVAL_MINUTES = 1;
+    static constexpr std::chrono::milliseconds::rep WRITE_DELAY_MS = 500;
     
-    // 工作线程
     std::thread worker;
-    
-    // 统计
     std::atomic<uint64_t> logs_count{0};
     std::atomic<uint64_t> bytes_written{0};
     std::chrono::system_clock::time_point start_time;
 
 public:
     Logger(std::string dir, int level = 3)
-        : running(true), log_dir(std::move(dir)), log_level(level),
+        : log_dir(std::move(dir)), log_level(level),
           start_time(std::chrono::system_clock::now()) {
-        try {
-            fs::create_directories(log_dir);
-        } catch (const fs::filesystem_error& e) {
-            std::cerr << "创建日志目录失败: " << e.what() << std::endl;
-            log_dir = ".";
-        }
-        
+        // 创建日志目录
+        mkdir(log_dir.c_str(), 0755);
         worker = std::thread(&Logger::process_queue, this);
     }
     
@@ -115,33 +105,41 @@ public:
         close_files();
         queue.clear();
         
-        try {
-            for (const auto& entry : fs::directory_iterator(log_dir)) {
-                if (entry.path().extension() == ".log") {
-                    fs::remove(entry.path());
+        DIR* dir = opendir(log_dir.c_str());
+        if (dir) {
+            struct dirent* entry;
+            while ((entry = readdir(dir)) != nullptr) {
+                std::string filename = entry->d_name;
+                if (filename.length() > 4 && 
+                    filename.substr(filename.length() - 4) == ".log") {
+                    std::string filepath = log_dir + "/" + filename;
+                    unlink(filepath.c_str());
                 }
             }
-        } catch (const fs::filesystem_error&) {}
+            closedir(dir);
+        }
     }
     
     std::string get_stats() const {
         auto uptime = std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now() - start_time).count();
         
-        return "日志统计:\n"
-               "- 运行时间: " + std::to_string(uptime) + "秒\n"
-               "- 处理日志: " + std::to_string(logs_count) + "条\n"
-               "- 写入大小: " + std::to_string(bytes_written) + "字节\n"
-               "- 当前队列: " + std::to_string(queue.size()) + "条\n";
+        std::ostringstream oss;
+        oss << "日志统计:\n"
+            << "- 运行时间: " << uptime << "秒\n"
+            << "- 处理日志: " << logs_count << "条\n"
+            << "- 写入大小: " << bytes_written << "字节\n"
+            << "- 当前队列: " << queue.size() << "条\n";
+        return oss.str();
     }
 
 private:
     void process_queue() {
         while (running) {
             std::unique_lock<std::mutex> lock(mtx);
-            cv.wait_for(lock, FLUSH_INTERVAL, [this] {
-                return !running || !queue.empty();
-            });
+            cv.wait_for(lock, 
+                std::chrono::minutes(FLUSH_INTERVAL_MINUTES), 
+                [this] { return !running || !queue.empty(); });
             
             if (!running && queue.empty()) break;
             flush_queue();
@@ -154,54 +152,91 @@ private:
         std::map<std::string, std::string> contents;
         
         for (const auto& entry : queue) {
-            auto& content = contents[entry.name];
+            std::string& content = contents[entry.name];
             
             char time_str[32];
             auto time = std::chrono::system_clock::to_time_t(entry.timestamp);
-            std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", std::localtime(&time));
+            strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", localtime(&time));
             
-            std::string level_str;
+            const char* level_str;
             switch (entry.level) {
                 case LogLevel::ERROR: level_str = "ERROR"; break;
                 case LogLevel::WARN:  level_str = "WARN";  break;
                 case LogLevel::INFO:  level_str = "INFO";  break;
                 case LogLevel::DEBUG: level_str = "DEBUG"; break;
+                default: level_str = "UNKNOWN";
             }
             
-            content += std::string(time_str) + " [" + level_str + "] " + entry.message + "\n";
+            content.reserve(content.size() + entry.message.size() + 50);
+            content += time_str;
+            content += " [";
+            content += level_str;
+            content += "] ";
+            content += entry.message;
+            content += '\n';
         }
         
         logs_count += queue.size();
         queue.clear();
         
-        for (const auto& [name, content] : contents) {
-            write_to_file(name, content);
-            bytes_written += content.size();
+        for (const auto& item : contents) {
+            write_to_file(item.first, item.second);
+            bytes_written += item.second.size();
         }
     }
     
-    void write_to_file(const std::string& name, const std::string& content) {
-        std::string path = log_dir + "/" + name + ".log";
+    private:
+        void write_to_file(const std::string& name, const std::string& content) {
+            std::string path = log_dir + "/" + name + ".log";
+            
+            auto& file = mapped_files[name];
+            if (file.fd == -1) {
+                file.fd = open(path.c_str(), O_RDWR | O_CREAT | O_APPEND, 0644);
+                if (file.fd != -1) {
+                    // 预分配文件空间
+                    fallocate(file.fd, 0, 0, BUFFER_SIZE);
+                    
+                    // 内存映射
+                    file.data = (char*)mmap(nullptr, BUFFER_SIZE, 
+                        PROT_READ | PROT_WRITE, MAP_SHARED, file.fd, 0);
+                    file.size = BUFFER_SIZE;
+                    file.used = 0;
+                }
+            }
         
-        if (files.find(name) == files.end()) {
-            files[name].open(path, std::ios::app);
-        }
+            if (file.fd != -1 && file.data != MAP_FAILED) {
+                // 检查是否需要扩展映射
+                if (file.used + content.size() > file.size) {
+                    munmap(file.data, file.size);
+                    file.size *= 2;
+                    fallocate(file.fd, 0, 0, file.size);
+                    file.data = (char*)mmap(nullptr, file.size, 
+                        PROT_READ | PROT_WRITE, MAP_SHARED, file.fd, 0);
+                }
         
-        auto& file = files[name];
-        if (file.is_open()) {
-            file << content;
-            file.flush();
-        }
-    }
-    
-    void close_files() {
-        for (auto& [_, file] : files) {
-            if (file.is_open()) {
-                file.close();
+                // 写入数据
+                memcpy(file.data + file.used, content.data(), content.size());
+                file.used += content.size();
+        
+                // 定期同步到磁盘
+                if (file.used >= BUFFER_SIZE / 2) {
+                    msync(file.data, file.used, MS_ASYNC);
+                }
             }
         }
-        files.clear();
-    }
+        
+        void close_files() {
+            for (const auto& pair : files) {
+                if (pair.second != -1) {
+                    close(pair.second);
+                }
+            }
+            files.clear();
+        }
+    
+    private:
+        // 修改文件缓存的类型
+        std::map<std::string, int> files;  // 文件名 -> 文件描述符
 };
 
 // 全局实例
@@ -214,13 +249,13 @@ int main(int argc, char* argv[]) {
     std::string log_name = "system";
     std::string message;
     
-    // 解析参数
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
         if (arg == "-d" && i + 1 < argc) {
             log_dir = argv[++i];
         } else if (arg == "-l" && i + 1 < argc) {
-            log_level = std::clamp(std::stoi(argv[++i]), 1, 4);
+            int level = std::stoi(argv[++i]);
+            log_level = (level < 1) ? 1 : (level > 4) ? 4 : level;
         } else if (arg == "-c" && i + 1 < argc) {
             command = argv[++i];
         } else if (arg == "-n" && i + 1 < argc) {
@@ -233,12 +268,10 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    // 创建日志实例
     if (!g_logger) {
-        g_logger = std::make_unique<Logger>(log_dir, log_level);
+        g_logger = std::unique_ptr<Logger>(new Logger(log_dir, log_level));
     }
     
-    // 执行命令
     if (command == "daemon") {
         g_logger->write_log("system", LogLevel::INFO, 
             "日志系统启动 (版本 " + std::string(VERSION) + ")");
