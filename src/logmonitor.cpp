@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <memory>
 #include <sstream>
+#include <fcntl.h>
+#include <sys/mman.h>
 
 // 版本信息
 constexpr const char* VERSION = "2.1.0";
@@ -186,25 +188,51 @@ private:
     }
     
     private:
+        static constexpr size_t BUFFER_SIZE = 1024 * 1024;  // 1MB 缓冲区
+        
+        struct MappedFile {
+            int fd{-1};
+            char* data{nullptr};
+            size_t size{0};
+            size_t used{0};
+            
+            ~MappedFile() {
+                if (data && data != MAP_FAILED) {
+                    munmap(data, size);
+                }
+                if (fd != -1) {
+                    close(fd);
+                }
+            }
+        };
+        
+        std::map<std::string, std::unique_ptr<MappedFile>> mapped_files;
+        
+        // 删除原来的 files 成员变量，因为我们现在使用 mapped_files
         void write_to_file(const std::string& name, const std::string& content) {
             std::string path = log_dir + "/" + name + ".log";
             
-            auto& file = mapped_files[name];
+            auto& file_ptr = mapped_files[name];
+            if (!file_ptr) {
+                file_ptr = std::make_unique<MappedFile>();
+            }
+            auto& file = *file_ptr;
+            
             if (file.fd == -1) {
                 file.fd = open(path.c_str(), O_RDWR | O_CREAT | O_APPEND, 0644);
                 if (file.fd != -1) {
                     // 预分配文件空间
-                    fallocate(file.fd, 0, 0, BUFFER_SIZE);
-                    
-                    // 内存映射
-                    file.data = (char*)mmap(nullptr, BUFFER_SIZE, 
-                        PROT_READ | PROT_WRITE, MAP_SHARED, file.fd, 0);
-                    file.size = BUFFER_SIZE;
-                    file.used = 0;
+                    if (fallocate(file.fd, 0, 0, BUFFER_SIZE) == 0) {
+                        // 内存映射
+                        file.data = (char*)mmap(nullptr, BUFFER_SIZE, 
+                            PROT_READ | PROT_WRITE, MAP_SHARED, file.fd, 0);
+                        file.size = BUFFER_SIZE;
+                        file.used = 0;
+                    }
                 }
             }
         
-            if (file.fd != -1 && file.data != MAP_FAILED) {
+            if (file.fd != -1 && file.data && file.data != MAP_FAILED) {
                 // 检查是否需要扩展映射
                 if (file.used + content.size() > file.size) {
                     munmap(file.data, file.size);
@@ -214,24 +242,21 @@ private:
                         PROT_READ | PROT_WRITE, MAP_SHARED, file.fd, 0);
                 }
         
-                // 写入数据
-                memcpy(file.data + file.used, content.data(), content.size());
-                file.used += content.size();
+                if (file.data && file.data != MAP_FAILED) {
+                    // 写入数据
+                    memcpy(file.data + file.used, content.data(), content.size());
+                    file.used += content.size();
         
-                // 定期同步到磁盘
-                if (file.used >= BUFFER_SIZE / 2) {
-                    msync(file.data, file.used, MS_ASYNC);
+                    // 定期同步到磁盘
+                    if (file.used >= BUFFER_SIZE / 2) {
+                        msync(file.data, file.used, MS_ASYNC);
+                    }
                 }
             }
         }
         
         void close_files() {
-            for (const auto& pair : files) {
-                if (pair.second != -1) {
-                    close(pair.second);
-                }
-            }
-            files.clear();
+            mapped_files.clear();  // 智能指针会自动清理资源
         }
     
     private:
