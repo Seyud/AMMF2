@@ -49,7 +49,25 @@ private:
     int log_level;
     
     // 文件缓存
-    std::map<std::string, std::unique_ptr<std::ofstream>> files;
+    static constexpr size_t BUFFER_SIZE = 1024 * 1024;  // 1MB 缓冲区
+    
+    struct MappedFile {
+        int fd{-1};
+        char* data{nullptr};
+        size_t size{0};
+        size_t used{0};
+        
+        ~MappedFile() {
+            if (data && data != MAP_FAILED) {
+                munmap(data, size);
+            }
+            if (fd != -1) {
+                close(fd);
+            }
+        }
+    };
+    
+    std::map<std::string, std::unique_ptr<MappedFile>> mapped_files;
     std::vector<LogEntry> queue;
     
     // 配置参数（省电模式）
@@ -188,33 +206,12 @@ private:
     }
     
     private:
-        static constexpr size_t BUFFER_SIZE = 1024 * 1024;  // 1MB 缓冲区
-        
-        struct MappedFile {
-            int fd{-1};
-            char* data{nullptr};
-            size_t size{0};
-            size_t used{0};
-            
-            ~MappedFile() {
-                if (data && data != MAP_FAILED) {
-                    munmap(data, size);
-                }
-                if (fd != -1) {
-                    close(fd);
-                }
-            }
-        };
-        
-        std::map<std::string, std::unique_ptr<MappedFile>> mapped_files;
-        
-        // 删除原来的 files 成员变量，因为我们现在使用 mapped_files
         void write_to_file(const std::string& name, const std::string& content) {
             std::string path = log_dir + "/" + name + ".log";
             
             auto& file_ptr = mapped_files[name];
             if (!file_ptr) {
-                file_ptr = std::make_unique<MappedFile>();
+                file_ptr.reset(new MappedFile());
             }
             auto& file = *file_ptr;
             
@@ -258,10 +255,6 @@ private:
         void close_files() {
             mapped_files.clear();  // 智能指针会自动清理资源
         }
-    
-    private:
-        // 修改文件缓存的类型
-        std::map<std::string, int> files;  // 文件名 -> 文件描述符
 };
 
 // 全局实例
