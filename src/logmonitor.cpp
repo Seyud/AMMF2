@@ -499,9 +499,8 @@ void signal_handler(int sig) {
 }
 
 // 主函数
-// 修改 main 函数中的相关部分
 int main(int argc, char* argv[]) {
-    // 修改默认路径为 Android 环境下的模块路径
+    // 修改默认路径为模块路径
     std::string log_dir = "/data/adb/modules/AMMF2/logs";
     int log_level = 3;
     std::string command;
@@ -580,10 +579,6 @@ int main(int argc, char* argv[]) {
         signal(SIGINT, signal_handler);
         signal(SIGUSR1, signal_handler);  // 用于触发日志刷新
         signal(SIGPIPE, SIG_IGN);  // 忽略管道错误
-        
-        // 写入启动日志到 Android 日志系统
-        __android_log_print(ANDROID_LOG_INFO, "AMMF2_Logger", "日志系统已启动%s", 
-            low_power ? " (低功耗模式)" : "");
         
         // 写入启动日志到文件
         std::string startup_msg = "日志系统已启动";
