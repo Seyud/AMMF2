@@ -220,21 +220,22 @@ public:
         }
     }
 
+// In LogFile class, modify rotate_if_needed()
 private:
     void rotate_if_needed() {
-        namespace fs = std::filesystem;
+        // Replace std::filesystem with traditional file operations
         for (int i = ROTATE_COUNT - 1; i > 0; --i) {
-            fs::path old_path = path + "." + std::to_string(i);
-            fs::path new_path = path + "." + std::to_string(i + 1);
-            if (fs::exists(old_path)) {
-                fs::rename(old_path, new_path);
+            std::string old_path = path + "." + std::to_string(i);
+            std::string new_path = path + "." + std::to_string(i + 1);
+            struct stat st;
+            if (stat(old_path.c_str(), &st) == 0) {
+                rename(old_path.c_str(), new_path.c_str());
             }
         }
         
-        fs::path current_path = path;
-        fs::path backup_path = path + ".1";
-        if (fs::exists(current_path)) {
-            fs::rename(current_path, backup_path);
+        struct stat st;
+        if (stat(path.c_str(), &st) == 0) {
+            rename(path.c_str(), (path + ".1").c_str());
         }
         
         if (fd != -1) {
@@ -245,187 +246,25 @@ private:
             buffer_used = 0;
         }
     }
-};
 
-// 日志管理器
-class Logger {
-private:
-    struct LogEntry {
-        std::string name;
-        LogLevel level;
-        std::string message;
-        std::chrono::system_clock::time_point timestamp;
-        
-        LogEntry(std::string n, LogLevel l, std::string m)
-            : name(std::move(n)), level(l), message(std::move(m)),
-              timestamp(std::chrono::system_clock::now()) {}
-    };
-
-    std::string log_dir;
-    int log_level;
-    std::atomic<bool> running{true};
-    std::mutex mtx;
-    std::condition_variable cv;
-    std::thread worker;
-    std::shared_ptr<CircularBuffer> buffer;
-    std::shared_ptr<MemoryPool> memory_pool;
-    std::map<std::string, std::unique_ptr<LogFile>> files;
+// In Logger class constructor
+Logger(std::string dir, int level)
+    : log_dir(std::move(dir)), 
+      log_level(level),
+      buffer(std::make_shared<CircularBuffer>()),
+      memory_pool(std::make_shared<MemoryPool>()),
+      start_time(std::chrono::steady_clock::now()) {
+    // Replace std::filesystem with mkdir
+    mkdir(log_dir.c_str(), 0755);
+    worker = std::thread(&Logger::process_logs, this);
     
-    // 自适应刷盘策略
-    static constexpr size_t BATCH_SIZE = 32;
-    static constexpr auto MIN_FLUSH_INTERVAL = std::chrono::milliseconds(100);
-    static constexpr auto MAX_FLUSH_INTERVAL = std::chrono::seconds(5);
-    std::chrono::milliseconds current_flush_interval{1000};
-    std::queue<LogEntry> pending_logs;
-    
-    // 性能统计
-    std::atomic<uint64_t> total_logs{0};
-    std::atomic<uint64_t> total_bytes{0};
-    std::chrono::steady_clock::time_point start_time;
+    // Define Android priority
+    constexpr int ANDROID_PRIORITY_BACKGROUND = 10;
+    setpriority(PRIO_PROCESS, gettid(), ANDROID_PRIORITY_BACKGROUND);
+}
 
-public:
-    Logger(std::string dir, int level)
-        : log_dir(std::move(dir)), 
-          log_level(level),
-          buffer(std::make_shared<CircularBuffer>()),
-          memory_pool(std::make_shared<MemoryPool>()),
-          start_time(std::chrono::steady_clock::now()) {
-        std::filesystem::create_directories(log_dir);  // 使用 C++17 的文件系统
-        worker = std::thread(&Logger::process_logs, this);
-        
-        // Android 优先级定义
-        constexpr int ANDROID_PRIORITY_BACKGROUND = 10;
-        setpriority(PRIO_PROCESS, gettid(), ANDROID_PRIORITY_BACKGROUND);
-    }
-
-    ~Logger() {
-        stop();
-    }
-
-    void write_log(const std::string& name, LogLevel level, const std::string& message) {
-        if (static_cast<int>(level) > log_level) return;
-        
-        std::lock_guard<std::mutex> lock(mtx);
-        pending_logs.emplace(name, level, message);
-        total_logs++;
-        
-        if (pending_logs.size() >= BATCH_SIZE || level == LogLevel::ERROR) {
-            cv.notify_one();
-        }
-    }
-
-    void stop() {
-        if (running.exchange(false)) {
-            cv.notify_all();
-            if (worker.joinable()) {
-                worker.join();
-            }
-            flush_all();
-        }
-    }
-    
-    std::string get_stats() const {
-        auto now = std::chrono::steady_clock::now();
-        auto uptime = std::chrono::duration_cast<std::chrono::seconds>(
-            now - start_time).count();
-        
-        return "统计信息:\n"
-               "- 运行时间: " + std::to_string(uptime) + " 秒\n"
-               "- 总日志数: " + std::to_string(total_logs) + "\n"
-               "- 总字节数: " + std::to_string(total_bytes) + "\n"
-               "- 平均速率: " + std::to_string(total_logs * 1.0 / uptime) + " 条/秒";
-    }
-
-private:
-    void process_logs() {
-        std::vector<char> buffer(4096);
-        auto last_flush = std::chrono::steady_clock::now();
-        
-        while (running) {
-            std::unique_lock<std::mutex> lock(mtx);
-            bool timeout = cv.wait_for(lock, current_flush_interval,
-                [this] { return !running || !pending_logs.empty(); });
-            
-            if (!running && pending_logs.empty()) break;
-            
-            // 处理待写入的日志
-            while (!pending_logs.empty()) {
-                auto& entry = pending_logs.front();
-                size_t msg_size = format_log(entry, buffer);
-                total_bytes += msg_size;
-                pending_logs.pop();
-                
-                auto& file = get_log_file(entry.name);
-                file->write(buffer.data(), msg_size);
-                
-                // 对于错误日志，立即刷盘
-                if (entry.level == LogLevel::ERROR) {
-                    file->flush();
-                }
-            }
-            
-            // 自适应调整刷盘间隔
-            auto now = std::chrono::steady_clock::now();
-            if (timeout) {
-                current_flush_interval = std::min(
-                    current_flush_interval * 2,
-                    MAX_FLUSH_INTERVAL);
-            } else {
-                current_flush_interval = std::max(
-                    current_flush_interval / 2,
-                    MIN_FLUSH_INTERVAL);
-            }
-            
-            // 定期刷新所有文件
-            if (std::chrono::duration_cast<std::chrono::seconds>(
-                now - last_flush).count() >= 5) {
-                flush_all();
-                last_flush = now;
-            }
-        }
-    }
-
-    LogFile& get_log_file(const std::string& name) {
-        auto it = files.find(name);
-        if (it == files.end()) {
-            std::string path = log_dir + "/" + name + ".log";
-            it = files.emplace(name, 
-                std::make_unique<LogFile>(path)).first;
-        }
-        return *it->second;
-    }
-
-    size_t format_log(const LogEntry& entry, std::vector<char>& buffer) {
-        char time_str[32];
-        auto time = std::chrono::system_clock::to_time_t(entry.timestamp);
-        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", 
-            localtime(&time));
-        
-        const char* level_str;
-        switch (entry.level) {
-            case LogLevel::ERROR: level_str = "ERROR"; break;
-            case LogLevel::WARN:  level_str = "WARN";  break;
-            case LogLevel::INFO:  level_str = "INFO";  break;
-            case LogLevel::DEBUG: level_str = "DEBUG"; break;
-            default: level_str = "UNKNOWN";
-        }
-        
-        return snprintf(buffer.data(), buffer.size(),
-            "%s [%s] %s\n", time_str, level_str, entry.message.c_str());
-    }
-
-    void flush_all() {
-        for (auto& file : files) {
-            file.second->flush();
-        }
-    }
-};
-
-// 全局实例
-static std::unique_ptr<Logger> g_logger;
-
+// In main function, remove filesystem namespace
 int main(int argc, char* argv[]) {
-    namespace fs = std::filesystem;
     std::string log_dir = "/data/adb/modules/AMMF2/logs";
     int log_level = 3;
     std::string command = "daemon";
