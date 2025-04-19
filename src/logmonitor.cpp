@@ -187,7 +187,7 @@ public:
 
     void write_log(const std::string& name, LogLevel level, const std::string& message) {
         if (static_cast<int>(level) > log_level) return;
-
+    
         time_t now;
         time(&now);
         tm* ltm = localtime(&now);
@@ -195,7 +195,7 @@ public:
         char timestamp[32];
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", ltm);
         
-        std::string formatted = std::string(timestamp) + " [" + 
+        std::string formatted = std::string(timestamp) + " [" + name + "] [" + 
             level_to_string(level) + "] " + message + "\n";
         
         buffer->write(formatted.c_str(), formatted.length());
@@ -271,8 +271,7 @@ int main(int argc, char* argv[]) {
                 int level = std::stoi(argv[++i]);
                 log_level = clamp(level, 1, 4);
             } catch (...) {
-                __android_log_print(ANDROID_LOG_WARN, "logmonitor",
-                    "Invalid log level, using default (3)");
+                std::cerr << "Invalid log level, using default (3)" << std::endl;
             }
         } else if (arg == "-c" && i + 1 < argc) {
             command = argv[++i];
