@@ -133,8 +133,14 @@ clean_logs() {
 # 停止日志系统
 stop_logger() {
     if [ "$LOGGER_INITIALIZED" = "1" ] && [ -n "$LOGMONITOR_PID" ]; then
-        "$LOGMONITOR_BIN" -c flush  # 停止前确保刷新
+        # 先刷新缓冲区
+        "$LOGMONITOR_BIN" -c flush
+        # 等待刷新完成
+        sleep 0.5
+        # 发送终止信号
         kill -TERM "$LOGMONITOR_PID" 2>/dev/null
+        # 等待进程退出
+        wait "$LOGMONITOR_PID" 2>/dev/null
         LOGGER_INITIALIZED=0
     fi
 }

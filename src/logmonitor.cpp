@@ -625,25 +625,16 @@ static std::unique_ptr<Logger> g_logger;
 
 // 信号处理函数
 void signal_handler(int sig) {
-    // 信号处理函数应尽可能快，避免复杂操作和分配内存
-    // 标记需要退出或刷新，让主线程或日志线程处理
-    // 这里简化处理：尝试刷新，然后退出 (可能不安全)
     if (g_logger) {
-        // 不要在信号处理器中调用 std::cerr 或其他可能分配内存/加锁的操作
-        // g_logger->flush_all(); // 可能不安全
-        // 更好的方法是设置一个原子标志，让主循环或日志线程检查
+        // 在退出前尝试刷新
+        if (sig == SIGTERM || sig == SIGINT) {
+            g_logger->flush_all();  // 刷新所有缓冲区
+            g_logger->stop();       // 停止日志系统
+        }
     }
 
-    // 对于终止信号，直接退出
     if (sig == SIGTERM || sig == SIGINT) {
-        // 调用 _exit 而不是 exit，避免调用 atexit 注册的函数和全局对象析构
-        _exit(0); // 或者使用 quick_exit (C++11)
-    }
-    // 其他信号 (如 SIGUSR1) 可以用于触发特定操作，例如刷新
-    if (sig == SIGUSR1 && g_logger) {
-         // g_logger->flush_all(); // 同样可能不安全
-         // 可以 notify 条件变量让日志线程刷新
-         // g_logger->cv.notify_all(); // 需要访问 Logger 内部成员，不推荐
+        _exit(0);
     }
 }
 
