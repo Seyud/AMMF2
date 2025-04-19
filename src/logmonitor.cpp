@@ -15,16 +15,6 @@
 #include <memory>
 #include <optional>
 
-#ifdef _WIN32
-#include <direct.h>
-#include <windows.h>
-#define mkdir(path, mode) _mkdir(path)
-#else
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#endif
-
 // 使用命名空间简化代码
 namespace fs = std::filesystem;
 
@@ -85,7 +75,9 @@ private:
 
 public:
     Logger(const std::string& dir, int level = 3, size_t size_limit = 102400)
-        : log_dir(dir), log_level(level), log_size_limit(size_limit) {
+        : log_size_limit(size_limit)
+        , log_level(level)
+        , log_dir(dir) {
         
         // 创建日志目录
         create_log_directory();
@@ -94,7 +86,8 @@ public:
         update_time_cache();
         
         // 启动刷新线程
-        flush_thread = std::make_unique<std::thread>(&Logger::flush_thread_func, this);
+        flush_thread = std::unique_ptr<std::thread>(
+            new std::thread(&Logger::flush_thread_func, this));
     }
     
     ~Logger() {
@@ -267,12 +260,8 @@ public:
         } catch (const std::exception& e) {
             std::cerr << "清理日志文件时出错: " << e.what() << std::endl;
             
-            // 回退到系统命令
-            #ifdef _WIN32
-            std::string cmd = "del /Q \"" + log_dir + "\\*.log\" \"" + log_dir + "\\*.log.old\"";
-            #else
+            // 使用 POSIX 命令
             std::string cmd = "rm -f \"" + log_dir + "\"/*.log \"" + log_dir + "\"/*.log.old";
-            #endif
             system(cmd.c_str());
         }
     }
@@ -287,24 +276,15 @@ private:
         } catch (const std::exception& e) {
             std::cerr << "无法创建日志目录: " << e.what() << std::endl;
             
-            // 回退到系统命令
-            #ifdef _WIN32
-            std::string cmd = "mkdir \"" + log_dir + "\"";
-            #else
+            // 使用 POSIX 命令
             std::string cmd = "mkdir -p \"" + log_dir + "\"";
-            #endif
             system(cmd.c_str());
             
             // 检查目录是否创建成功
             if (!fs::exists(log_dir)) {
                 std::cerr << "无法创建日志目录，使用当前目录" << std::endl;
                 log_dir = "./logs";
-                
-                #ifdef _WIN32
-                cmd = "mkdir \"" + log_dir + "\"";
-                #else
                 cmd = "mkdir -p \"" + log_dir + "\"";
-                #endif
                 system(cmd.c_str());
             }
         }
@@ -349,7 +329,7 @@ private:
         
         // 确保缓冲区存在
         if (log_buffers.find(log_name) == log_buffers.end()) {
-            log_buffers[log_name] = std::make_unique<LogBuffer>();
+            log_buffers[log_name] = std::unique_ptr<LogBuffer>(new LogBuffer());
         }
         
         auto& buffer = log_buffers[log_name];
@@ -384,7 +364,7 @@ private:
         // 获取或创建日志文件
         auto file_it = log_files.find(log_name);
         if (file_it == log_files.end()) {
-            log_files[log_name] = std::make_unique<LogFile>();
+            log_files[log_name] = std::unique_ptr<LogFile>(new LogFile());
             file_it = log_files.find(log_name);
         }
         
@@ -406,12 +386,8 @@ private:
                     }
                 } catch (const std::exception& e) {
                     std::cerr << "轮转日志文件时出错: " << e.what() << std::endl;
-                    // 回退到系统命令
-                    #ifdef _WIN32
-                    std::string cmd = "move /Y \"" + log_path + "\" \"" + old_log + "\"";
-                    #else
+                    // 使用 POSIX 命令
                     std::string cmd = "mv -f \"" + log_path + "\" \"" + old_log + "\"";
-                    #endif
                     system(cmd.c_str());
                 }
                 
@@ -523,8 +499,10 @@ void signal_handler(int sig) {
 }
 
 // 主函数
+// 修改 main 函数中的相关部分
 int main(int argc, char* argv[]) {
-    std::string log_dir = "d:\\AuroraData\\shell\\AMMF2\\logs";
+    // 修改默认路径为 Android 环境下的模块路径
+    std::string log_dir = "/data/adb/modules/AMMF2/logs";
     int log_level = 3;
     std::string command;
     std::string log_name = "system";
@@ -561,7 +539,7 @@ int main(int argc, char* argv[]) {
         } else if (arg == "-h" || arg == "--help") {
             std::cout << "用法: " << argv[0] << " [选项]" << std::endl;
             std::cout << "选项:" << std::endl;
-            std::cout << "  -d DIR    指定日志目录 (默认: d:\\AuroraData\\shell\\AMMF2\\logs)" << std::endl;
+            std::cout << "  -d DIR    指定日志目录 (默认: /data/adb/modules/AMMF2/logs)" << std::endl;
             std::cout << "  -l LEVEL  设置日志级别 (1=错误, 2=警告, 3=信息, 4=调试, 默认: 3)" << std::endl;
             std::cout << "  -c CMD    执行命令 (daemon, write, batch, flush, clean)" << std::endl;
             std::cout << "  -n NAME   指定日志名称 (用于write命令, 默认: system)" << std::endl;
@@ -594,19 +572,28 @@ int main(int argc, char* argv[]) {
     
     // 执行命令
     if (command == "daemon") {
+        // 设置文件权限
+        umask(0022);
+        
         // 设置信号处理
         signal(SIGTERM, signal_handler);
         signal(SIGINT, signal_handler);
-        #ifndef _WIN32
-        signal(SIGUSR1, signal_handler);  // 可用于触发日志刷新
-        #endif
+        signal(SIGUSR1, signal_handler);  // 用于触发日志刷新
+        signal(SIGPIPE, SIG_IGN);  // 忽略管道错误
         
-        // 写入启动日志
+        // 写入启动日志到 Android 日志系统
+        __android_log_print(ANDROID_LOG_INFO, "AMMF2_Logger", "日志系统已启动%s", 
+            low_power ? " (低功耗模式)" : "");
+        
+        // 写入启动日志到文件
         std::string startup_msg = "日志系统已启动";
         if (low_power) {
             startup_msg += " (低功耗模式)";
         }
         g_logger->write_log("system", LOG_INFO, startup_msg);
+        
+        // 确保日志目录权限正确
+        chmod(log_dir.c_str(), 0755);
         
         // 优化的主循环 - 使用条件变量等待
         std::mutex main_mutex;
