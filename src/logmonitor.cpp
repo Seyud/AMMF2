@@ -21,7 +21,6 @@
 
 constexpr const char* VERSION = "3.0.0";
 
-// 日志级别
 enum class LogLevel : uint8_t {
     ERROR = 1,
     WARN  = 2,
@@ -29,141 +28,72 @@ enum class LogLevel : uint8_t {
     DEBUG = 4
 };
 
-// 内存池管理器
-class MemoryPool {
+class LogBuffer {
 private:
-    static constexpr size_t CHUNK_SIZE = 4096;
-    struct Chunk {
-        std::unique_ptr<char[]> data;
-        size_t used = 0;
-        std::unique_ptr<Chunk> next;
-        
-        Chunk() : data(std::make_unique<char[]>(CHUNK_SIZE)) {}
-    };
-    
-    std::unique_ptr<Chunk> head;
+    static constexpr size_t BUFFER_SIZE = 256 * 1024;  // 256KB
+    char buffer[BUFFER_SIZE];
+    size_t used = 0;
     std::mutex mtx;
+    std::condition_variable cv;
+    bool need_flush = false;
+    static constexpr size_t FLUSH_THRESHOLD = BUFFER_SIZE * 3 / 4;
 
 public:
-    MemoryPool() : head(std::make_unique<Chunk>()) {}
-    
-    char* allocate(size_t size) {
-        std::lock_guard<std::mutex> lock(mtx);
-        if (size > CHUNK_SIZE) return nullptr;
-        
-        auto* chunk = head.get();
-        while (chunk->used + size > CHUNK_SIZE) {
-            if (!chunk->next) {
-                chunk->next = std::make_unique<Chunk>();
-            }
-            chunk = chunk->next.get();
-        }
-        
-        char* ptr = chunk->data.get() + chunk->used;
-        chunk->used += size;
-        return ptr;
-    }
-    
-    void reset() {
-        std::lock_guard<std::mutex> lock(mtx);
-        auto* chunk = head.get();
-        while (chunk) {
-            chunk->used = 0;
-            chunk = chunk->next.get();
-        }
-    }
-};
-
-// 环形缓冲区
-class CircularBuffer {
-private:
-    struct Buffer {
-        std::unique_ptr<char[]> data;
-        size_t capacity;
-        std::atomic<size_t> read_pos{0};
-        std::atomic<size_t> write_pos{0};
-        
-        explicit Buffer(size_t size) 
-            : data(std::make_unique<char[]>(size)), capacity(size) {}
-    };
-    
-    std::shared_ptr<Buffer> buffer;
-    std::mutex write_mtx;
-    static constexpr size_t DEFAULT_SIZE = 64 * 1024;
-
-public:
-    CircularBuffer() : buffer(std::make_shared<Buffer>(DEFAULT_SIZE)) {}
-    
     bool write(const char* data, size_t len) {
-        std::lock_guard<std::mutex> lock(write_mtx);
-        auto* buf = buffer.get();
-        size_t write_pos = buf->write_pos.load(std::memory_order_relaxed);
-        size_t read_pos = buf->read_pos.load(std::memory_order_acquire);
+        if (len > BUFFER_SIZE) return false;
         
-        if (available_space(write_pos, read_pos, buf->capacity) < len) {
+        std::unique_lock<std::mutex> lock(mtx);
+        if (used + len > BUFFER_SIZE) {
+            need_flush = true;
+            cv.notify_one();
             return false;
         }
         
-        size_t first_part = std::min(buf->capacity - write_pos, len);
-        memcpy(buf->data.get() + write_pos, data, first_part);
+        memcpy(buffer + used, data, len);
+        used += len;
         
-        if (first_part < len) {
-            memcpy(buf->data.get(), data + first_part, len - first_part);
+        if (used >= FLUSH_THRESHOLD) {
+            need_flush = true;
+            cv.notify_one();
         }
-        
-        buf->write_pos.store((write_pos + len) % buf->capacity, 
-            std::memory_order_release);
         return true;
     }
     
     size_t read(char* out, size_t max_len) {
-        auto* buf = buffer.get();
-        size_t read_pos = buf->read_pos.load(std::memory_order_relaxed);
-        size_t write_pos = buf->write_pos.load(std::memory_order_acquire);
-        
-        size_t available = (write_pos + buf->capacity - read_pos) % buf->capacity;
-        if (available == 0) return 0;
-        
-        size_t to_read = std::min(available, max_len);
-        size_t first_part = std::min(buf->capacity - read_pos, to_read);
-        
-        memcpy(out, buf->data.get() + read_pos, first_part);
-        if (first_part < to_read) {
-            memcpy(out + first_part, buf->data.get(), to_read - first_part);
+        std::unique_lock<std::mutex> lock(mtx);
+        if (used == 0) {
+            cv.wait_for(lock, std::chrono::seconds(5), [this] { 
+                return need_flush || used >= FLUSH_THRESHOLD; 
+            });
         }
         
-        buf->read_pos.store((read_pos + to_read) % buf->capacity, 
-            std::memory_order_release);
+        size_t to_read = std::min(used, max_len);
+        if (to_read > 0) {
+            memcpy(out, buffer, to_read);
+            used -= to_read;
+            if (used > 0) {
+                memmove(buffer, buffer + to_read, used);
+            }
+            need_flush = false;
+        }
         return to_read;
-    }
-
-private:
-    static size_t available_space(size_t write_pos, size_t read_pos, size_t capacity) {
-        if (write_pos >= read_pos) {
-            return capacity - (write_pos - read_pos) - 1;
-        }
-        return read_pos - write_pos - 1;
     }
 };
 
-// 日志文件管理器
 class LogFile {
 private:
-    static constexpr size_t MAX_FILE_SIZE = 10 * 1024 * 1024;  // 10MB
+    static constexpr size_t MAX_FILE_SIZE = 10 * 1024 * 1024;
     static constexpr size_t ROTATE_COUNT = 3;
-    static constexpr size_t BUFFER_SIZE = 64 * 1024;  // 64KB
     
     std::string path;
     int fd;
     size_t current_size;
-    std::unique_ptr<char[]> buffer;
-    size_t buffer_used;
-    std::mutex write_mutex;
+    std::vector<char> write_buffer;
+    static constexpr size_t WRITE_BUFFER_SIZE = 512 * 1024;  // 512KB
 
 public:
     explicit LogFile(const std::string& p) 
-        : path(p), fd(-1), current_size(0), 
-          buffer(new char[BUFFER_SIZE]), buffer_used(0) {
+        : path(p), fd(-1), current_size(0), write_buffer(WRITE_BUFFER_SIZE) {
         rotate_files();
         fd = open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
         if (fd != -1) {
@@ -171,50 +101,31 @@ public:
             if (fstat(fd, &st) == 0) {
                 current_size = st.st_size;
             }
+            posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
         }
     }
 
     ~LogFile() {
-        flush();
         if (fd != -1) {
             close(fd);
         }
     }
 
     bool write(const char* data, size_t len) {
-        std::lock_guard<std::mutex> lock(write_mutex);
-        
         if (fd == -1) return false;
         
         if (current_size + len > MAX_FILE_SIZE) {
-            flush();
             rotate_files();
         }
         
-        if (buffer_used + len > BUFFER_SIZE) {
-            flush();
-        }
-        
-        memcpy(buffer.get() + buffer_used, data, len);
-        buffer_used += len;
-        current_size += len;
-        
-        if (buffer_used >= BUFFER_SIZE / 2) {
-            flush();
-        }
-        
-        return true;
-    }
-    
-    void flush() {
-        if (buffer_used > 0 && fd != -1) {
-            if (::write(fd, buffer.get(), buffer_used) == -1) {
-                __android_log_print(ANDROID_LOG_ERROR, "LogFile", 
-                    "Failed to write to log file");
+        ssize_t written = ::write(fd, data, len);
+        if (written > 0) {
+            current_size += written;
+            if (current_size % (1024 * 1024) == 0) {  // 每1MB同步一次
+                fdatasync(fd);
             }
-            fsync(fd);
-            buffer_used = 0;
         }
+        return written == static_cast<ssize_t>(len);
     }
 
 private:
@@ -236,7 +147,6 @@ private:
     }
 };
 
-// 日志管理器
 class Logger {
 private:
     std::string log_dir;
@@ -245,18 +155,23 @@ private:
     std::mutex files_mutex;
     std::atomic<bool> running{true};
     std::thread worker;
-    std::shared_ptr<CircularBuffer> buffer;
-    std::shared_ptr<MemoryPool> memory_pool;
+    std::unique_ptr<LogBuffer> buffer;
     std::chrono::steady_clock::time_point start_time;
+    static constexpr size_t MAX_BATCH_SIZE = 1024 * 1024;  // 1MB
 
 public:
     Logger(const std::string& dir, int level)
         : log_dir(dir), log_level(level),
-          buffer(std::make_shared<CircularBuffer>()),
-          memory_pool(std::make_shared<MemoryPool>()),
+          buffer(new LogBuffer()),
           start_time(std::chrono::steady_clock::now()) {
         mkdir(log_dir.c_str(), 0755);
         worker = std::thread(&Logger::process_logs, this);
+        
+        pthread_setname_np(worker.native_handle(), "log_worker");
+        
+        struct sched_param param;
+        param.sched_priority = sched_get_priority_min(SCHED_BATCH);
+        pthread_setschedparam(worker.native_handle(), SCHED_BATCH, &param);
     }
 
     ~Logger() {
@@ -273,22 +188,17 @@ public:
     void write_log(const std::string& name, LogLevel level, const std::string& message) {
         if (static_cast<int>(level) > log_level) return;
 
-        auto now = std::chrono::system_clock::now();
-        auto now_c = std::chrono::system_clock::to_time_t(now);
+        time_t now;
+        time(&now);
+        tm* ltm = localtime(&now);
         
         char timestamp[32];
-        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now_c));
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", ltm);
         
         std::string formatted = std::string(timestamp) + " [" + 
             level_to_string(level) + "] " + message + "\n";
         
         buffer->write(formatted.c_str(), formatted.length());
-    }
-
-    std::string get_stats() const {
-        auto uptime = std::chrono::duration_cast<std::chrono::hours>(
-            std::chrono::steady_clock::now() - start_time).count();
-        return "Uptime: " + std::to_string(uptime) + " hours";
     }
 
 private:
@@ -303,30 +213,47 @@ private:
     }
 
     void process_logs() {
-        char read_buffer[4096];
+        std::vector<char> batch_buffer(MAX_BATCH_SIZE);
+        size_t batch_size = 0;
+        
         while (running) {
-            size_t bytes_read = buffer->read(read_buffer, sizeof(read_buffer) - 1);
+            size_t bytes_read = buffer->read(batch_buffer.data() + batch_size, 
+                                           MAX_BATCH_SIZE - batch_size);
             if (bytes_read > 0) {
-                read_buffer[bytes_read] = '\0';
-                write_to_file("system", read_buffer, bytes_read);
-            } else {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                batch_size += bytes_read;
+                
+                if (batch_size >= MAX_BATCH_SIZE / 2) {
+                    write_batch(batch_buffer.data(), batch_size);
+                    batch_size = 0;
+                }
+            } else if (batch_size > 0) {
+                write_batch(batch_buffer.data(), batch_size);
+                batch_size = 0;
             }
+        }
+        
+        if (batch_size > 0) {
+            write_batch(batch_buffer.data(), batch_size);
         }
     }
 
-    void write_to_file(const std::string& name, const char* data, size_t len) {
+    void write_batch(const char* data, size_t len) {
         std::lock_guard<std::mutex> lock(files_mutex);
-        auto& file = log_files[name];
+        auto& file = log_files["system"];
         if (!file) {
-            std::string path = log_dir + "/" + name + ".log";
-            file = std::make_unique<LogFile>(path);
+            std::string path = log_dir + "/system.log";
+            file.reset(new LogFile(path));
         }
         file->write(data, len);
     }
 };
 
 std::unique_ptr<Logger> g_logger;
+
+template<typename T>
+T clamp(T value, T min, T max) {
+    return value < min ? min : (value > max ? max : value);
+}
 
 int main(int argc, char* argv[]) {
     std::string log_dir = "/data/adb/modules/AMMF2/logs";
@@ -340,7 +267,13 @@ int main(int argc, char* argv[]) {
         if (arg == "-d" && i + 1 < argc) {
             log_dir = argv[++i];
         } else if (arg == "-l" && i + 1 < argc) {
-            log_level = std::clamp(std::stoi(argv[++i]), 1, 4);
+            try {
+                int level = std::stoi(argv[++i]);
+                log_level = clamp(level, 1, 4);
+            } catch (...) {
+                __android_log_print(ANDROID_LOG_WARN, "logmonitor",
+                    "Invalid log level, using default (3)");
+            }
         } else if (arg == "-c" && i + 1 < argc) {
             command = argv[++i];
         } else if (arg == "-n" && i + 1 < argc) {
@@ -357,7 +290,7 @@ int main(int argc, char* argv[]) {
     }
     
     if (!g_logger) {
-        g_logger = std::make_unique<Logger>(log_dir, log_level);
+        g_logger.reset(new Logger(log_dir, log_level));
     }
     
     if (command == "daemon") {
