@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <memory>
 #include <iostream>
-#include <filesystem>
 
 constexpr const char* VERSION = "3.0.0";
 
@@ -75,7 +74,7 @@ public:
     }
 };
 
-// 改进的环形缓冲区
+// 环形缓冲区
 class CircularBuffer {
 private:
     struct Buffer {
@@ -105,7 +104,13 @@ public:
             return false;
         }
         
-        write_to_buffer(data, len, write_pos);
+        size_t first_part = std::min(buf->capacity - write_pos, len);
+        memcpy(buf->data.get() + write_pos, data, first_part);
+        
+        if (first_part < len) {
+            memcpy(buf->data.get(), data + first_part, len - first_part);
+        }
+        
         buf->write_pos.store((write_pos + len) % buf->capacity, 
             std::memory_order_release);
         return true;
@@ -116,43 +121,28 @@ public:
         size_t read_pos = buf->read_pos.load(std::memory_order_relaxed);
         size_t write_pos = buf->write_pos.load(std::memory_order_acquire);
         
-        size_t available = used_space(write_pos, read_pos, buf->capacity);
+        size_t available = (write_pos + buf->capacity - read_pos) % buf->capacity;
         if (available == 0) return 0;
         
         size_t to_read = std::min(available, max_len);
-        read_from_buffer(out, to_read, read_pos);
+        size_t first_part = std::min(buf->capacity - read_pos, to_read);
+        
+        memcpy(out, buf->data.get() + read_pos, first_part);
+        if (first_part < to_read) {
+            memcpy(out + first_part, buf->data.get(), to_read - first_part);
+        }
+        
         buf->read_pos.store((read_pos + to_read) % buf->capacity, 
             std::memory_order_release);
         return to_read;
     }
 
 private:
-    void write_to_buffer(const char* data, size_t len, size_t pos) {
-        auto* buf = buffer.get();
-        size_t first_part = std::min(buf->capacity - pos, len);
-        memcpy(buf->data.get() + pos, data, first_part);
-        
-        if (first_part < len) {
-            memcpy(buf->data.get(), data + first_part, len - first_part);
-        }
-    }
-    
-    void read_from_buffer(char* out, size_t len, size_t pos) {
-        auto* buf = buffer.get();
-        size_t first_part = std::min(buf->capacity - pos, len);
-        memcpy(out, buf->data.get() + pos, first_part);
-        
-        if (first_part < len) {
-            memcpy(out + first_part, buf->data.get(), len - first_part);
-        }
-    }
-    
     static size_t available_space(size_t write_pos, size_t read_pos, size_t capacity) {
-        return (read_pos + capacity - write_pos - 1) % capacity;
-    }
-    
-    static size_t used_space(size_t write_pos, size_t read_pos, size_t capacity) {
-        return (write_pos + capacity - read_pos) % capacity;
+        if (write_pos >= read_pos) {
+            return capacity - (write_pos - read_pos) - 1;
+        }
+        return read_pos - write_pos - 1;
     }
 };
 
@@ -161,51 +151,55 @@ class LogFile {
 private:
     static constexpr size_t MAX_FILE_SIZE = 10 * 1024 * 1024;  // 10MB
     static constexpr size_t ROTATE_COUNT = 3;
-    static constexpr size_t WRITE_BUFFER_SIZE = 64 * 1024;  // 64KB写缓冲
+    static constexpr size_t BUFFER_SIZE = 64 * 1024;  // 64KB
     
     std::string path;
-    int fd = -1;
-    size_t current_size = 0;
-    std::unique_ptr<char[]> write_buffer;
-    size_t buffer_used = 0;
+    int fd;
+    size_t current_size;
+    std::unique_ptr<char[]> buffer;
+    size_t buffer_used;
+    std::mutex write_mutex;
 
 public:
-    explicit LogFile(std::string p) : path(std::move(p)), 
-        write_buffer(std::make_unique<char[]>(WRITE_BUFFER_SIZE)) {
-        rotate_if_needed();
+    explicit LogFile(const std::string& p) 
+        : path(p), fd(-1), current_size(0), 
+          buffer(new char[BUFFER_SIZE]), buffer_used(0) {
+        rotate_files();
         fd = open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
         if (fd != -1) {
             struct stat st;
             if (fstat(fd, &st) == 0) {
                 current_size = st.st_size;
             }
-            // 设置文件缓冲区
-            setvbuf(fdopen(fd, "a"), nullptr, _IOFBF, WRITE_BUFFER_SIZE);
         }
     }
 
     ~LogFile() {
         flush();
-        if (fd != -1) close(fd);
+        if (fd != -1) {
+            close(fd);
+        }
     }
 
     bool write(const char* data, size_t len) {
+        std::lock_guard<std::mutex> lock(write_mutex);
+        
         if (fd == -1) return false;
         
         if (current_size + len > MAX_FILE_SIZE) {
             flush();
-            rotate_if_needed();
+            rotate_files();
         }
         
-        if (buffer_used + len > WRITE_BUFFER_SIZE) {
+        if (buffer_used + len > BUFFER_SIZE) {
             flush();
         }
         
-        memcpy(write_buffer.get() + buffer_used, data, len);
+        memcpy(buffer.get() + buffer_used, data, len);
         buffer_used += len;
         current_size += len;
         
-        if (buffer_used >= WRITE_BUFFER_SIZE / 2) {
+        if (buffer_used >= BUFFER_SIZE / 2) {
             flush();
         }
         
@@ -214,56 +208,126 @@ public:
     
     void flush() {
         if (buffer_used > 0 && fd != -1) {
-            ::write(fd, write_buffer.get(), buffer_used);
+            if (::write(fd, buffer.get(), buffer_used) == -1) {
+                __android_log_print(ANDROID_LOG_ERROR, "LogFile", 
+                    "Failed to write to log file");
+            }
             fsync(fd);
             buffer_used = 0;
         }
     }
 
-// In LogFile class, modify rotate_if_needed()
 private:
-    void rotate_if_needed() {
-        // Replace std::filesystem with traditional file operations
-        for (int i = ROTATE_COUNT - 1; i > 0; --i) {
-            std::string old_path = path + "." + std::to_string(i);
-            std::string new_path = path + "." + std::to_string(i + 1);
-            struct stat st;
-            if (stat(old_path.c_str(), &st) == 0) {
-                rename(old_path.c_str(), new_path.c_str());
-            }
-        }
-        
-        struct stat st;
-        if (stat(path.c_str(), &st) == 0) {
-            rename(path.c_str(), (path + ".1").c_str());
-        }
-        
+    void rotate_files() {
         if (fd != -1) {
-            flush();
             close(fd);
-            fd = open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
-            current_size = 0;
-            buffer_used = 0;
+            fd = -1;
+        }
+
+        for (int i = ROTATE_COUNT - 1; i > 0; --i) {
+            std::string old_name = path + "." + std::to_string(i);
+            std::string new_name = path + "." + std::to_string(i + 1);
+            rename(old_name.c_str(), new_name.c_str());
+        }
+
+        rename(path.c_str(), (path + ".1").c_str());
+        fd = open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
+        current_size = 0;
+    }
+};
+
+// 日志管理器
+class Logger {
+private:
+    std::string log_dir;
+    int log_level;
+    std::map<std::string, std::unique_ptr<LogFile>> log_files;
+    std::mutex files_mutex;
+    std::atomic<bool> running{true};
+    std::thread worker;
+    std::shared_ptr<CircularBuffer> buffer;
+    std::shared_ptr<MemoryPool> memory_pool;
+    std::chrono::steady_clock::time_point start_time;
+
+public:
+    Logger(const std::string& dir, int level)
+        : log_dir(dir), log_level(level),
+          buffer(std::make_shared<CircularBuffer>()),
+          memory_pool(std::make_shared<MemoryPool>()),
+          start_time(std::chrono::steady_clock::now()) {
+        mkdir(log_dir.c_str(), 0755);
+        worker = std::thread(&Logger::process_logs, this);
+    }
+
+    ~Logger() {
+        stop();
+    }
+
+    void stop() {
+        running = false;
+        if (worker.joinable()) {
+            worker.join();
         }
     }
 
-// In Logger class constructor
-Logger(std::string dir, int level)
-    : log_dir(std::move(dir)), 
-      log_level(level),
-      buffer(std::make_shared<CircularBuffer>()),
-      memory_pool(std::make_shared<MemoryPool>()),
-      start_time(std::chrono::steady_clock::now()) {
-    // Replace std::filesystem with mkdir
-    mkdir(log_dir.c_str(), 0755);
-    worker = std::thread(&Logger::process_logs, this);
-    
-    // Define Android priority
-    constexpr int ANDROID_PRIORITY_BACKGROUND = 10;
-    setpriority(PRIO_PROCESS, gettid(), ANDROID_PRIORITY_BACKGROUND);
-}
+    void write_log(const std::string& name, LogLevel level, const std::string& message) {
+        if (static_cast<int>(level) > log_level) return;
 
-// In main function, remove filesystem namespace
+        auto now = std::chrono::system_clock::now();
+        auto now_c = std::chrono::system_clock::to_time_t(now);
+        
+        char timestamp[32];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now_c));
+        
+        std::string formatted = std::string(timestamp) + " [" + 
+            level_to_string(level) + "] " + message + "\n";
+        
+        buffer->write(formatted.c_str(), formatted.length());
+    }
+
+    std::string get_stats() const {
+        auto uptime = std::chrono::duration_cast<std::chrono::hours>(
+            std::chrono::steady_clock::now() - start_time).count();
+        return "Uptime: " + std::to_string(uptime) + " hours";
+    }
+
+private:
+    static const char* level_to_string(LogLevel level) {
+        switch (level) {
+            case LogLevel::ERROR: return "ERROR";
+            case LogLevel::WARN:  return "WARN";
+            case LogLevel::INFO:  return "INFO";
+            case LogLevel::DEBUG: return "DEBUG";
+            default: return "UNKNOWN";
+        }
+    }
+
+    void process_logs() {
+        char read_buffer[4096];
+        while (running) {
+            size_t bytes_read = buffer->read(read_buffer, sizeof(read_buffer) - 1);
+            if (bytes_read > 0) {
+                read_buffer[bytes_read] = '\0';
+                write_to_file("system", read_buffer, bytes_read);
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        }
+    }
+
+    void write_to_file(const std::string& name, const char* data, size_t len) {
+        std::lock_guard<std::mutex> lock(files_mutex);
+        auto& file = log_files[name];
+        if (!file) {
+            std::string path = log_dir + "/" + name + ".log";
+            file = std::make_unique<LogFile>(path);
+        }
+        file->write(data, len);
+    }
+};
+
+std::unique_ptr<Logger> g_logger;
+
 int main(int argc, char* argv[]) {
     std::string log_dir = "/data/adb/modules/AMMF2/logs";
     int log_level = 3;
@@ -271,19 +335,12 @@ int main(int argc, char* argv[]) {
     std::string log_name = "system";
     std::string message;
     
-    // 处理命令行参数
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
         if (arg == "-d" && i + 1 < argc) {
             log_dir = argv[++i];
         } else if (arg == "-l" && i + 1 < argc) {
-            try {
-                int level = std::stoi(argv[++i]);
-                log_level = std::clamp(level, 1, 4);
-            } catch (...) {
-                __android_log_print(ANDROID_LOG_WARN, "logmonitor",
-                    "Invalid log level, using default (3)");
-            }
+            log_level = std::clamp(std::stoi(argv[++i]), 1, 4);
         } else if (arg == "-c" && i + 1 < argc) {
             command = argv[++i];
         } else if (arg == "-n" && i + 1 < argc) {
@@ -291,16 +348,10 @@ int main(int argc, char* argv[]) {
         } else if (arg == "-m" && i + 1 < argc) {
             message = argv[++i];
             while (i + 1 < argc && argv[i + 1][0] != '-') {
-                message += " ";
-                message += argv[++i];
+                message += " " + std::string(argv[++i]);
             }
         } else if (arg == "-v") {
-            std::cout << "logmonitor 版本 " << VERSION << std::endl;
-            return 0;
-        } else if (arg == "-s") {
-            if (g_logger) {
-                std::cout << g_logger->get_stats() << std::endl;
-            }
+            std::cout << "logmonitor version " << VERSION << std::endl;
             return 0;
         }
     }
@@ -310,8 +361,8 @@ int main(int argc, char* argv[]) {
     }
     
     if (command == "daemon") {
-        g_logger->write_log("system", LogLevel::INFO,
-            "日志系统启动 (版本 " + std::string(VERSION) + ")");
+        g_logger->write_log("system", LogLevel::INFO, 
+            "Log system started (version " + std::string(VERSION) + ")");
         
         sigset_t mask;
         sigemptyset(&mask);
@@ -323,8 +374,7 @@ int main(int argc, char* argv[]) {
         
         g_logger->stop();
     } else if (command == "write" && !message.empty()) {
-        g_logger->write_log(log_name, 
-            static_cast<LogLevel>(log_level), message);
+        g_logger->write_log(log_name, static_cast<LogLevel>(log_level), message);
     }
     
     return 0;
