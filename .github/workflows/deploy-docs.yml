@@ -3,6 +3,8 @@ name: Deploy VitePress to GitHub Pages
 on:
   push:
     branches: ["main"]
+    paths: # <-- 添加 paths 过滤器
+      - 'docs/**' # 仅当 docs 目录或其子目录中的文件发生更改时触发
   # 允许手动触发工作流
   workflow_dispatch:
 
