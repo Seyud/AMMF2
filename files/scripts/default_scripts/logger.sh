@@ -23,10 +23,7 @@ init_logger() {
     
     # 日志目录
     LOG_DIR="${MODPATH}/logs"
-    mkdir -p "$LOG_DIR" 2>/dev/null || {
-        echo "错误: 无法创建日志目录: $LOG_DIR" >&2
-        return 1
-    }
+    mkdir -p "$LOG_DIR" 2>/dev/null
     
     # 启动logmonitor守护进程
     if [ -f "$LOGMONITOR_BIN" ]; then
@@ -43,7 +40,7 @@ init_logger() {
             sleep 0.1  # 减少等待时间
         fi
     else
-        echo "警告: logmonitor不存在" >&2
+        Aurora_ui_print "$FILE_NOT_FOUND logmonitor" >&2
         return 1
     fi
     
@@ -145,16 +142,3 @@ stop_logger() {
     fi
 }
 
-# 获取日志系统状态
-logger_status() {
-    if [ "$LOGGER_INITIALIZED" = "1" ]; then
-        echo "日志系统状态: 运行中"
-        echo "日志级别: $LOG_LEVEL"
-        echo "当前日志文件: $LOG_FILE_NAME"
-        echo "低功耗模式: $([ "$LOW_POWER_MODE" = "1" ] && echo "开启" || echo "关闭")"
-        echo "进程ID: $LOGMONITOR_PID"
-        echo "日志目录: ${MODPATH}/logs"
-    else
-        echo "日志系统状态: 未运行"
-    fi
-}
