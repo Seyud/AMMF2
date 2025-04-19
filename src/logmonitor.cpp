@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <memory>
 #include <iostream>
+#include <filesystem>
 
 constexpr const char* VERSION = "3.0.0";
 
@@ -221,12 +222,20 @@ public:
 
 private:
     void rotate_if_needed() {
+        namespace fs = std::filesystem;
         for (int i = ROTATE_COUNT - 1; i > 0; --i) {
-            std::string old_name = path + "." + std::to_string(i);
-            std::string new_name = path + "." + std::to_string(i + 1);
-            rename(old_name.c_str(), new_name.c_str());
+            fs::path old_path = path + "." + std::to_string(i);
+            fs::path new_path = path + "." + std::to_string(i + 1);
+            if (fs::exists(old_path)) {
+                fs::rename(old_path, new_path);
+            }
         }
-        rename(path.c_str(), (path + ".1").c_str());
+        
+        fs::path current_path = path;
+        fs::path backup_path = path + ".1";
+        if (fs::exists(current_path)) {
+            fs::rename(current_path, backup_path);
+        }
         
         if (fd != -1) {
             flush();
@@ -281,10 +290,11 @@ public:
           buffer(std::make_shared<CircularBuffer>()),
           memory_pool(std::make_shared<MemoryPool>()),
           start_time(std::chrono::steady_clock::now()) {
-        mkdir(log_dir.c_str(), 0755);
+        std::filesystem::create_directories(log_dir);  // 使用 C++17 的文件系统
         worker = std::thread(&Logger::process_logs, this);
         
-        // 设置线程优先级
+        // Android 优先级定义
+        constexpr int ANDROID_PRIORITY_BACKGROUND = 10;
         setpriority(PRIO_PROCESS, gettid(), ANDROID_PRIORITY_BACKGROUND);
     }
 
@@ -415,6 +425,7 @@ private:
 static std::unique_ptr<Logger> g_logger;
 
 int main(int argc, char* argv[]) {
+    namespace fs = std::filesystem;
     std::string log_dir = "/data/adb/modules/AMMF2/logs";
     int log_level = 3;
     std::string command = "daemon";
