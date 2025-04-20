@@ -90,7 +90,7 @@ jobs:
           
       - name: Remove files
         run: |
-          rm -f src/*.cpp
+          rm -rf src
           rm build.sh
           
       - name: Create META-INF directory structure
