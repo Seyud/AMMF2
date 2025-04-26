@@ -6,13 +6,16 @@
 const StatusPage = {
     // 模块状态
     moduleStatus: 'UNKNOWN',
-    
+
+    // GPU调速器状态
+    gpuStatus: 'UNKNOWN',
+
     // 自动刷新定时器
     refreshTimer: null,
 
     // 设备信息
     deviceInfo: {},
-    
+
     // 初始化
     async init() {
         try {
@@ -21,19 +24,19 @@ const StatusPage = {
             await this.loadDeviceInfo();
             // 启动自动刷新
             this.startAutoRefresh();
-            
+
             return true;
         } catch (error) {
             console.error('初始化状态页面失败:', error);
             return false;
         }
     },
-    
+
     // 渲染页面
     render() {
         // 设置页面标题
         document.getElementById('page-title').textContent = I18n.translate('NAV_STATUS', '状态');
-        
+
         const pageActions = document.getElementById('page-actions');
         pageActions.innerHTML = `
             <button id="refresh-status" class="icon-button" title="${I18n.translate('REFRESH', '刷新')}">
@@ -43,7 +46,7 @@ const StatusPage = {
                 <span class="material-symbols-rounded">play_arrow</span>
             </button>
         `;
-        
+
         // 渲染页面内容
         // 定义快捷按钮配置
         const quickActionsEnabled = false; // 设置为false可全部隐藏
@@ -64,7 +67,7 @@ const StatusPage = {
                 command: 'cat ${Core.MODULE_PATH}logs.txt'
             }
         ];
-        
+
         return `
             <div class="status-page">
                 <!-- 合并的状态卡片 -->
@@ -87,7 +90,7 @@ const StatusPage = {
                             </div>
                         </div>
                     </div>
-                    
+
                     ${quickActionsEnabled ? `
                     <!-- 快捷操作按钮 -->
                     <div class="quick-actions-container">
@@ -99,10 +102,39 @@ const StatusPage = {
                         `).join('')}
                     </div>
                     ` : ''}
-                    
+
                     <!-- 设备信息部分 -->
                     <div class="device-info-grid">
                         ${this.renderDeviceInfo()}
+                    </div>
+                </div>
+
+                <!-- GPU调速器状态卡片 -->
+                <div class="card status-card">
+                    <div class="status-card-header">
+                        <span class="status-title" data-i18n="GPU_CONTROL_TITLE">GPU调速器状态</span>
+                    </div>
+                    <div class="status-card-content">
+                        <div class="status-icon-container">
+                            <div class="status-indicator ${this.getGpuStatusClass()}">
+                                <span class="material-symbols-rounded">${this.getGpuStatusIcon()}</span>
+                            </div>
+                        </div>
+                        <div class="status-info-container">
+                            <div class="status-title-row">
+                                <span class="status-value ${this.getGpuStatusClass()}-text" data-i18n="${this.getGpuStatusI18nKey()}">${this.getGpuStatusText()}</span>
+                            </div>
+                            <div class="status-actions">
+                                <button id="toggle-gpu" class="button ${this.gpuStatus === 'RUNNING' ? 'danger' : 'primary'}">
+                                    <span class="material-symbols-rounded">${this.gpuStatus === 'RUNNING' ? 'stop' : 'play_arrow'}</span>
+                                    <span data-i18n="${this.gpuStatus === 'RUNNING' ? 'STOP_GPU' : 'START_GPU'}">${this.gpuStatus === 'RUNNING' ? '停止调速器' : '启动调速器'}</span>
+                                </button>
+                                <a href="#gpu_config" class="button secondary">
+                                    <span class="material-symbols-rounded">settings</span>
+                                    <span data-i18n="NAV_GPU_CONFIG">GPU配置</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -114,19 +146,27 @@ const StatusPage = {
         // 确保只绑定一次事件
         const refreshBtn = document.getElementById('refresh-status');
         const actionBtn = document.getElementById('run-action');
-        
+        const toggleGpuBtn = document.getElementById('toggle-gpu');
+
         if (refreshBtn && !refreshBtn.dataset.bound) {
             refreshBtn.addEventListener('click', () => {
                 this.refreshStatus(true);
             });
             refreshBtn.dataset.bound = 'true';
         }
-        
+
         if (actionBtn && !actionBtn.dataset.bound) {
             actionBtn.addEventListener('click', () => {
                 this.runAction();
             });
             actionBtn.dataset.bound = 'true';
+        }
+
+        if (toggleGpuBtn && !toggleGpuBtn.dataset.bound) {
+            toggleGpuBtn.addEventListener('click', () => {
+                this.toggleGpuStatus();
+            });
+            toggleGpuBtn.dataset.bound = 'true';
         }
         // 绑定快捷按钮事件
         document.querySelectorAll('.quick-action').forEach(button => {
@@ -141,7 +181,7 @@ const StatusPage = {
             });
         });
     },
-    
+
     // 运行Action脚本
     async runAction() {
         try {
@@ -157,23 +197,23 @@ const StatusPage = {
                 </div>
                 <div class="action-output-content"></div>
             `;
-            
+
             document.body.appendChild(outputContainer);
             const outputContent = outputContainer.querySelector('.action-output-content');
-            
+
             // 修复关闭按钮的事件监听
             const closeButton = outputContainer.querySelector('.close-output');
             closeButton.addEventListener('click', () => {
                 outputContainer.remove();
             });
-            
+
             Core.showToast(I18n.translate('RUNNING_ACTION', '正在运行Action...'));
             outputContent.textContent = I18n.translate('ACTION_STARTING', '正在启动Action...\n');
-            
+
             outputContainer.querySelector('.close-output').addEventListener('click', () => {
                 outputContainer.remove();
             });
-    
+
             await Core.execCommand(`busybox sh ${Core.MODULE_PATH}action.sh`, {
                 onStdout: (data) => {
                     outputContent.textContent += data + '\n';
@@ -187,7 +227,7 @@ const StatusPage = {
                     outputContent.scrollTop = outputContent.scrollHeight;
                 }
             });
-    
+
             outputContent.textContent += '\n' + I18n.translate('ACTION_COMPLETED', 'Action运行完成');
             Core.showToast(I18n.translate('ACTION_COMPLETED', 'Action运行完成'));
         } catch (error) {
@@ -195,42 +235,32 @@ const StatusPage = {
             Core.showToast(I18n.translate('ACTION_ERROR', '运行Action失败'), 'error');
         }
     },
-    
+
     // 加载模块状态
     async loadModuleStatus() {
         try {
-            // 检查状态文件是否存在
-            const statusPath = `${Core.MODULE_PATH}status.txt`;
-            const fileExistsResult = await Core.execCommand(`[ -f "${statusPath}" ] && echo "true" || echo "false"`);
-            
-            if (fileExistsResult.trim() !== "true") {
-                console.error(`状态文件不存在: ${statusPath}`);
-                this.moduleStatus = 'UNKNOWN';
-                return;
-            }
-            
-            // 读取状态文件
-            const status = await Core.execCommand(`cat "${statusPath}"`);
-            if (!status) {
-                console.error(`无法读取状态文件: ${statusPath}`);
-                this.moduleStatus = 'UNKNOWN';
-                return;
-            }
-            
             // 检查服务进程是否运行
             const isRunning = await this.isServiceRunning();
-            
-            // 如果状态文件显示运行中，但进程检查显示没有运行，则返回STOPPED
-            if (status.trim() === 'RUNNING' && !isRunning) {
-                console.warn('状态文件显示运行中，但服务进程未检测到');
-                this.moduleStatus = 'STOPPED';
-                return;
-            }
-            
-            this.moduleStatus = status.trim() || 'UNKNOWN';
+            this.moduleStatus = isRunning ? 'RUNNING' : 'STOPPED';
+
+            // 直接检查GPU调速器进程是否运行
+            const isGpuRunning = await this.isGpuRunning();
+            this.gpuStatus = isGpuRunning ? 'RUNNING' : 'STOPPED';
         } catch (error) {
             console.error('获取模块状态失败:', error);
             this.moduleStatus = 'ERROR';
+            this.gpuStatus = 'UNKNOWN';
+        }
+    },
+
+    // 检查GPU调速器是否运行
+    async isGpuRunning() {
+        try {
+            const result = await Core.execCommand(`pidof gpu-scheduler >/dev/null && echo "true" || echo "false"`);
+            return result.trim() === 'true';
+        } catch (error) {
+            console.error('检查GPU调速器运行状态失败:', error);
+            return false;
         }
     },
 
@@ -256,7 +286,7 @@ const StatusPage = {
                 android_api: await this.getAndroidAPI(),
                 device_abi: await this.getDeviceABI()
             };
-            
+
             console.log('设备信息加载完成:', this.deviceInfo);
         } catch (error) {
             console.error('加载设备信息失败:', error);
@@ -318,14 +348,14 @@ const StatusPage = {
             // 检查Magisk是否安装
             const magiskPath = '/data/adb/magisk';
             const magiskExists = await Core.execCommand(`[ -f "${magiskPath}" ] && echo "true" || echo "false"`);
-            
+
             if (magiskExists.trim() === "true") {
                 const version = await Core.execCommand(`cat "${magiskPath}"`);
                 if (version && version.trim()) {
                     return `Magisk ${version.trim()}`;
                 }
             }
-            
+
             // 尝试通过magisk命令获取版本
             const magiskResult = await Core.execCommand('magisk -v');
             if (magiskResult && !magiskResult.includes('not found')) {
@@ -334,19 +364,19 @@ const StatusPage = {
                     return `Magisk ${magiskVersion}`;
                 }
             }
-            
+
             // 检查KernelSU是否安装
             const ksuResult = await Core.execCommand('ksud -V');
             if (ksuResult && !ksuResult.includes('not found')) {
                 return `KernelSU ${ksuResult.trim()}`;
             }
-            
+
             // 检查APatch是否安装
             const apatchResult = await Core.execCommand('apd -V');
             if (apatchResult && !apatchResult.includes('not found')) {
                 return `APatch ${apatchResult.trim()}`;
             }
-            
+
             return 'No Root';
         } catch (error) {
             console.error('获取ROOT实现失败:', error);
@@ -376,7 +406,7 @@ const StatusPage = {
         if (!this.deviceInfo || Object.keys(this.deviceInfo).length === 0) {
             return `<div class="no-info" data-i18n="NO_DEVICE_INFO">无设备信息</div>`;
         }
-        
+
         // 设备信息项映射
         const infoItems = [
             { key: 'model', label: 'DEVICE_MODEL', icon: 'smartphone' },
@@ -386,9 +416,9 @@ const StatusPage = {
             { key: 'kernel', label: 'KERNEL_VERSION', icon: 'terminal' },
             { key: 'root', label: 'ROOT_IMPLEMENTATION', icon: 'security' }
         ];
-        
+
         let html = '';
-        
+
         infoItems.forEach(item => {
             if (this.deviceInfo[item.key]) {
                 html += `
@@ -404,19 +434,19 @@ const StatusPage = {
                 `;
             }
         });
-        
+
         return html || `<div class="no-info" data-i18n="NO_DEVICE_INFO">无设备信息</div>`;
     },
-    
+
     // 刷新状态
     async refreshStatus(showToast = false) {
         try {
             const oldStatus = this.moduleStatus;
             const oldDeviceInfo = JSON.stringify(this.deviceInfo);
-            
+
             await this.loadModuleStatus();
             await this.loadDeviceInfo();
-            
+
             // 只在状态发生变化时更新UI
             const newDeviceInfo = JSON.stringify(this.deviceInfo);
             if (oldStatus !== this.moduleStatus || oldDeviceInfo !== newDeviceInfo) {
@@ -444,18 +474,47 @@ const StatusPage = {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- 设备信息部分 -->
                             <div class="device-info-grid">
                                 ${this.renderDeviceInfo()}
                             </div>
                         </div>
+
+                        <!-- GPU调速器状态卡片 -->
+                        <div class="card status-card">
+                            <div class="status-card-header">
+                                <span class="status-title" data-i18n="GPU_CONTROL_TITLE">GPU调速器状态</span>
+                            </div>
+                            <div class="status-card-content">
+                                <div class="status-icon-container">
+                                    <div class="status-indicator ${this.getGpuStatusClass()}">
+                                        <span class="material-symbols-rounded">${this.getGpuStatusIcon()}</span>
+                                    </div>
+                                </div>
+                                <div class="status-info-container">
+                                    <div class="status-title-row">
+                                        <span class="status-value ${this.getGpuStatusClass()}-text" data-i18n="${this.getGpuStatusI18nKey()}">${this.getGpuStatusText()}</span>
+                                    </div>
+                                    <div class="status-actions">
+                                        <button id="toggle-gpu" class="button ${this.gpuStatus === 'RUNNING' ? 'danger' : 'primary'}">
+                                            <span class="material-symbols-rounded">${this.gpuStatus === 'RUNNING' ? 'stop' : 'play_arrow'}</span>
+                                            <span data-i18n="${this.gpuStatus === 'RUNNING' ? 'STOP_GPU' : 'START_GPU'}">${this.gpuStatus === 'RUNNING' ? '停止调速器' : '启动调速器'}</span>
+                                        </button>
+                                        <a href="#gpu_config" class="button secondary">
+                                            <span class="material-symbols-rounded">settings</span>
+                                            <span data-i18n="NAV_GPU_CONFIG">GPU配置</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     `;
-                    
+
                     this.afterRender();
                 }
             }
-            
+
             if (showToast) {
                 Core.showToast(I18n.translate('STATUS_REFRESHED', '状态已刷新'));
             }
@@ -466,7 +525,7 @@ const StatusPage = {
             }
         }
     },
-    
+
     // 启动自动刷新
     startAutoRefresh() {
         // 每60秒刷新一次
@@ -474,7 +533,7 @@ const StatusPage = {
             this.refreshStatus();
         }, 60000);
     },
-    
+
     // 停止自动刷新
     stopAutoRefresh() {
         if (this.refreshTimer) {
@@ -482,7 +541,7 @@ const StatusPage = {
             this.refreshTimer = null;
         }
     },
-    
+
     // 获取状态类名
     getStatusClass() {
         switch (this.moduleStatus) {
@@ -494,7 +553,7 @@ const StatusPage = {
             default: return 'status-unknown';
         }
     },
-    
+
     // 获取状态图标
     getStatusIcon() {
         switch (this.moduleStatus) {
@@ -506,7 +565,7 @@ const StatusPage = {
             default: return 'help';
         }
     },
-    
+
     // 获取状态文本
     getStatusText() {
         switch (this.moduleStatus) {
@@ -518,7 +577,67 @@ const StatusPage = {
             default: return I18n.translate('UNKNOWN', '未知');
         }
     },
-    
+
+    // 获取GPU状态类名
+    getGpuStatusClass() {
+        switch (this.gpuStatus) {
+            case 'RUNNING': return 'status-running';
+            case 'STOPPED': return 'status-stopped';
+            case 'ERROR': return 'status-error';
+            default: return 'status-unknown';
+        }
+    },
+
+    // 获取GPU状态图标
+    getGpuStatusIcon() {
+        switch (this.gpuStatus) {
+            case 'RUNNING': return 'memory';
+            case 'STOPPED': return 'power_off';
+            case 'ERROR': return 'error';
+            default: return 'help';
+        }
+    },
+
+    // 获取GPU状态I18n键
+    getGpuStatusI18nKey() {
+        switch (this.gpuStatus) {
+            case 'RUNNING': return 'RUNNING';
+            case 'STOPPED': return 'STOPPED';
+            case 'ERROR': return 'ERROR';
+            default: return 'UNKNOWN';
+        }
+    },
+
+    // 获取GPU状态文本
+    getGpuStatusText() {
+        switch (this.gpuStatus) {
+            case 'RUNNING': return I18n.translate('RUNNING', '运行中');
+            case 'STOPPED': return I18n.translate('STOPPED', '已停止');
+            case 'ERROR': return I18n.translate('ERROR', '错误');
+            default: return I18n.translate('UNKNOWN', '未知');
+        }
+    },
+
+    // 切换GPU调速器状态
+    async toggleGpuStatus() {
+        try {
+            Core.showToast(I18n.translate('RUNNING_ACTION', '正在运行Action...'));
+            await Core.execCommand(`sh ${Core.MODULE_PATH}action.sh`);
+
+            // 刷新状态
+            await this.refreshStatus(true);
+
+            if (this.gpuStatus === 'RUNNING') {
+                Core.showToast(I18n.translate('GPU_STARTED', 'GPU调速器已启动'));
+            } else {
+                Core.showToast(I18n.translate('GPU_STOPPED', 'GPU调速器已停止'));
+            }
+        } catch (error) {
+            console.error('切换GPU调速器状态失败:', error);
+            Core.showToast(I18n.translate('ACTION_ERROR', '运行Action失败'), 'error');
+        }
+    },
+
     // 页面激活时的回调
     onActivate() {
         console.log('状态页面已激活');
@@ -529,7 +648,7 @@ const StatusPage = {
         // 启动自动刷新
         this.startAutoRefresh();
     },
-    
+
     onDeactivate() {
         console.log('状态页面已停用');
         // 停止自动刷新但保留状态数据

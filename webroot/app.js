@@ -18,7 +18,7 @@ class App {
     async init() {
         await I18n.init();
         ThemeManager.init();
-        
+
         // 初始化CSS加载器
         if (window.CSSLoader) {
             CSSLoader.init();
@@ -31,7 +31,7 @@ class App {
             // 降低顶栏高度以适应手机状态栏
             document.body.classList.add('mmrl-environment');
         }
-        
+
         // 添加应用加载完成标记
         requestAnimationFrame(() => document.body.classList.add('app-loaded'));
 
@@ -41,7 +41,7 @@ class App {
         } else {
             document.addEventListener('i18nReady', () => I18n.initLanguageSelector());
         }
-        
+
         // 加载初始页面
         const initialPage = Router.getCurrentPage();
         await Router.navigate(initialPage, false);
@@ -64,7 +64,7 @@ class App {
     async execCommand(command) {
         return await Core.execCommand(command);
     }
-    
+
     /**
      * 渲染界面内容API
      * 支持模板字符串和数据绑定，动态渲染内容到指定容器
@@ -76,15 +76,15 @@ class App {
      */
     renderUI(container, template, data = {}, options = {}) {
         // 获取容器元素
-        const containerElement = typeof container === 'string' 
-            ? document.querySelector(container) 
+        const containerElement = typeof container === 'string'
+            ? document.querySelector(container)
             : container;
-            
+
         if (!containerElement) {
             console.error('渲染UI失败: 容器不存在', container);
             return null;
         }
-        
+
         // 默认选项
         const defaultOptions = {
             append: false,        // 是否追加内容
@@ -92,9 +92,9 @@ class App {
             processEvents: true,  // 是否处理事件绑定
             clearFirst: !options.append // 如果不是追加模式，默认先清空容器
         };
-        
+
         const renderOptions = { ...defaultOptions, ...options };
-        
+
         // 处理模板中的数据绑定 (简单的模板引擎)
         let processedTemplate = template;
         if (data && typeof template === 'string') {
@@ -106,12 +106,12 @@ class App {
                     const context = Object.assign({}, data, {
                         I18n: window.I18n || { translate: (key, fallback) => fallback }
                     });
-                    
+
                     // 使用Function构造函数创建一个可以访问上下文的函数
                     const keys = Object.keys(context);
                     const values = Object.values(context);
                     const func = new Function(...keys, `return ${key};`);
-                    
+
                     // 执行函数获取结果
                     return func(...values) ?? '';
                 } catch (error) {
@@ -120,16 +120,16 @@ class App {
                 }
             });
         }
-        
+
         // 清空容器或准备追加
         if (renderOptions.clearFirst) {
             containerElement.innerHTML = '';
         }
-        
+
         // 创建临时容器解析HTML
         const temp = document.createElement('div');
         temp.innerHTML = processedTemplate;
-        
+
         // 应用动画类
         if (renderOptions.animate) {
             // 为每个顶级子元素添加淡入动画类
@@ -139,7 +139,7 @@ class App {
                 child.style.animationDelay = `${Math.random() * 0.2}s`;
             });
         }
-        
+
         // 添加到容器
         if (renderOptions.append) {
             // 逐个添加子节点以保留事件绑定
@@ -149,15 +149,15 @@ class App {
         } else {
             containerElement.innerHTML = temp.innerHTML;
         }
-        
+
         // 处理事件绑定
         if (renderOptions.processEvents) {
             this.processEventBindings(containerElement, data);
         }
-        
+
         return containerElement;
     }
-    
+
     /**
      * 处理元素中的事件绑定属性
      * 支持 data-on-click="methodName" 形式的声明式事件绑定
@@ -167,17 +167,17 @@ class App {
     processEventBindings(element, context = {}) {
         // 查找所有带有data-on-*属性的元素
         const eventElements = element.querySelectorAll('[data-on-click], [data-on-change], [data-on-input], [data-on-submit]');
-        
+
         eventElements.forEach(el => {
             // 处理点击事件
             if (el.hasAttribute('data-on-click')) {
                 const methodName = el.getAttribute('data-on-click');
                 el.addEventListener('click', (event) => {
                     // 查找方法 - 先在上下文中查找，再在当前页面模块中查找
-                    const method = context[methodName] || 
-                                  (window[Router.modules[app.state.currentPage]] && 
+                    const method = context[methodName] ||
+                                  (window[Router.modules[app.state.currentPage]] &&
                                    window[Router.modules[app.state.currentPage]][methodName]);
-                    
+
                     if (typeof method === 'function') {
                         method.call(context, event, el);
                     } else {
@@ -185,44 +185,44 @@ class App {
                     }
                 });
             }
-            
+
             // 处理变更事件
             if (el.hasAttribute('data-on-change')) {
                 const methodName = el.getAttribute('data-on-change');
                 el.addEventListener('change', (event) => {
-                    const method = context[methodName] || 
-                                  (window[Router.modules[app.state.currentPage]] && 
+                    const method = context[methodName] ||
+                                  (window[Router.modules[app.state.currentPage]] &&
                                    window[Router.modules[app.state.currentPage]][methodName]);
-                    
+
                     if (typeof method === 'function') {
                         method.call(context, event, el);
                     }
                 });
             }
-            
+
             // 处理输入事件
             if (el.hasAttribute('data-on-input')) {
                 const methodName = el.getAttribute('data-on-input');
                 el.addEventListener('input', (event) => {
-                    const method = context[methodName] || 
-                                  (window[Router.modules[app.state.currentPage]] && 
+                    const method = context[methodName] ||
+                                  (window[Router.modules[app.state.currentPage]] &&
                                    window[Router.modules[app.state.currentPage]][methodName]);
-                    
+
                     if (typeof method === 'function') {
                         method.call(context, event, el);
                     }
                 });
             }
-            
+
             // 处理表单提交事件
             if (el.hasAttribute('data-on-submit')) {
                 const methodName = el.getAttribute('data-on-submit');
                 el.addEventListener('submit', (event) => {
                     event.preventDefault();
-                    const method = context[methodName] || 
-                                  (window[Router.modules[app.state.currentPage]] && 
+                    const method = context[methodName] ||
+                                  (window[Router.modules[app.state.currentPage]] &&
                                    window[Router.modules[app.state.currentPage]][methodName]);
-                    
+
                     if (typeof method === 'function') {
                         method.call(context, event, el);
                     }
@@ -237,6 +237,7 @@ class Router {
     // 页面模块映射
     static modules = {
         status: 'StatusPage',
+        gpu_config: 'GpuConfigPage',
         logs: 'LogsPage',
         settings: 'SettingsPage',
         about: 'AboutPage'
@@ -254,7 +255,7 @@ class Router {
     // 预加载所有页面
     static preloadPages() {
         requestIdleCallback(() => {
-            const pageOrder = ['status', 'settings', 'logs', 'about'];
+            const pageOrder = ['status', 'gpu_config', 'settings', 'logs', 'about'];
             const currentPage = app.state.currentPage;
 
             // 移除当前页面
@@ -400,6 +401,7 @@ class UI {
     static updatePageTitle(pageName) {
         const titles = {
             status: I18n.translate('NAV_STATUS', '状态'),
+            gpu_config: I18n.translate('NAV_GPU_CONFIG', 'GPU配置'),
             logs: I18n.translate('NAV_LOGS', '日志'),
             settings: I18n.translate('NAV_SETTINGS', '设置'),
             about: I18n.translate('NAV_ABOUT', '关于')
@@ -412,36 +414,36 @@ class UI {
     // 显示底栏覆盖层 - 添加动画效果
     static showOverlay(overlayElement) {
         if (!overlayElement) return;
-        
+
         // 移除可能存在的closing类
         overlayElement.classList.remove('closing');
-        
+
         // 先设置为显示
         overlayElement.style.display = 'flex';  // 改为flex以确保居中
-        
+
         // 使用requestAnimationFrame确保DOM更新后再添加active类
         requestAnimationFrame(() => {
             overlayElement.classList.add('active');
         });
     }
-    
+
     // 隐藏底栏覆盖层 - 添加动画效果
     static hideOverlay(overlayElement) {
         if (!overlayElement) return;
-        
+
         // 添加closing类以触发淡出动画
         overlayElement.classList.add('closing');
         overlayElement.classList.remove('active');
-        
+
         // 监听动画结束后隐藏元素
         const handleAnimationEnd = () => {
             overlayElement.removeEventListener('animationend', handleAnimationEnd);
             overlayElement.style.display = 'none';
             overlayElement.classList.remove('closing');
         };
-        
+
         overlayElement.addEventListener('animationend', handleAnimationEnd);
-        
+
         // 添加超时保护，确保元素最终被隐藏
         setTimeout(() => {
             if (!overlayElement.classList.contains('active')) {
@@ -479,7 +481,7 @@ class UI {
         navItems.forEach(item => {
         // 移除之前的动画类
         item.classList.remove('nav-entering', 'nav-exiting');
-        
+
         if (item.dataset.page === pageName) {
             // 如果之前未激活,添加进入动画
             if (!item.classList.contains('active')) {
@@ -502,7 +504,7 @@ class UI {
         const pageActions = this.elements.pageActions;
         const themeToggle = this.elements.themeToggle;
         const languageButton = this.elements.languageButton;
-    
+
         if (isLandscape) {
             // 横屏模式：移动按钮到侧栏
             const navContent = document.querySelector('.nav-content');
@@ -514,7 +516,7 @@ class UI {
                     pageActionsContainer.className = 'page-actions';
                     navContent.appendChild(pageActionsContainer);
                 }
-    
+
                 // 确保存在或创建系统按钮容器
                 let systemActionsContainer = navContent.querySelector('.system-actions');
                 if (!systemActionsContainer) {
@@ -522,12 +524,12 @@ class UI {
                     systemActionsContainer.className = 'system-actions';
                     navContent.appendChild(systemActionsContainer);
                 }
-    
+
                 // 移动操作按钮
                 if (pageActions && !pageActionsContainer.contains(pageActions)) {
                     pageActionsContainer.appendChild(pageActions);
                 }
-    
+
                 // 移动系统按钮
                 if (languageButton && !systemActionsContainer.contains(languageButton)) {
                     systemActionsContainer.appendChild(languageButton);
@@ -625,33 +627,33 @@ class UI {
         const mainContent = this.elements.mainContent;
         const nav = document.querySelector('.app-nav');
         if (!header || !mainContent || !nav) return;
-    
+
         const isLandscape = window.innerWidth >= 768;
         const scrollTop = mainContent.scrollTop;
         const headerHeight = header.offsetHeight;
         const contentHeight = mainContent.scrollHeight;
         const viewportHeight = mainContent.clientHeight;
-        
+
         // 跟踪上次滚动位置
         if (!this.lastScrollPosition) {
             this.lastScrollPosition = scrollTop;
         }
-        
+
         // 计算滚动方向 (1=向下, -1=向上)
         const scrollDirection = scrollTop > this.lastScrollPosition ? 1 : -1;
         this.lastScrollPosition = scrollTop;
-        
+
         // 当滚动超过顶栏高度时显示背景
         if (scrollTop > headerHeight) {
             header.classList.add('header-solid');
-            
+
             // 竖屏模式下根据滚动方向显示/隐藏底栏
             if (!isLandscape) {
                 // 向下滚动时显示底栏
                 if (scrollDirection === -1) {
                     nav.classList.remove('hidden');
                     nav.classList.add('visible');
-                } 
+                }
                 // 向上滚动时隐藏底栏
                 else if (scrollDirection === 1 && scrollTop > headerHeight * 1.5) {
                     nav.classList.remove('visible');
@@ -664,7 +666,7 @@ class UI {
             nav.classList.remove('hidden');
             nav.classList.add('visible');
         }
-        
+
         // 移除滚动到底部的检测逻辑
     }
 }
