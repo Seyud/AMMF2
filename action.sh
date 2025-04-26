@@ -19,13 +19,6 @@ log_info "action.sh 被调用，参数: $*"
 # GPU调速器控制函数
 # ============================
 
-# 更新状态文件
-update_status() {
-    local status_file="$MODPATH/status.txt"
-    echo "$1" > "$status_file"
-    log_info "状态已更新: $1"
-}
-
 # 切换GPU调速器状态
 dimensity_hybrid_switch() {
     local gpu_scheduler="$MODPATH/gpu-scheduler"
@@ -35,13 +28,13 @@ dimensity_hybrid_switch() {
         log_info "正在停止GPU调速器"
         echo '' > "$disable_file"
         killall gpu-scheduler 2>/dev/null
-        update_status "STOPPED"
+        log_info "GPU调速器已停止"
         Aurora_ui_print "天玑GPU混合调速器已关闭"
     else
         log_info "正在启动GPU调速器"
         nohup "$gpu_scheduler" > /dev/null 2>&1 &
         rm -f "$disable_file" 2>/dev/null
-        update_status "RUNNING"
+        log_info "GPU调速器已启动"
         Aurora_ui_print "天玑GPU混合调速器已启动"
     fi
 }
