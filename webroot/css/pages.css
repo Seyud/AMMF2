@@ -596,12 +596,6 @@ select option {
     top: 0;
 }
 
-.log-line {
-    width: 100%;
-    white-space: pre-wrap;
-    line-height: 20px;
-    min-height: 20px;
-}
 
 .log-line {
     height: 20px;
