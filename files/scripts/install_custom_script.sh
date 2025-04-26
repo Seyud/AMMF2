@@ -25,7 +25,8 @@ Aurora_ui_print " 该模块将在开机60秒后生效 "
 Aurora_ui_print " 如遇死机问题，可在重启后及时禁用模块 "
 Aurora_ui_print ""
 Aurora_ui_print " 运行日志位于 $MODPATH/gpu_governor.log "
-Aurora_ui_print " 遇到问题时请提供此日志文件 "
+Aurora_ui_print " GPU调度器日志位于 $MODPATH/logs/gpu-scheduler.log "
+Aurora_ui_print " 遇到问题时请提供这些日志文件 "
 Aurora_ui_print ""
 Aurora_ui_print " 此模块用于改善天玑1000+ GPU的高频功耗 "
 Aurora_ui_print " 你所玩的游戏GPU性能需求越大收益越明显 "
@@ -137,5 +138,10 @@ else
   Aurora_ui_print "检测到已有频率表配置，将使用现有配置"
 fi
 
+# 记录新功能信息
+log_info "已添加GPU调度器日志记录功能，将记录前20行日志到 $MODPATH/logs/gpu-scheduler.log"
+
 # 安装完成
 log_info "安装自定义脚本执行完成"
+# 确保日志被写入磁盘
+flush_logs
