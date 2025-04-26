@@ -1,4 +1,9 @@
 #!/system/bin/sh
+# ============================
+# 天玑GPU混合调速器控制脚本
+# ============================
+# 此脚本用于控制天玑GPU混合调速器的开关状态
+
 MODDIR=${0%/*}
 MODPATH="$MODDIR"
 
@@ -6,29 +11,43 @@ MODPATH="$MODDIR"
 LOG_DIR="$MODPATH/logs"
 mkdir -p "$LOG_DIR"
 
-# 启动日志监控器（如果存在）
-if [ -f "$MODPATH/bin/logmonitor" ]; then
-    # 检查是否已经启动
-    if ! pgrep -f "$MODPATH/bin/logmonitor.*-c daemon" >/dev/null; then
-        "$MODPATH/bin/logmonitor" -c start -d "$LOG_DIR" >/dev/null 2>&1 &
+# 设置日志文件名为action
+set_log_file "action"
+log_info "action.sh 被调用，参数: $*"
+
+# ============================
+# GPU调速器控制函数
+# ============================
+
+# 更新状态文件
+update_status() {
+    local status_file="$MODPATH/status.txt"
+    echo "$1" > "$status_file"
+    log_info "状态已更新: $1"
+}
+
+# 切换GPU调速器状态
+dimensity_hybrid_switch() {
+    local gpu_scheduler="$MODPATH/gpu-scheduler"
+    local disable_file="$MODPATH/disable"
+
+    if [[ $(pidof gpu-scheduler) != '' ]]; then
+        log_info "正在停止GPU调速器"
+        echo '' > "$disable_file"
+        killall gpu-scheduler 2>/dev/null
+        update_status "STOPPED"
+        Aurora_ui_print "天玑GPU混合调速器已关闭"
+    else
+        log_info "正在启动GPU调速器"
+        nohup "$gpu_scheduler" > /dev/null 2>&1 &
+        rm -f "$disable_file" 2>/dev/null
+        update_status "RUNNING"
+        Aurora_ui_print "天玑GPU混合调速器已启动"
     fi
-    # 设置日志文件名为action
-    "$MODPATH/bin/logmonitor" -c write -n "action" -m "action.sh 被调用" -l 3 >/dev/null 2>&1
-fi
+}
 
-if [ ! -f "$MODPATH/files/scripts/default_scripts/main.sh" ]; then
-    log_error "File not found: $MODPATH/files/scripts/default_scripts/main.sh"
-    exit 1
-else
-    . "$MODPATH/files/scripts/default_scripts/main.sh"
-    # 记录action.sh被调用
-    start_script
-    log_info "action.sh was called with parameters: $*"
-fi
-# 在这里添加您的自定义脚本逻辑
-# -----------------
-# This script extends the functionality of the default and setup scripts, allowing direct use of their variables and functions.
-# SCRIPT_EN.md
+# 直接切换GPU调速器状态
+dimensity_hybrid_switch
 
-# 定义清理进程函数
+# 刷新并停止日志系统
 stop_logger
